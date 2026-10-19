@@ -1,4 +1,4 @@
-* New Flight:
+### New Flight:
 * Ability to add new glider from New Flight screen rather than having to back out & start over.
 * Default Club for an airfield
 * Default launch type for an airfield
