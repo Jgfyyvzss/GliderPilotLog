@@ -383,7 +383,7 @@ The record layouts below come from my knowledge of the IGC format, because I cou
 
 All WeGlide code sits behind one interface with a fake implementation for tests. The base URL is a single constant, `https://api.weglide.org`, with `GET /v1/aircraft` and `POST /v1/igcfile`. The pilot supplied both paths, and the shared host is an assumption to check with a first real call.
 
-- **Headers:** every request sends a `User-Agent` of the form `<app name>/<version> (Android)`. The app name is a project-setup decision.
+- **Headers:** every request sends a `User-Agent` of the form `<app name>/<version> (Android)`, for example `soarlogs/1.0.0 (Android)`.
 - **Aircraft list:** GET with no credentials. The response is a JSON array whose entries have `id`, `name`, `kind`, `sc_class` and `dmst_index`. Skip entries without a numeric `id` and a string `name`. Cache the raw response in a file in app-private storage, load the cache first, refresh on request and automatically when it is older than 30 days, and keep the cache if a refresh fails. With no cache and no network, show a message.
 - **Search:** lower-case both strings, remove accents, and remove everything except letters and digits. Rank exact matches first, then starts-with, then contains, ties by name. Show the name with its `kind` and `sc_class` exactly as returned.
 - **Picking:** store the ID on the glider and replace its type with WeGlide's name, after showing the confirmation line described above.
@@ -396,7 +396,7 @@ All WeGlide code sits behind one interface with a fake implementation for tests.
 
 ## Appendix F: Project setup and tests
 
-- **Identity:** the app name and package ID are not yet chosen. Ask the pilot before creating the project.
+- **Identity:** the app name is soarlogs and the package ID is `io.github.jgfyyvzss.gliderpilotlog`, confirmed 2026-10-19.
 - **Android versions:** propose a minimum of API 26 (Android 8.0), which has the java.time classes built in, pending the decision listed below. Use the current stable compile and target versions at project start.
 - **Stack:** Kotlin, Jetpack Compose with Material 3, Navigation Compose, Room with KSP and its Paging integration, DataStore (Preferences), WorkManager for scheduled exports, kotlinx.serialization for JSON, and OkHttp for HTTP. Use the latest stable releases at project start, pinned in a version catalogue, and check them against the official documentation. CSV needs only a small RFC 4180 reader and writer in the core package.
 - **Layout:** one Gradle module with `core` (pure Kotlin, no `android.*` imports), `data` (Room, DataStore, files) and `ui` packages. A `testdata` folder holds the pilot's glider table, an anonymised flights CSV and a few real IGC files.
@@ -432,10 +432,32 @@ The first three steps give a usable logbook with safe backups before any integra
 
 ## Decisions and open points
 
-Four of these points were settled during review, and one remains open.
+All five points have been settled.
 
 1. **Totals:** Instructor and Coach flights - selectable in Settings if they also count toward PIC, or stay separate with Dual as their sum. The Totals screen shows the five buckets and Combined.
 2. **Landing place:** Optional, behind the Record landing place Setting, off by default. Launch and landing times are likewise optional, behind a separate Record launch and landing times Setting, off by default.
 3. **Aircraft logbook rounding:** whether the logbook wants H:MM or decimal hours, and any rounding rule. Selectable in settings, rounding to nearest minute.
 4. **Launch type list:** the seed values = Aero, Winch, Self, Auto
-5. **Minimum Android version:** not yet chosen.
+5. **Minimum Android version:** API 26 (Android 8.0), confirmed 2026-10-19.
+
+## Sources consulted
+
+Research ran on 2026-10-18; several pages were read as search extracts, not in full.
+
+- [Add Times (Akaflieg Freiburg)](https://github.com/Akaflieg-Freiburg/addhoursandminutes)
+- [KTrax API usage](https://ktrax.kisstech.ch/api-usage)
+- [WeGlide developer docs](https://docs.weglide.org/creators/developers.html)
+- [WeGlide flight upload](https://docs.weglide.org/how_to/flight_upload.html)
+- [WeGlide: getting started](https://magazine.weglide.org/getting-started/)
+- [WeGlide Tasks in XCSoar](https://magazine.weglide.org/weglide-tasks-xcsoar/)
+- [XCSoar 7.23 release notes](https://xcsoar.org/news/2022/02/11/xcsoar-7-dot-23-released.html)
+- [Room release notes](https://developer.android.com/jetpack/androidx/releases/room)
+- [Compose Multiplatform and Jetpack Compose](https://jetbrains.com/help/kotlin-multiplatform-dev/compose-multiplatform-and-jetpack-compose.html)
+- [Android SQLite performance best practices](https://developer.android.com/topic/performance/sqlite-performance-best-practices)
+- [Android Storage Access Framework](https://developer.android.com/training/data-storage/shared/documents-files)
+- [Auto Backup for Apps](https://developer.android.com/identity/data/autobackup?authuser=2)
+- [aerofiles IGC header examples](https://aerofiles.readthedocs.io/en/latest/guide/igc-writing.html)
+- [LXNAV Data Port Specification 1.04 (Draft, Internal)](https://github.com/XCSoar/XCSoar/files/11738481/LXNAV_DataPort_Specification1.04.pdf)
+- [XCSoar 7.44 release notes](https://xcsoar.org/news/2026/03/22/xcsoar-7-dot-44-released.html)
+- [XCSoar documentation index](https://xcsoar.org/docs/)
+- [Android Bluetooth permissions](https://developer.android.com/guide/topics/connectivity/bluetooth/permissions)
