@@ -12,7 +12,12 @@ Yes, this is all about me. But if it's useful to you, all the better.
 
 ## What it does:
 * Provides a quick and easy place to log flights.
-* Your data is yours to do with as you like. It is stored internally in a SQLite database but full backups can be exported to text based JSON and all log data can be exported to CSV for easy transfer to spreadsheets or other systems. You will not lose access to your data even if the app ceases to exist.
+* Your data is yours to do with as you like. You will not lose access to your data even if the app ceases to exist (subject to you maintaining backups).
+  * Data is stored internally in an open SQLite database.
+  * Full backup and restore via text based JSON ensures you can always reinstall the app and get back to where you were.
+  * All log data can be exported to CSV for easy transfer to spreadsheets or other systems.
+  * Backup can be manual or scheduled by time or number of new records.
+  * Backup can be to any available location, including Drive, Dropbox etc.
 * Provides dropdown lists for Gliders, Airfields and Clubs, with configurable defaults.
 * Can be configured to record just flight time or launch, landing & flight time. Useful for compliance with some jurisdiction rules.
 * Can be configured to save Landing place. Useful for compliance with some jurisdiction rules.
@@ -21,6 +26,7 @@ Yes, this is all about me. But if it's useful to you, all the better.
 * Send the selected IGC file to WeGlide.
 * Select an IGC file from an LXNav bluetooth enabled device (Nano, S100 etc)
 * Time calculator to make filling in aircraft logbook easier. Provides last known AC logbook total + current day total. Last known total can be updated from the paper logbook to give the correct running total. For single user private gliders this will probably stay in sync with the glider logbook. For club and syndicate gliders you simply enter the last figure from the logbook and the app provides the new running total.
+* Configurable filtering and sorting. Want to know how many hours you've flown a specific glider from a specific airfield? Need to report your past year's instructing hours? 
 
 ## What it doesn't do:
 * Store, display or analyse IGC files. IGC files are parsed for flight launch and landing data then dropped or passed on to WeGlide.
