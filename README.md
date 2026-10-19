@@ -3,8 +3,11 @@ A pilot flight logbook for gliding.
 
 ## Why:
 I have been using a Memento database to record my flights. It works very well but it uses a cloud service to sync data and the export option is adequate, but not great. The free version has limitations on filtering that were a minor nuisance. I don't see the need to pay for something just to keep a simple record of flights.
+
 I enter my flights into Memento when I finish flying, then transfer to my paper logbook sometime later. 
+
 I wouldn't mind dropping the paper logbook if my digital one is compliant with local rules and sufficiently robust.
+
 Yes, this is all about me. But if it's useful to you, all the better.
 
 ## What it does:
