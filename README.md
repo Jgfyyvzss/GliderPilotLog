@@ -18,7 +18,7 @@ Yes, this is all about me. But if it's useful to you, all the better.
   * All log data can be exported to CSV for easy transfer to spreadsheets or other systems.
   * Backup can be manual or scheduled by time or number of new records.
   * Backup can be to any available location, including Drive, Dropbox etc.
-* Provides dropdown lists for Gliders, Airfields and Clubs, with configurable defaults.
+* Provides dropdown lists for Gliders, Airfields and Clubs, with configurable defaults per airfield.
 * Can be configured to record just flight time or launch, landing & flight time. Useful for compliance with some jurisdiction rules.
 * Can be configured to save Landing place. Useful for compliance with some jurisdiction rules.
 * Automatically selects the launch airfield and optionally the landing airfield (relies on airfield location being set).
