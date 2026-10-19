@@ -1,0 +1,164 @@
+package io.github.jgfyyvzss.gliderpilotlog.data
+
+import androidx.paging.PagingSource
+import androidx.room.ColumnInfo
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.Query
+import androidx.room.Transaction
+import androidx.room.Update
+import kotlinx.coroutines.flow.Flow
+
+@Dao
+interface GliderDao {
+    @Query("SELECT * FROM glider WHERE deleted_at IS NULL ORDER BY archived, registration_key")
+    fun observeAll(): Flow<List<GliderEntity>>
+
+    @Query("SELECT * FROM glider WHERE id = :id")
+    suspend fun get(id: String): GliderEntity?
+
+    @Query("SELECT * FROM glider WHERE deleted_at IS NULL AND registration_key = :key AND id != :exceptId LIMIT 1")
+    suspend fun findLiveByKey(key: String, exceptId: String = ""): GliderEntity?
+
+    @Insert suspend fun insert(glider: GliderEntity)
+    @Update suspend fun update(glider: GliderEntity)
+}
+
+/** An airfield row for lists, with its club names joined in name order. */
+data class AirfieldListRow(
+    val id: String,
+    val name: String,
+    val incomplete: Boolean,
+    val archived: Boolean,
+    @ColumnInfo(name = "club_names") val clubNames: String?,
+)
+
+@Dao
+interface AirfieldDao {
+    @Query(
+        """
+        SELECT a.id, a.name, a.incomplete, a.archived,
+               (SELECT group_concat(name, ', ') FROM
+                  (SELECT c.name FROM airfield_club ac JOIN club c ON c.id = ac.club_id
+                   WHERE ac.airfield_id = a.id ORDER BY c.name_key)) AS club_names
+        FROM airfield a WHERE a.deleted_at IS NULL ORDER BY a.archived, a.name_key
+        """,
+    )
+    fun observeList(): Flow<List<AirfieldListRow>>
+
+    @Query("SELECT * FROM airfield WHERE deleted_at IS NULL ORDER BY archived, name_key")
+    fun observeAll(): Flow<List<AirfieldEntity>>
+
+    @Query("SELECT * FROM airfield WHERE id = :id")
+    suspend fun get(id: String): AirfieldEntity?
+
+    @Query("SELECT * FROM airfield WHERE deleted_at IS NULL AND name_key = :key AND id != :exceptId LIMIT 1")
+    suspend fun findLiveByKey(key: String, exceptId: String = ""): AirfieldEntity?
+
+    @Query(
+        "SELECT c.* FROM club c JOIN airfield_club ac ON ac.club_id = c.id " +
+            "WHERE ac.airfield_id = :airfieldId AND c.deleted_at IS NULL ORDER BY c.name_key",
+    )
+    suspend fun clubsFor(airfieldId: String): List<ClubEntity>
+
+    @Insert suspend fun insert(airfield: AirfieldEntity)
+    @Update suspend fun update(airfield: AirfieldEntity)
+
+    @Query("DELETE FROM airfield_club WHERE airfield_id = :airfieldId")
+    suspend fun deleteLinks(airfieldId: String)
+
+    @Insert suspend fun insertLinks(links: List<AirfieldClubEntity>)
+
+    /** Rows are deleted outright when links change, and the caller bumps the airfield's updated_at. */
+    @Transaction
+    suspend fun replaceLinks(airfieldId: String, clubIds: List<String>) {
+        deleteLinks(airfieldId)
+        insertLinks(clubIds.distinct().map { AirfieldClubEntity(airfieldId, it) })
+    }
+}
+
+@Dao
+interface ClubDao {
+    @Query("SELECT * FROM club WHERE deleted_at IS NULL ORDER BY name_key")
+    fun observeAll(): Flow<List<ClubEntity>>
+
+    @Query("SELECT * FROM club WHERE id = :id")
+    suspend fun get(id: String): ClubEntity?
+
+    @Query("SELECT * FROM club WHERE deleted_at IS NULL AND name_key = :key AND id != :exceptId LIMIT 1")
+    suspend fun findLiveByKey(key: String, exceptId: String = ""): ClubEntity?
+
+    @Insert suspend fun insert(club: ClubEntity)
+    @Update suspend fun update(club: ClubEntity)
+}
+
+@Dao
+interface LaunchTypeDao {
+    @Query("SELECT * FROM launch_type WHERE deleted_at IS NULL ORDER BY archived, sort_order, name_key")
+    fun observeAll(): Flow<List<LaunchTypeEntity>>
+
+    @Query("SELECT * FROM launch_type WHERE id = :id")
+    suspend fun get(id: String): LaunchTypeEntity?
+
+    @Query("SELECT * FROM launch_type WHERE deleted_at IS NULL AND name_key = :key AND id != :exceptId LIMIT 1")
+    suspend fun findLiveByKey(key: String, exceptId: String = ""): LaunchTypeEntity?
+
+    @Query("SELECT COALESCE(MAX(sort_order), -1) FROM launch_type")
+    suspend fun maxSortOrder(): Int
+
+    @Insert suspend fun insert(launchType: LaunchTypeEntity)
+    @Update suspend fun update(launchType: LaunchTypeEntity)
+}
+
+/** A flight for the two-line list row. */
+data class FlightListRow(
+    val id: String,
+    @ColumnInfo(name = "log_no") val logNo: Int,
+    val date: String,
+    @ColumnInfo(name = "duration_minutes") val durationMinutes: Int,
+    val role: String,
+    val registration: String,
+    @ColumnInfo(name = "glider_type") val gliderType: String,
+    @ColumnInfo(name = "airfield_name") val airfieldName: String,
+    @ColumnInfo(name = "launch_type_name") val launchTypeName: String,
+)
+
+/** Enough about a flight to name it in a duplicate log number message. */
+data class FlightLabel(
+    @ColumnInfo(name = "log_no") val logNo: Int,
+    val date: String,
+    val registration: String,
+)
+
+@Dao
+interface FlightDao {
+    /** Uses the partial unique index on live log numbers. */
+    @Query("SELECT MAX(log_no) FROM flight WHERE deleted_at IS NULL")
+    suspend fun maxLogNo(): Int?
+
+    @Query(
+        "SELECT f.log_no, f.date, g.registration FROM flight f JOIN glider g ON g.id = f.glider_id " +
+            "WHERE f.deleted_at IS NULL AND f.log_no = :logNo AND f.id != :exceptId LIMIT 1",
+    )
+    suspend fun liveHolderOf(logNo: Int, exceptId: String = ""): FlightLabel?
+
+    @Query("SELECT * FROM flight WHERE id = :id")
+    suspend fun get(id: String): FlightEntity?
+
+    @Query(
+        """
+        SELECT f.id, f.log_no, f.date, f.duration_minutes, f.role,
+               g.registration, g.type AS glider_type, a.name AS airfield_name, lt.name AS launch_type_name
+        FROM flight f
+        JOIN glider g ON g.id = f.glider_id
+        JOIN airfield a ON a.id = f.airfield_id
+        JOIN launch_type lt ON lt.id = f.launch_type_id
+        WHERE f.deleted_at IS NULL
+        ORDER BY f.date DESC, f.log_no DESC
+        """,
+    )
+    fun pagedList(): PagingSource<Int, FlightListRow>
+
+    @Insert suspend fun insert(flight: FlightEntity)
+    @Update suspend fun update(flight: FlightEntity)
+}
