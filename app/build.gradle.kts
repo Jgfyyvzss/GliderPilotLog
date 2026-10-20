@@ -20,6 +20,11 @@ android {
     }
 
     buildTypes {
+        // Debug builds and test runs install as a separate app, so they never replace or uninstall the
+        // pilot's own copy and its logbook.
+        debug {
+            applicationIdSuffix = ".debug"
+        }
         release {
             isMinifyEnabled = false
         }
@@ -68,5 +73,8 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.room.testing)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
     androidTestImplementation(libs.kotlinx.coroutines.test)
 }

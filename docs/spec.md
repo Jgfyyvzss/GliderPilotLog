@@ -94,7 +94,7 @@ The home screen offers New flight and From IGC immediately, and navigation cover
 
 - **Home:** the two entry buttons, a compact totals card, and a "last backed up" line that nudges when stale. IGC files shared from other apps open the same import flow.
 - **Flights:** newest first by date then `log_no`. Each flight is a two-line row: log number, date, glider and type on the first line (for example 340 · 17/10/26 · FQM Hornet) and airfield, launch type, role and duration on the second. Tapping a row opens the flight to edit, including notes, and the list is paged. Active filters show as chips above the list, and the filter button opens a bottom sheet with dropdowns for glider, airfield and club, plus date range, role and a log-number range, and a launch time range when the Times setting is on.
-- **Totals:** a small grid, the one table-like screen, with a row each for PIC, Student, Instructor, Coach, Mutual and Combined and columns for hours and flights. With no filter active, each figure equals the opening balance plus the flights. With any filter active, opening balances are left out and only matching flights count, so "my hours in this glider at this airfield" is one query. They are labelled as the pilot's own time, never aircraft time.
+- **Totals:** a small grid, the one table-like screen, with a row each for PIC, Student, Instructor, Coach, Mutual and Combined and columns for hours and flights. With no filter active, each figure equals the opening balance plus the flights. With any filter active, opening balances are left out and only matching flights count, so "my hours in this glider at this airfield" is one query. They are labelled as the pilot's own time, never aircraft time. The Flights list and Totals share one filter, shown as chips on both screens, and it resets when the app is closed. When Instructor and Coach count toward PIC, their opening balances do too. The Home totals card shows PIC and Combined, always unfiltered and including opening balances.
 - **Airfields and Gliders:** plain lists. A glider row shows the registration and type, a glider's detail also shows its logbook total as last entered, and an airfield row shows its name and club names. A plus button creates a record, tapping a row edits or archives it, and an "incomplete" badge marks records created by CSV import.
 - **Settings:** pilot name and identifying numbers, hours display (H:MM or decimal), whether Instructor and Coach flights also count toward PIC in Totals, Record landing place, Record launch and landing times, opening balances, undo last import, backup folder and restore, and WeGlide credentials.
 
@@ -114,7 +114,7 @@ The calculator adds a day's flying to the aircraft logbook total, for the legal 
 - **Double-add warning:** if the stored date is on or after the day being added, the calculator warns that the day may already have been added, because adding the same day twice is the easiest way to corrupt the figure.
 - **Gliders screen:** a glider's detail shows the stored figures, for example "Logbook total as last entered: 1234:56, 5678 flights, 18/10/26", and lets the pilot edit or clear them by hand. The flights count is optional and may be removed later.
 
-The count is labelled "Flights", as everywhere in the app, because a flight is one landing. Role does not matter here, since airframe time counts for every role. Hours can be shown as H:MM or decimal, selectable in Settings, with rounding to the nearest minute.
+The count is labelled "Flights", as everywhere in the app, because a flight is one landing. Role does not matter here, since airframe time counts for every role. Hours can be shown as H:MM or decimal, selectable in Settings. H:MM is exact to the minute, and decimal hours are shown to one place, for example 4.5.
 
 ## IGC import
 
@@ -277,7 +277,7 @@ The appendices hold proposed defaults written while preparing this spec for impl
 **Notes**
 
 - Roles are stored as the text names PIC, STUDENT, INSTRUCTOR, COACH and MUTUAL.
-- Room's index annotation, as far as I know, cannot express a WHERE clause. Create the partial unique indexes with raw SQL in the database-creation callback and in migrations, and test that they enforce uniqueness.
+- Room's index annotation cannot express a WHERE clause, so the partial unique indexes are created with raw SQL in the database callback, both on creation and on every open. Room's schema validation after a migration rejects indexes it does not know (confirmed on a device on 2026-10-20), so every migration drops the partial indexes first and the open callback recreates them. Test that they enforce uniqueness.
 - Settings live in DataStore: `hours_display` (HM or DECIMAL), `instruction_counts_as_pic` (boolean), record\_landing\_place (boolean), record\_times (boolean), pilot\_name (text) and pilot\_identifiers (a list of label and value pairs) are backed up. `backup_folder_uri` and `last_backup_at` are specific to the device and are not.
 - The WeGlide ID and date of birth are held in Keystore-backed encrypted storage. Check which AndroidX API is current for this before choosing one.
 - Totals use `SUM(duration_minutes)` and `COUNT(*)` per role over live flights with the active filters. With no filter active, the opening balance is added. Combined counts each flight once, and when the Settings option that counts instruction as PIC is on, the PIC row also includes Instructor and Coach flights.
@@ -409,7 +409,7 @@ All WeGlide code sits behind one interface with a fake implementation for tests.
 **Tests**
 
 - **Plain JVM:** duration arithmetic including overflow and the form's digit entry for durations and times, CSV parsing and the error messages, a JSON export-import-export round trip that must be identical, the IGC parser against the sample files, and the WeGlide search normalisation and ranking.
-- **On a device or emulator:** the Room constraints (unique `log_no` that ignores tombstones, foreign keys, partial indexes), and every migration with `MigrationTestHelper`, starting from a database that already has the partial indexes and triggers, so Room's schema validation is tested against them.
+- **On a device or emulator:** the Room constraints (unique `log_no` that ignores tombstones, foreign keys, partial indexes), and every migration with `MigrationTestHelper`, starting from a database that already has the partial indexes and triggers, so Room's schema validation is tested against them. The migration tests must pass before any release that changes the schema.
 - **UI:** a smoke test that creates a flight, filters the list, and checks the totals.
 
 ## Later features

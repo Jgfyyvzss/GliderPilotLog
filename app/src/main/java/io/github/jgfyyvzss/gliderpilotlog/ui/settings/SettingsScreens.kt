@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -44,6 +45,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.jgfyyvzss.gliderpilotlog.core.HoursDisplay
 import io.github.jgfyyvzss.gliderpilotlog.data.ClubEntity
 import io.github.jgfyyvzss.gliderpilotlog.data.LaunchTypeEntity
 import io.github.jgfyyvzss.gliderpilotlog.data.PilotIdentifier
@@ -83,7 +85,7 @@ private val identifierSuggestions = listOf("Licence number", "Membership number"
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun SettingsScreen(onClubs: () -> Unit, onLaunchTypes: () -> Unit) {
+fun SettingsScreen(onClubs: () -> Unit, onLaunchTypes: () -> Unit, onOpeningBalances: () -> Unit) {
     val container = appContainer()
     val settings by container.settings.settings.collectAsStateWithLifecycle(null)
     val vm: ProfileViewModel = viewModel(factory = vmFactory { ProfileViewModel(it.settings) })
@@ -141,6 +143,34 @@ fun SettingsScreen(onClubs: () -> Unit, onLaunchTypes: () -> Unit) {
                 s.recordTimes,
             ) { on -> scope.launch { container.settings.setRecordTimes(on) } }
         }
+
+        HorizontalDivider()
+        Text("Totals", style = MaterialTheme.typography.titleMedium)
+        settings?.let { s ->
+            Text("Hours display")
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = s.hoursDisplay == HoursDisplay.HM,
+                    onClick = { scope.launch { container.settings.setHoursDisplay(HoursDisplay.HM) } },
+                    label = { Text("H:MM") },
+                )
+                FilterChip(
+                    selected = s.hoursDisplay == HoursDisplay.DECIMAL,
+                    onClick = { scope.launch { container.settings.setHoursDisplay(HoursDisplay.DECIMAL) } },
+                    label = { Text("Decimal") },
+                )
+            }
+            SwitchRow(
+                "Instructor and Coach count as PIC",
+                "The PIC row in Totals also includes Instructor and Coach flights.",
+                s.instructionCountsAsPic,
+            ) { on -> scope.launch { container.settings.setInstructionCountsAsPic(on) } }
+        }
+        ListItem(
+            headlineContent = { Text("Opening balances") },
+            supportingContent = { Text("Totals carried over from your paper logbook") },
+            modifier = Modifier.clickable(onClick = onOpeningBalances),
+        )
 
         HorizontalDivider()
         Text("Lists", style = MaterialTheme.typography.titleMedium)

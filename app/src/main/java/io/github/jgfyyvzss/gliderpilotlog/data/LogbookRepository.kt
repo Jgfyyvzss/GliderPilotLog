@@ -4,13 +4,17 @@ import androidx.paging.PagingSource
 import androidx.room.withTransaction
 import io.github.jgfyyvzss.gliderpilotlog.core.FlightContext
 import io.github.jgfyyvzss.gliderpilotlog.core.FlightDraft
+import io.github.jgfyyvzss.gliderpilotlog.core.FlightFilter
 import io.github.jgfyyvzss.gliderpilotlog.core.FlightRules
 import io.github.jgfyyvzss.gliderpilotlog.core.FlightValidation
 import io.github.jgfyyvzss.gliderpilotlog.core.Keys
+import io.github.jgfyyvzss.gliderpilotlog.core.Role
+import io.github.jgfyyvzss.gliderpilotlog.core.RoleTotal
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 /** The outcome of saving a record. */
 sealed interface SaveResult {
@@ -27,6 +31,7 @@ class LogbookRepository(
     private val clubs = db.clubDao()
     private val launchTypes = db.launchTypeDao()
     private val flights = db.flightDao()
+    private val openingBalances = db.openingBalanceDao()
 
     // Gliders
 
@@ -132,7 +137,26 @@ class LogbookRepository(
 
     // Flights
 
-    fun pagedFlights(): PagingSource<Int, FlightListRow> = flights.pagedList()
+    fun pagedFlights(filter: FlightFilter = FlightFilter()): PagingSource<Int, FlightListRow> =
+        flights.pagedList(FlightQueries.list(filter))
+
+    /** Minutes and flights per role for the live flights matching [filter]. */
+    fun observeTotalsByRole(filter: FlightFilter): Flow<Map<Role, RoleTotal>> =
+        flights.totalsByRole(FlightQueries.totalsByRole(filter)).map { rows ->
+            rows.mapNotNull { r -> Role.entries.firstOrNull { it.name == r.role }?.let { it to RoleTotal(r.minutes, r.flights) } }.toMap()
+        }
+
+    // Opening balances
+
+    fun observeOpeningBalances(): Flow<List<OpeningBalanceEntity>> = openingBalances.observeAll()
+
+    /** Saves the five balances together. Minutes and flights must not be negative. */
+    suspend fun saveOpeningBalances(balances: List<OpeningBalanceEntity>): SaveResult {
+        if (balances.any { it.minutes < 0 || it.flights < 0 }) return SaveResult.Rejected("Balances cannot be negative")
+        val time = now()
+        openingBalances.update(balances.map { it.copy(updatedAt = time) })
+        return SaveResult.Saved("opening_balance")
+    }
     suspend fun flight(id: String) = flights.get(id)
 
     /** The highest live log number plus one, or 1 for the first flight. */

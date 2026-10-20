@@ -5,17 +5,30 @@ import io.github.jgfyyvzss.gliderpilotlog.core.Role
 
 /**
  * SQL that Room's annotations cannot express: partial unique indexes over live rows, triggers that
- * enforce the column rules from Appendix A, and the seed rows. Run on creation, and again from every
- * migration that rebuilds a table.
+ * enforce the column rules from Appendix A, and the seed rows. Created on creation and ensured on every open.
+ *
+ * Room's schema validation after a migration rejects indexes it does not know, so every migration drops the
+ * partial indexes first (see [logbookMigration]) and the open callback recreates them.
  */
 object SchemaSql {
-    val partialUniqueIndexes = listOf(
-        "CREATE UNIQUE INDEX IF NOT EXISTS live_flight_log_no ON flight(log_no) WHERE deleted_at IS NULL",
-        "CREATE UNIQUE INDEX IF NOT EXISTS live_glider_registration_key ON glider(registration_key) WHERE deleted_at IS NULL",
-        "CREATE UNIQUE INDEX IF NOT EXISTS live_airfield_name_key ON airfield(name_key) WHERE deleted_at IS NULL",
-        "CREATE UNIQUE INDEX IF NOT EXISTS live_club_name_key ON club(name_key) WHERE deleted_at IS NULL",
-        "CREATE UNIQUE INDEX IF NOT EXISTS live_launch_type_name_key ON launch_type(name_key) WHERE deleted_at IS NULL",
+    /** Partial unique index name to its table and column. */
+    private val partialIndexDefs = listOf(
+        Triple("live_flight_log_no", "flight", "log_no"),
+        Triple("live_glider_registration_key", "glider", "registration_key"),
+        Triple("live_airfield_name_key", "airfield", "name_key"),
+        Triple("live_club_name_key", "club", "name_key"),
+        Triple("live_launch_type_name_key", "launch_type", "name_key"),
     )
+
+    val partialIndexNames = partialIndexDefs.map { it.first }
+
+    val partialUniqueIndexes = partialIndexDefs.map { (name, table, column) ->
+        "CREATE UNIQUE INDEX IF NOT EXISTS $name ON $table($column) WHERE deleted_at IS NULL"
+    }
+
+    fun dropPartialIndexes(execSQL: (String) -> Unit) {
+        partialIndexNames.forEach { execSQL("DROP INDEX IF EXISTS $it") }
+    }
 
     private val roleList = Role.entries.joinToString(",") { "'${it.name}'" }
 

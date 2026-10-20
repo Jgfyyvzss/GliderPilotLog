@@ -5,8 +5,13 @@ import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.RawQuery
 import androidx.room.Transaction
 import androidx.room.Update
+import androidx.sqlite.db.SimpleSQLiteQuery
+import androidx.sqlite.db.SupportSQLiteQuery
+import io.github.jgfyyvzss.gliderpilotlog.core.FilterSql
+import io.github.jgfyyvzss.gliderpilotlog.core.FlightFilter
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -145,20 +150,53 @@ interface FlightDao {
     @Query("SELECT * FROM flight WHERE id = :id")
     suspend fun get(id: String): FlightEntity?
 
-    @Query(
-        """
-        SELECT f.id, f.log_no, f.date, f.duration_minutes, f.role,
-               g.registration, g.type AS glider_type, a.name AS airfield_name, lt.name AS launch_type_name
-        FROM flight f
-        JOIN glider g ON g.id = f.glider_id
-        JOIN airfield a ON a.id = f.airfield_id
-        JOIN launch_type lt ON lt.id = f.launch_type_id
-        WHERE f.deleted_at IS NULL
-        ORDER BY f.date DESC, f.log_no DESC
-        """,
-    )
-    fun pagedList(): PagingSource<Int, FlightListRow>
+    /** The filtered list, built by [FlightQueries.list]. */
+    @RawQuery(observedEntities = [FlightEntity::class, GliderEntity::class, AirfieldEntity::class, LaunchTypeEntity::class])
+    fun pagedList(query: SupportSQLiteQuery): PagingSource<Int, FlightListRow>
+
+    /** Minutes and flights per role for the filtered flights, built by [FlightQueries.totalsByRole]. */
+    @RawQuery(observedEntities = [FlightEntity::class])
+    fun totalsByRole(query: SupportSQLiteQuery): Flow<List<RoleTotalRow>>
 
     @Insert suspend fun insert(flight: FlightEntity)
     @Update suspend fun update(flight: FlightEntity)
+}
+
+data class RoleTotalRow(val role: String, val minutes: Int, val flights: Int)
+
+/** Raw queries whose WHERE clause comes from the filter. */
+object FlightQueries {
+    fun list(filter: FlightFilter): SupportSQLiteQuery {
+        val where = FilterSql.where(filter)
+        return SimpleSQLiteQuery(
+            """
+            SELECT f.id, f.log_no, f.date, f.duration_minutes, f.role,
+                   g.registration, g.type AS glider_type, a.name AS airfield_name, lt.name AS launch_type_name
+            FROM flight f
+            JOIN glider g ON g.id = f.glider_id
+            JOIN airfield a ON a.id = f.airfield_id
+            JOIN launch_type lt ON lt.id = f.launch_type_id
+            WHERE ${where.sql}
+            ORDER BY f.date DESC, f.log_no DESC
+            """.trimIndent(),
+            where.args.toTypedArray(),
+        )
+    }
+
+    fun totalsByRole(filter: FlightFilter): SupportSQLiteQuery {
+        val where = FilterSql.where(filter)
+        return SimpleSQLiteQuery(
+            "SELECT f.role AS role, COALESCE(SUM(f.duration_minutes), 0) AS minutes, COUNT(*) AS flights " +
+                "FROM flight f WHERE ${where.sql} GROUP BY f.role",
+            where.args.toTypedArray(),
+        )
+    }
+}
+
+@Dao
+interface OpeningBalanceDao {
+    @Query("SELECT * FROM opening_balance")
+    fun observeAll(): Flow<List<OpeningBalanceEntity>>
+
+    @Update suspend fun update(balances: List<OpeningBalanceEntity>)
 }

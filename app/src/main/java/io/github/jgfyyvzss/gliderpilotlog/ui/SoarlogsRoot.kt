@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.AirplanemodeActive
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -23,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -37,11 +39,15 @@ import io.github.jgfyyvzss.gliderpilotlog.ui.gliders.GliderListScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.home.HomeScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.settings.ClubsScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.settings.LaunchTypesScreen
+import io.github.jgfyyvzss.gliderpilotlog.ui.settings.OpeningBalancesScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.settings.SettingsScreen
+import io.github.jgfyyvzss.gliderpilotlog.ui.totals.TotalsScreen
 import kotlinx.serialization.Serializable
 
 @Serializable object HomeRoute
 @Serializable object FlightsRoute
+@Serializable object TotalsRoute
+@Serializable object OpeningBalancesRoute
 @Serializable object AirfieldsRoute
 @Serializable object GlidersRoute
 @Serializable object SettingsRoute
@@ -56,6 +62,7 @@ private data class TopLevel(val route: Any, val label: String, val icon: ImageVe
 private val topLevel = listOf(
     TopLevel(HomeRoute, "Home", Icons.Default.Home),
     TopLevel(FlightsRoute, "Flights", Icons.AutoMirrored.Filled.List),
+    TopLevel(TotalsRoute, "Totals", Icons.Default.TableChart),
     TopLevel(AirfieldsRoute, "Airfields", Icons.Default.Place),
     TopLevel(GlidersRoute, "Gliders", Icons.Default.AirplanemodeActive),
 )
@@ -71,6 +78,7 @@ fun SoarlogsRoot() {
         destination?.hasRoute(SettingsRoute::class) == true -> "Settings"
         destination?.hasRoute(ClubsRoute::class) == true -> "Clubs"
         destination?.hasRoute(LaunchTypesRoute::class) == true -> "Launch types"
+        destination?.hasRoute(OpeningBalancesRoute::class) == true -> "Opening balances"
         destination?.hasRoute(FlightEditRoute::class) == true ->
             if (entry?.toRoute<FlightEditRoute>()?.id == null) "New flight" else "Flight"
         destination?.hasRoute(AirfieldEditRoute::class) == true ->
@@ -106,13 +114,8 @@ fun SoarlogsRoot() {
                     topLevel.forEach { t ->
                         NavigationBarItem(
                             selected = t == current,
-                            onClick = {
-                                nav.navigate(t.route) {
-                                    popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
+                            onClick = { nav.navigateTopLevel(t.route) },
+
                             icon = { Icon(t.icon, contentDescription = null) },
                             label = { Text(t.label) },
                         )
@@ -122,7 +125,10 @@ fun SoarlogsRoot() {
         },
     ) { padding ->
         NavHost(nav, startDestination = HomeRoute, modifier = Modifier.padding(padding).consumeWindowInsets(padding)) {
-            composable<HomeRoute> { HomeScreen(onNewFlight = { nav.navigate(FlightEditRoute()) }) }
+            composable<HomeRoute> {
+                HomeScreen(onNewFlight = { nav.navigate(FlightEditRoute()) }, onTotals = { nav.navigateTopLevel(TotalsRoute) })
+            }
+            composable<TotalsRoute> { TotalsScreen() }
             composable<FlightsRoute> {
                 FlightListScreen(onOpen = { nav.navigate(FlightEditRoute(it)) }, onNew = { nav.navigate(FlightEditRoute()) })
             }
@@ -136,10 +142,24 @@ fun SoarlogsRoot() {
             }
             composable<GliderEditRoute> { GliderEditScreen(id = it.toRoute<GliderEditRoute>().id, onDone = { nav.popBackStack() }) }
             composable<SettingsRoute> {
-                SettingsScreen(onClubs = { nav.navigate(ClubsRoute) }, onLaunchTypes = { nav.navigate(LaunchTypesRoute) })
+                SettingsScreen(
+                    onClubs = { nav.navigate(ClubsRoute) },
+                    onLaunchTypes = { nav.navigate(LaunchTypesRoute) },
+                    onOpeningBalances = { nav.navigate(OpeningBalancesRoute) },
+                )
             }
             composable<ClubsRoute> { ClubsScreen() }
             composable<LaunchTypesRoute> { LaunchTypesScreen() }
+            composable<OpeningBalancesRoute> { OpeningBalancesScreen() }
         }
+    }
+}
+
+/** Switches tabs, keeping each tab's own back stack. */
+private fun NavHostController.navigateTopLevel(route: Any) {
+    navigate(route) {
+        popUpTo(graph.findStartDestination().id) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
     }
 }

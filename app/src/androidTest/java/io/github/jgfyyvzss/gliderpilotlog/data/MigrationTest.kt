@@ -62,23 +62,48 @@ class MigrationTest {
             assertEquals(340, it.getInt(0))
             assertEquals(271, it.getInt(1))
         }
-        // The partial unique indexes and triggers survive the migration.
-        db.query("SELECT COUNT(*) FROM sqlite_master WHERE name LIKE 'live_%' OR name LIKE 'flight_check_%'").use {
+        // The triggers survive; the partial indexes are dropped for validation and recreated on open.
+        db.query("SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'flight_check_%'").use {
             it.moveToFirst()
-            assertEquals(SchemaSql.partialUniqueIndexes.size + SchemaSql.triggers.size, it.getInt(0))
+            assertEquals(SchemaSql.triggers.size, it.getInt(0))
         }
         db.close()
     }
+
+    @Test fun partialIndexesAreRecreatedWhenRoomOpensTheMigratedDatabase() = runTest {
+        createVersion1()
+        helper.runMigrationsAndValidate(dbName, 2, true, MIGRATION_1_2).close()
+        val room = openWithRoom()
+        try {
+            val db = room.openHelper.writableDatabase
+            db.query("SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name LIKE 'live_%'").use {
+                it.moveToFirst()
+                assertEquals(SchemaSql.partialIndexNames.size, it.getInt(0))
+            }
+            try {
+                db.execSQL(
+                    "INSERT INTO glider (id, registration, registration_key, type, incomplete, archived, updated_at) " +
+                        "VALUES ('g2', 'fqm', 'fqm', '', 1, 0, 1)",
+                )
+                fail("expected the recreated unique index to reject a duplicate registration")
+            } catch (e: android.database.sqlite.SQLiteConstraintException) {
+            }
+        } finally {
+            room.close()
+        }
+    }
+
+    private fun openWithRoom(): LogbookDatabase =
+        Room.databaseBuilder(InstrumentationRegistry.getInstrumentation().targetContext, LogbookDatabase::class.java, dbName)
+            .addMigrations(*ALL_MIGRATIONS)
+            .addCallback(LogbookDatabase.CreateCallback)
+            .build()
 
     @Test fun migratedDatabaseOpensWithRoomAndEnforcesNewForeignKeys() = runTest {
         createVersion1()
         helper.runMigrationsAndValidate(dbName, 2, true, MIGRATION_1_2).close()
 
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val room = Room.databaseBuilder(context, LogbookDatabase::class.java, dbName)
-            .addMigrations(*ALL_MIGRATIONS)
-            .addCallback(LogbookDatabase.CreateCallback)
-            .build()
+        val room = openWithRoom()
         try {
             val repo = LogbookRepository(room)
             val saved = repo.saveAirfield(

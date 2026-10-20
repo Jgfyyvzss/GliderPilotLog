@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import io.github.jgfyyvzss.gliderpilotlog.core.HoursDisplay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
@@ -21,6 +22,9 @@ data class Settings(
     val pilotIdentifiers: List<PilotIdentifier> = emptyList(),
     val recordLandingPlace: Boolean = false,
     val recordTimes: Boolean = false,
+    val hoursDisplay: HoursDisplay = HoursDisplay.HM,
+    /** Whether the Totals PIC row also counts Instructor and Coach flights. */
+    val instructionCountsAsPic: Boolean = false,
 )
 
 private val Context.settingsStore by preferencesDataStore(name = "settings")
@@ -35,6 +39,8 @@ class SettingsRepository(context: Context) {
         val pilotIdentifiers = stringPreferencesKey("pilot_identifiers")
         val recordLandingPlace = booleanPreferencesKey("record_landing_place")
         val recordTimes = booleanPreferencesKey("record_times")
+        val hoursDisplay = stringPreferencesKey("hours_display")
+        val instructionCountsAsPic = booleanPreferencesKey("instruction_counts_as_pic")
     }
 
     val settings: Flow<Settings> = store.data.map { it.toSettings() }
@@ -46,6 +52,8 @@ class SettingsRepository(context: Context) {
             ?: emptyList(),
         recordLandingPlace = this[K.recordLandingPlace] ?: false,
         recordTimes = this[K.recordTimes] ?: false,
+        hoursDisplay = HoursDisplay.entries.firstOrNull { it.name == this[K.hoursDisplay] } ?: HoursDisplay.HM,
+        instructionCountsAsPic = this[K.instructionCountsAsPic] ?: false,
     )
 
     /** The profile changes only through this call, made from the Settings screen. */
@@ -66,5 +74,13 @@ class SettingsRepository(context: Context) {
 
     suspend fun setRecordTimes(on: Boolean) {
         store.edit { it[K.recordTimes] = on }
+    }
+
+    suspend fun setHoursDisplay(display: HoursDisplay) {
+        store.edit { it[K.hoursDisplay] = display.name }
+    }
+
+    suspend fun setInstructionCountsAsPic(on: Boolean) {
+        store.edit { it[K.instructionCountsAsPic] = on }
     }
 }

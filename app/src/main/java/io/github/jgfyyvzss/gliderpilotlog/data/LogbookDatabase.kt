@@ -26,6 +26,7 @@ abstract class LogbookDatabase : RoomDatabase() {
     abstract fun clubDao(): ClubDao
     abstract fun launchTypeDao(): LaunchTypeDao
     abstract fun flightDao(): FlightDao
+    abstract fun openingBalanceDao(): OpeningBalanceDao
 
     /**
      * Creates the partial indexes and triggers and seeds launch types and opening balances. The indexes and
