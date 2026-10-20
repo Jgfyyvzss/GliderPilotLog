@@ -33,3 +33,12 @@ Yes, this is all about me. But if it's useful to you, all the better.
 * In-flight logging. This is a logbook replacement, not a logger.
 * Send your data anywhere off your device without you telling it to. No central database, no cloud storage, no third-party processing. WeGlide is the exception and only if you specifically tell it to.
 
+## More info:
+* I only use Android and usually non-stock versions.
+* I generally don't use any of the big tech services where I don't have to.
+* I'm not interested in dealing with Apple's walled garden, it goes against my leanings.
+ **So**
+* How it functions on stock Android (eg Samsung or any other brand) is unknown to me. It should be fine - but who knows.
+* Backup and restore should work seamlessly with Dropbox, Drive or other providers setup on your phone, but again - who knows.
+* I've deliberately set this project up to be able to be ported to IOS, and I welcome someone doing it if they want. But I wont.
+
