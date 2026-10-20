@@ -173,6 +173,9 @@ fun SettingsScreen(onClubs: () -> Unit, onLaunchTypes: () -> Unit, onOpeningBala
         )
 
         HorizontalDivider()
+        BackupSection()
+
+        HorizontalDivider()
         Text("Lists", style = MaterialTheme.typography.titleMedium)
         ListItem(headlineContent = { Text("Clubs") }, modifier = Modifier.clickable(onClick = onClubs))
         ListItem(headlineContent = { Text("Launch types") }, modifier = Modifier.clickable(onClick = onLaunchTypes))

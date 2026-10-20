@@ -19,7 +19,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -38,10 +42,12 @@ import io.github.jgfyyvzss.gliderpilotlog.ui.gliders.GliderEditScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.gliders.GliderListScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.home.HomeScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.settings.ClubsScreen
+import io.github.jgfyyvzss.gliderpilotlog.ui.settings.FirstRunScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.settings.LaunchTypesScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.settings.OpeningBalancesScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.settings.SettingsScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.totals.TotalsScreen
+import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
 
 @Serializable object HomeRoute
@@ -70,6 +76,20 @@ private val topLevel = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SoarlogsRoot() {
+    // An empty logbook opens on Start fresh or Restore from backup the first time.
+    val app = appContainer()
+    var firstRun by remember { mutableStateOf<Boolean?>(null) }
+    LaunchedEffect(Unit) { firstRun = !app.settings.settings.first().firstRunDone && app.backup.isEmpty() }
+    when (firstRun) {
+        null -> return
+        true -> { FirstRunScreen(onDone = { firstRun = false }); return }
+        false -> MainScreens()
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MainScreens() {
     val nav = rememberNavController()
     val entry by nav.currentBackStackEntryAsState()
     val destination = entry?.destination
@@ -126,7 +146,11 @@ fun SoarlogsRoot() {
     ) { padding ->
         NavHost(nav, startDestination = HomeRoute, modifier = Modifier.padding(padding).consumeWindowInsets(padding)) {
             composable<HomeRoute> {
-                HomeScreen(onNewFlight = { nav.navigate(FlightEditRoute()) }, onTotals = { nav.navigateTopLevel(TotalsRoute) })
+                HomeScreen(
+                    onNewFlight = { nav.navigate(FlightEditRoute()) },
+                    onTotals = { nav.navigateTopLevel(TotalsRoute) },
+                    onBackup = { nav.navigate(SettingsRoute) },
+                )
             }
             composable<TotalsRoute> { TotalsScreen() }
             composable<FlightsRoute> {

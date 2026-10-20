@@ -26,16 +26,21 @@ import io.github.jgfyyvzss.gliderpilotlog.core.FlightFilter
 import io.github.jgfyyvzss.gliderpilotlog.core.HoursFormat
 import io.github.jgfyyvzss.gliderpilotlog.core.Role
 import io.github.jgfyyvzss.gliderpilotlog.core.RoleTotal
+import io.github.jgfyyvzss.gliderpilotlog.core.backup.BackupSchedule
 import io.github.jgfyyvzss.gliderpilotlog.data.Settings
 import io.github.jgfyyvzss.gliderpilotlog.ui.appContainer
+import io.github.jgfyyvzss.gliderpilotlog.ui.settings.lastBackupText
 
-/** New flight, and a compact unfiltered totals card. From IGC and the backup line arrive in later steps. */
+/** New flight, a compact unfiltered totals card, and the last backup. From IGC arrives in step 6. */
 @Composable
-fun HomeScreen(onNewFlight: () -> Unit, onTotals: () -> Unit) {
+fun HomeScreen(onNewFlight: () -> Unit, onTotals: () -> Unit, onBackup: () -> Unit) {
     val app = appContainer()
     val tableFlow = remember { app.totals.observe(FlightFilter()) }
     val table by tableFlow.collectAsStateWithLifecycle(null)
     val settings by app.settings.settings.collectAsStateWithLifecycle(Settings())
+    val flightsFlow = remember { app.repository.observeTotalsByRole(FlightFilter()) }
+    val byRole by flightsFlow.collectAsStateWithLifecycle(emptyMap())
+    val hasFlights = byRole.values.any { it.flights > 0 }
 
     Column(
         Modifier.fillMaxSize().padding(16.dp),
@@ -54,6 +59,14 @@ fun HomeScreen(onNewFlight: () -> Unit, onTotals: () -> Unit) {
                 }
             }
         }
+        // Nudges when there are flights and the last backup is stale or missing.
+        val stale = hasFlights && BackupSchedule.isStale(settings.lastBackupAt, System.currentTimeMillis())
+        Text(
+            "Last backed up: ${lastBackupText(settings.lastBackupAt)}" + if (stale) ". Tap to back up." else "",
+            color = if (stale) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.fillMaxWidth().clickable(onClick = onBackup).padding(vertical = 8.dp),
+        )
     }
 }
 
