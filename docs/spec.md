@@ -37,7 +37,7 @@ The model is normalised: flights refer to gliders, airfields and clubs by ID, an
 | --- | --- | --- |
 | Flight | log\_no, date, duration\_minutes, glider, airfield, club, launch\_type, role, pic\_name, notes, source, import\_batch\_id, plus optional launch\_time, landing\_time, landing\_airfield and landing\_place | `log_no` is required, unique and positive. `date` is the local flight date. Duration is whole minutes. Role is one of PIC, STUDENT, INSTRUCTOR, COACH, MUTUAL. Launch type is mandatory. Club is stored whenever the airfield has at least one club. The optional fields appear in the form only when their Settings are on. Times are local 24-hour HH:MM, and a landing time must be after the launch time. A landing airfield and a landing place are never both set, and neither set means the same place as departure. The pic\_name is required, non-blank text. |
 | Glider | registration, type, weglide\_aircraft\_id, logbook\_total\_minutes, logbook\_total\_flights, logbook\_total\_date, incomplete, archived | Registration is required and unique, stored as written; matching ignores case, spaces and hyphens, and no format is enforced (`?` and `B4` exist). Type is free text, as the paper logbook shows it. The WeGlide aircraft ID is set per glider by the pilot from WeGlide's aircraft list, and WeGlide upload is blocked until it is set. Choosing an entry also replaces the type with WeGlide's name; with no pick, the original type stays. No make or class. The logbook total fields hold only the last total the pilot wrote in the aircraft logbook, as a default for the calculator, never a computed airframe total. |
-| Airfield | name, latitude, longitude, match radius, incomplete, archived | Name is required and unique ignoring case. Coordinates are optional but needed for IGC matching. The match radius has a default and can be set per airfield. |
+| Airfield | name, latitude, longitude, match radius, default club, default launch type, incomplete, archived | Name is required and unique ignoring case. Coordinates are optional but needed for IGC matching. The match radius has a default and can be set per airfield. The default club, if set, is one of the airfield's own clubs, and both defaults only pre-fill the flight form. |
 | Club, airfield-club link | club name; airfield and club IDs | Many-to-many, because an airfield can host several clubs and a pilot can fly with several at one field. |
 | Launch type | name | Seeded with Aero, Winch, Self and Auto, and extendable. CSV values must match a name. |
 | Opening balance | role bucket, as-of date, minutes, flights | One per role, entered once from the last paper page. |
@@ -49,9 +49,11 @@ Deleted records are kept as tombstones so a JSON Merge respects deletions, and t
 The flight form has dropdowns for glider, airfield and launch type, a role choice, a duration and notes. Every flight lands in exactly one role bucket, so Combined is the sum of all five.
 
 - **Role:** PIC, or Dual with a second choice of Student, Instructor, Coach or Mutual.
-- **Duration:** entered as H:MM. Overflow is accepted (1:75 becomes 2:15) and the value is stored as whole minutes.
-- **Club:** the dropdown appears only when the chosen airfield has more than one club. With exactly one, it is set silently.
+- **Duration:** typed as digits on a numeric keyboard, the last two being minutes, so 51 is 0:51 and 324 is 3:24. H:MM with a colon is also accepted. Overflow is accepted (175, or 1:75, becomes 2:15), the field shows the result as it is typed (for example "= 3:24"), and the value is stored as whole minutes.
+- **Club:** the dropdown appears only when the chosen airfield has more than one club, starting at the airfield's default club if one is set. With exactly one, it is set silently.
+- **Launch type:** choosing an airfield fills the launch type with the airfield's default launch type, unless the pilot has already picked one. Editing an existing flight never changes its launch type this way.
 - **Dropdowns:** glider rows read like `FQM, Hornet`, because several types repeat and only the registration tells them apart.
+- **Adding from the form:** the glider and airfield dropdowns start with New glider and New airfield. New glider asks for the registration and type, and New airfield for the name only. The record is saved and selected without leaving the form, and an airfield created this way is incomplete until its coordinates are added.
 
 **Pilot in command**
 
@@ -68,7 +70,7 @@ Every flight records who was pilot in command, as required text.
 Two Settings, both off by default, add optional fields to the flight form. Turning one off hides its fields and keeps any data already entered, and neither Setting makes its fields required.
 
 - **Record landing place:** a Landing place choice that defaults to Same as departure, with an airfield dropdown and an Other place text box for outlandings. Regulators such as EASA and the FAA expect a pilot's logbook to show where each flight ended.
-- **Record launch and landing times:** two HH:MM fields in local 24-hour time. When both are entered, the duration is pre-filled from them and can still be edited, and the form warns if the two disagree by more than a minute.
+- **Record launch and landing times:** two local 24-hour time fields, typed as three or four digits on a numeric keyboard (905 is 09:05, 1305 is 13:05) or as H:MM, and stored as HH:MM. When both are entered, the duration is pre-filled from them and can still be edited, and the form warns if the two disagree by more than a minute.
 
 **Log numbers**
 
@@ -265,7 +267,7 @@ The appendices hold proposed defaults written while preparing this spec for impl
 | --- | --- | --- |
 | flight | id, log\_no (integer, required), date (text, required), duration\_minutes (integer, 1 to 1440), glider\_id, airfield\_id, club\_id (nullable), launch\_type\_id, role (text, required), pic\_name (text, required, non-blank), launch\_time (text HH:MM, nullable), landing\_time (text HH:MM, nullable), landing\_airfield\_id (nullable), landing\_place (text, nullable), notes (nullable), source (MANUAL, IGC or CSV), import\_batch\_id (nullable), updated\_at, deleted\_at | Unique index on `log_no` for live rows. Indexes on date, glider\_id, airfield\_id, club\_id, role and import\_batch\_id. Foreign keys restrict deletion. |
 | glider | id, registration, registration\_key, type (text, empty allowed for stubs), weglide\_aircraft\_id (integer, nullable), logbook\_total\_minutes (integer, nullable), logbook\_total\_flights (integer, nullable), logbook\_total\_date (text YYYY-MM-DD, nullable), incomplete, archived, import\_batch\_id (nullable), updated\_at, deleted\_at | Unique index on `registration_key` for live rows. The key is the registration lower-cased with spaces and hyphens removed and nothing else changed, so `?` stays valid. The logbook total minutes and date are set together, and the flights count is optional and may be removed later. |
-| airfield | id, name, name\_key, latitude, longitude, elevation\_m, match\_radius\_m (null means the default), incomplete, archived, import\_batch\_id (nullable), updated\_at, deleted\_at | Unique index on `name_key` (trimmed, lower-cased) for live rows. Incomplete means no coordinates. `elevation_m` is an addition to the data model, used to pre-fill a new airfield from an IGC file. |
+| airfield | id, name, name\_key, latitude, longitude, elevation\_m, match\_radius\_m (null means the default), default\_club\_id (nullable), default\_launch\_type\_id (nullable), incomplete, archived, import\_batch\_id (nullable), updated\_at, deleted\_at | Unique index on `name_key` (trimmed, lower-cased) for live rows. Incomplete means no coordinates. `elevation_m` is an addition to the data model, used to pre-fill a new airfield from an IGC file. The two defaults are foreign keys that restrict deletion, added in schema version 2. `default_club_id` must be one of the airfield's linked clubs and is cleared when that link is removed. |
 | club | id, name, name\_key, updated\_at, deleted\_at | Unique index on `name_key` for live rows. |
 | airfield\_club | airfield\_id, club\_id | Composite primary key. Rows are deleted outright when links change, and the airfield's `updated_at` is bumped, so a Merge treats the link set as part of the airfield. |
 | launch\_type | id, name, name\_key, sort\_order, archived, updated\_at, deleted\_at | Seeded with Aero, Winch, Self and Auto using fixed UUIDs derived from the names, so a restore into a fresh install cannot duplicate them. |
@@ -325,7 +327,7 @@ All files are UTF-8 with a comma delimiter, a single header row, and RFC 4180 qu
 | log\_no | Optional | Positive integer. See the log number rules above. |
 | date | Required | YYYY-MM-DD |
 | glider | Required | Registration, matched ignoring case, spaces and hyphens. |
-| duration | Required | H:MM (minutes may exceed 59, so 1:75 is valid) if it contains a colon, otherwise whole minutes. At least one minute. Export writes H:MM. |
+| duration | Required | H:MM (minutes may exceed 59, so 1:75 is valid) if it contains a colon, otherwise whole minutes. At least one minute. Export writes H:MM. A bare number means whole minutes here, unlike the flight form, where 324 means 3:24. |
 | airfield | Required | Airfield name, matched ignoring case after trimming. |
 | role | Required | PIC, STUDENT, INSTRUCTOR, COACH or MUTUAL |
 | launch\_type | Prompted if missing or blank | A launch type name, matched ignoring case. |
@@ -406,8 +408,8 @@ All WeGlide code sits behind one interface with a fake implementation for tests.
 
 **Tests**
 
-- **Plain JVM:** duration arithmetic including overflow, CSV parsing and the error messages, a JSON export-import-export round trip that must be identical, the IGC parser against the sample files, and the WeGlide search normalisation and ranking.
-- **On a device or emulator:** the Room constraints (unique `log_no` that ignores tombstones, foreign keys, partial indexes), and migrations as soon as a second schema version exists.
+- **Plain JVM:** duration arithmetic including overflow and the form's digit entry for durations and times, CSV parsing and the error messages, a JSON export-import-export round trip that must be identical, the IGC parser against the sample files, and the WeGlide search normalisation and ranking.
+- **On a device or emulator:** the Room constraints (unique `log_no` that ignores tombstones, foreign keys, partial indexes), and every migration with `MigrationTestHelper`, starting from a database that already has the partial indexes and triggers, so Room's schema validation is tested against them.
 - **UI:** a smoke test that creates a flight, filters the list, and checks the totals.
 
 ## Later features

@@ -38,6 +38,14 @@ class FlightRulesTest {
         assertEquals(135, valid(complete.copy(durationText = "1:75")).flight.durationMinutes)
     }
 
+    @Test fun digitEntryForDurationAndTimes() {
+        val f = valid(complete.copy(durationText = "431", launchTimeText = "1305", landingTimeText = "1736")).flight
+        assertEquals(271, f.durationMinutes)
+        assertEquals("13:05", f.launchTime.toString())
+        assertEquals("17:36", f.landingTime.toString())
+        assertEquals(271, FlightRules.durationFromTimes("1305", "1736"))
+    }
+
     @Test fun logNoMustBePositiveAndFree() {
         listOf("", "0", "-3", "1.5", "abc").forEach {
             assertTrue(it, FlightField.LOG_NO in errors(complete.copy(logNoText = it)))

@@ -57,6 +57,20 @@ class LogbookRepositoryTest {
         assertEquals(false, row.incomplete)
     }
 
+    @Test fun defaultClubMustBeOneOfTheAirfieldsClubs() = runTest {
+        val c1 = repo.saveClub(null, "MBGC").id()
+        val c2 = repo.saveClub(null, "Bogong").id()
+        val winch = Keys.seededLaunchTypeId("Winch")
+        val a = repo.saveAirfield(null, "YMBT", null, null, null, null, listOf(c1, c2), archived = false,
+            defaultClubId = c2, defaultLaunchTypeId = winch).id()
+        assertEquals(c2, repo.airfield(a)!!.defaultClubId)
+        assertEquals(winch, repo.airfield(a)!!.defaultLaunchTypeId)
+        // Unlinking the default club clears it.
+        repo.saveAirfield(a, "YMBT", null, null, null, null, listOf(c1), archived = false, defaultClubId = c2)
+        assertNull(repo.airfield(a)!!.defaultClubId)
+        assertNull(repo.airfield(a)!!.defaultLaunchTypeId)
+    }
+
     @Test fun flightSaveEnforcesClubAndLogNoRules() = runTest {
         val g = repo.saveGlider(null, "FQM", "Hornet", archived = false).id()
         val c1 = repo.saveClub(null, "MBGC").id()

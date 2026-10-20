@@ -59,6 +59,8 @@ fun PickerField(
     error: String? = null,
     placeholder: String = "Choose",
     selectedLabel: String? = null,
+    addNewLabel: String? = null,
+    onAddNew: (() -> Unit)? = null,
 ) {
     var open by rememberSaveable { mutableStateOf(false) }
     val shown = selectedLabel ?: options.firstOrNull { it.id == selectedId }?.label ?: ""
@@ -81,10 +83,19 @@ fun PickerField(
             onDismissRequest = { open = false },
             title = { Text(label) },
             text = {
-                if (options.isEmpty()) {
+                if (options.isEmpty() && onAddNew == null) {
                     Text("Nothing to choose yet. Add one first.")
                 } else {
                     LazyColumn(Modifier.heightIn(max = 420.dp)) {
+                        if (onAddNew != null) item {
+                            ListItem(
+                                headlineContent = { Text("+ ${addNewLabel ?: "New"}", color = MaterialTheme.colorScheme.primary) },
+                                modifier = Modifier.clickable {
+                                    open = false
+                                    onAddNew()
+                                },
+                            )
+                        }
                         items(options, key = { it.id }) { option ->
                             ListItem(
                                 headlineContent = {

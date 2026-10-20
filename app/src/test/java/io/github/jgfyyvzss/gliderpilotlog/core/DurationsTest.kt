@@ -26,6 +26,22 @@ class DurationsTest {
         }
     }
 
+    @Test fun formEntryReadsDigitsAsHoursAndMinutes() {
+        assertEquals(51, Durations.parseFormEntry("51"))
+        assertEquals(5, Durations.parseFormEntry("5"))
+        assertEquals(3 * 60 + 24, Durations.parseFormEntry("324"))
+        assertEquals(10 * 60, Durations.parseFormEntry("1000"))
+        assertEquals(135, Durations.parseFormEntry("175")) // 1:75 overflows to 2:15
+        assertEquals(90, Durations.parseFormEntry("90"))   // 0:90 is 1:30
+        assertEquals(0, Durations.parseFormEntry("0"))
+    }
+
+    @Test fun formEntryStillAcceptsHm() {
+        assertEquals(135, Durations.parseFormEntry("2:15"))
+        assertEquals(135, Durations.parseFormEntry("1:75"))
+        listOf("", "2.15", "-51", "abc", "1234567").forEach { assertNull(it, Durations.parseFormEntry(it)) }
+    }
+
     @Test fun formatsHm() {
         assertEquals("2:15", Durations.formatHm(135))
         assertEquals("0:01", Durations.formatHm(1))

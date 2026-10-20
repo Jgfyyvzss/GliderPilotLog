@@ -1,4 +1,4 @@
-﻿package io.github.jgfyyvzss.gliderpilotlog.data
+package io.github.jgfyyvzss.gliderpilotlog.data
 
 import io.github.jgfyyvzss.gliderpilotlog.core.Keys
 import io.github.jgfyyvzss.gliderpilotlog.core.Role

@@ -1,5 +1,6 @@
 package io.github.jgfyyvzss.gliderpilotlog.ui
 
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -120,7 +121,7 @@ fun SoarlogsRoot() {
             }
         },
     ) { padding ->
-        NavHost(nav, startDestination = HomeRoute, modifier = Modifier.padding(padding)) {
+        NavHost(nav, startDestination = HomeRoute, modifier = Modifier.padding(padding).consumeWindowInsets(padding)) {
             composable<HomeRoute> { HomeScreen(onNewFlight = { nav.navigate(FlightEditRoute()) }) }
             composable<FlightsRoute> {
                 FlightListScreen(onOpen = { nav.navigate(FlightEditRoute(it)) }, onNew = { nav.navigate(FlightEditRoute()) })

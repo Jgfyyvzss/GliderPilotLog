@@ -63,6 +63,8 @@ class LogbookRepository(
         matchRadiusM: Int?,
         clubIds: List<String>,
         archived: Boolean,
+        defaultClubId: String? = null,
+        defaultLaunchTypeId: String? = null,
     ): SaveResult {
         val trimmed = name.trim()
         if (trimmed.isEmpty()) return SaveResult.Rejected("Enter the airfield name")
@@ -80,6 +82,9 @@ class LogbookRepository(
                 .copy(
                     name = trimmed, nameKey = key, latitude = latitude, longitude = longitude,
                     elevationM = elevationM, matchRadiusM = matchRadiusM,
+                    // The default club must be one of the airfield's own clubs.
+                    defaultClubId = defaultClubId?.takeIf { it in clubIds },
+                    defaultLaunchTypeId = defaultLaunchTypeId,
                     incomplete = latitude == null, archived = archived, updatedAt = now(),
                 )
             if (existing == null) airfields.insert(row) else airfields.update(row)

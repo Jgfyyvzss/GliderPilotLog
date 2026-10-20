@@ -31,7 +31,11 @@ data class GliderEntity(
 
 @Entity(
     tableName = "airfield",
-    indices = [Index("import_batch_id")],
+    foreignKeys = [
+        ForeignKey(entity = ClubEntity::class, parentColumns = ["id"], childColumns = ["default_club_id"], onDelete = ForeignKey.RESTRICT),
+        ForeignKey(entity = LaunchTypeEntity::class, parentColumns = ["id"], childColumns = ["default_launch_type_id"], onDelete = ForeignKey.RESTRICT),
+    ],
+    indices = [Index("import_batch_id"), Index("default_club_id"), Index("default_launch_type_id")],
 )
 data class AirfieldEntity(
     @PrimaryKey val id: String,
@@ -41,6 +45,10 @@ data class AirfieldEntity(
     val longitude: Double? = null,
     @ColumnInfo(name = "elevation_m") val elevationM: Int? = null,
     @ColumnInfo(name = "match_radius_m") val matchRadiusM: Int? = null,
+    /** Pre-selected on the flight form when the airfield has more than one club. One of its linked clubs. */
+    @ColumnInfo(name = "default_club_id") val defaultClubId: String? = null,
+    /** Fills the flight form's launch type when the airfield is chosen, unless the pilot picked one. */
+    @ColumnInfo(name = "default_launch_type_id") val defaultLaunchTypeId: String? = null,
     val incomplete: Boolean,
     val archived: Boolean = false,
     @ColumnInfo(name = "import_batch_id") val importBatchId: String? = null,

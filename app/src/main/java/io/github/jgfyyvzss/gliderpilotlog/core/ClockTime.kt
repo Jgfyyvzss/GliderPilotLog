@@ -21,6 +21,15 @@ value class ClockTime(val minuteOfDay: Int) {
             return ClockTime(h * 60 + min)
         }
 
+        private val digits = Regex("""^\s*(\d{3,4})\s*$""")
+
+        /** Parses the flight form's entry: three or four digits such as 905 or 1305, or H:MM. */
+        fun parseFormEntry(text: String): ClockTime? {
+            parse(text)?.let { return it }
+            val d = digits.matchEntire(text)?.groupValues?.get(1) ?: return null
+            return parse("${d.dropLast(2)}:${d.takeLast(2)}")
+        }
+
         /** Minutes from launch to landing, or null unless landing is after launch. */
         fun minutesBetween(launch: ClockTime, landing: ClockTime): Int? {
             val diff = landing.minuteOfDay - launch.minuteOfDay

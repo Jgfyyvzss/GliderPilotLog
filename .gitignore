@@ -10,3 +10,4 @@ captures/
 .cxx/
 *.keystore
 *.jks
+hs_err_pid*.log

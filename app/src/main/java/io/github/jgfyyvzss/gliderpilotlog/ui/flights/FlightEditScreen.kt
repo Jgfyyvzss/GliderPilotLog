@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -37,6 +38,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.jgfyyvzss.gliderpilotlog.core.ClockTime
+import io.github.jgfyyvzss.gliderpilotlog.core.Durations
 import io.github.jgfyyvzss.gliderpilotlog.core.FlightField
 import io.github.jgfyyvzss.gliderpilotlog.core.LandingChoice
 import io.github.jgfyyvzss.gliderpilotlog.core.Role
@@ -64,6 +67,8 @@ fun FlightEditScreen(id: String?, onDone: () -> Unit) {
     val e = vm.errors
     var pickDate by rememberSaveable { mutableStateOf(false) }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
+    var newGlider by rememberSaveable { mutableStateOf(false) }
+    var newAirfield by rememberSaveable { mutableStateOf(false) }
 
     // Archived records are hidden, except one this flight already uses.
     val gliderOptions = gliders.filter { !it.archived || it.id == d.gliderId }.map { PickerOption(it.id, it.pickerLabel()) }
@@ -71,8 +76,9 @@ fun FlightEditScreen(id: String?, onDone: () -> Unit) {
         .map { PickerOption(it.id, it.name) }
     val launchOptions = launchTypes.filter { !it.archived || it.id == d.launchTypeId }.map { PickerOption(it.id, it.name) }
 
+    val numeric = KeyboardOptions(keyboardType = KeyboardType.Number)
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -92,8 +98,14 @@ fun FlightEditScreen(id: String?, onDone: () -> Unit) {
         }
         (e[FlightField.LOG_NO] ?: e[FlightField.DATE])?.let { ErrorText(it) }
 
-        PickerField("Glider", d.gliderId, gliderOptions, vm::setGlider, error = e[FlightField.GLIDER])
-        PickerField("Airfield", d.airfieldId, airfieldOptions, vm::setAirfield, error = e[FlightField.AIRFIELD])
+        PickerField(
+            "Glider", d.gliderId, gliderOptions, vm::setGlider, error = e[FlightField.GLIDER],
+            addNewLabel = "New glider", onAddNew = { newGlider = true },
+        )
+        PickerField(
+            "Airfield", d.airfieldId, airfieldOptions, vm::setAirfield, error = e[FlightField.AIRFIELD],
+            addNewLabel = "New airfield", onAddNew = { newAirfield = true },
+        )
         if (vm.airfieldClubs.size > 1) {
             PickerField("Club", d.clubId, vm.airfieldClubs.map { PickerOption(it.id, it.name) }, vm::setClub, error = e[FlightField.CLUB])
         } else {
@@ -123,21 +135,23 @@ fun FlightEditScreen(id: String?, onDone: () -> Unit) {
         if (settings.recordTimes) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
-                    d.launchTimeText, vm::setLaunchTime, label = { Text("Launch") }, placeholder = { Text("HH:MM") },
-                    singleLine = true, isError = FlightField.LAUNCH_TIME in e, modifier = Modifier.weight(1f),
+                    d.launchTimeText, vm::setLaunchTime, label = { Text("Launch") }, placeholder = { Text("1305") },
+                    singleLine = true, isError = FlightField.LAUNCH_TIME in e, keyboardOptions = numeric,
+                    supportingText = timeHint(d.launchTimeText), modifier = Modifier.weight(1f),
                 )
                 OutlinedTextField(
-                    d.landingTimeText, vm::setLandingTime, label = { Text("Landing") }, placeholder = { Text("HH:MM") },
-                    singleLine = true, isError = FlightField.LANDING_TIME in e, modifier = Modifier.weight(1f),
+                    d.landingTimeText, vm::setLandingTime, label = { Text("Landing") }, placeholder = { Text("1736") },
+                    singleLine = true, isError = FlightField.LANDING_TIME in e, keyboardOptions = numeric,
+                    supportingText = timeHint(d.landingTimeText), modifier = Modifier.weight(1f),
                 )
             }
             (e[FlightField.LAUNCH_TIME] ?: e[FlightField.LANDING_TIME])?.let { ErrorText(it) }
         }
 
         OutlinedTextField(
-            d.durationText, vm::setDuration, label = { Text("Duration") }, placeholder = { Text("H:MM") },
-            singleLine = true, isError = FlightField.DURATION in e,
-            supportingText = { Text(e[FlightField.DURATION] ?: "Hours and minutes, for example 1:75 is 2:15") },
+            d.durationText, vm::setDuration, label = { Text("Duration") }, placeholder = { Text("324") },
+            singleLine = true, isError = FlightField.DURATION in e, keyboardOptions = numeric,
+            supportingText = { Text(e[FlightField.DURATION] ?: durationHint(d.durationText)) },
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -193,6 +207,13 @@ fun FlightEditScreen(id: String?, onDone: () -> Unit) {
         ) { DatePicker(state) }
     }
 
+    if (newGlider) NewGliderDialog(onDismiss = { newGlider = false }) { reg, type, report ->
+        vm.addGlider(reg, type) { error -> if (error == null) newGlider = false else report(error) }
+    }
+    if (newAirfield) NewAirfieldDialog(onDismiss = { newAirfield = false }) { name, report ->
+        vm.addAirfield(name) { error -> if (error == null) newAirfield = false else report(error) }
+    }
+
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
@@ -202,6 +223,68 @@ fun FlightEditScreen(id: String?, onDone: () -> Unit) {
             dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } },
         )
     }
+}
+
+/** Adds a glider without leaving the flight form. The rest of its record can be filled in later. */
+@Composable
+private fun NewGliderDialog(onDismiss: () -> Unit, onSave: (String, String, (String) -> Unit) -> Unit) {
+    var registration by rememberSaveable { mutableStateOf("") }
+    var type by rememberSaveable { mutableStateOf("") }
+    var error by rememberSaveable { mutableStateOf<String?>(null) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("New glider") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    registration, { registration = it; error = null }, label = { Text("Registration") }, singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters),
+                )
+                OutlinedTextField(type, { type = it }, label = { Text("Type") }, singleLine = true)
+                error?.let { ErrorText(it) }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(registration, type) { error = it } }, enabled = registration.isNotBlank()) { Text("Add") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+/** Adds an airfield by name without leaving the flight form. It shows as Incomplete until it has coordinates. */
+@Composable
+private fun NewAirfieldDialog(onDismiss: () -> Unit, onSave: (String, (String) -> Unit) -> Unit) {
+    var name by rememberSaveable { mutableStateOf("") }
+    var error by rememberSaveable { mutableStateOf<String?>(null) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("New airfield") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(name, { name = it; error = null }, label = { Text("Name") }, singleLine = true)
+                Text("Add coordinates and clubs later from the Airfields screen.", style = MaterialTheme.typography.bodySmall)
+                error?.let { ErrorText(it) }
+            }
+        },
+        confirmButton = { TextButton(onClick = { onSave(name) { error = it } }, enabled = name.isNotBlank()) { Text("Add") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+/** Shows what typed digits mean, for example 324 as = 3:24. */
+private fun durationHint(text: String): String {
+    val minutes = Durations.parseFormEntry(text)
+    return when {
+        minutes == null || text.isBlank() -> "Digits: 51 is 0:51, 324 is 3:24"
+        text.contains(':') && Durations.parseHm(text) == minutes && text.trim() == Durations.formatHm(minutes) -> " "
+        else -> "= ${Durations.formatHm(minutes)}"
+    }
+}
+
+private fun timeHint(text: String): (@Composable () -> Unit)? {
+    if (text.isBlank() || text.contains(':')) return null
+    val t = ClockTime.parseFormEntry(text) ?: return null
+    return { Text("= $t") }
 }
 
 @Composable

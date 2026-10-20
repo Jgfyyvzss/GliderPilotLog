@@ -18,6 +18,20 @@ object Durations {
         return hours * 60 + minutes
     }
 
+    private val digits = Regex("""^\s*(\d{1,6})\s*$""")
+
+    /**
+     * Parses the flight form's duration. Digits alone read as hours then two digits of minutes, so 51 is 0:51,
+     * 324 is 3:24 and 175 is 1:75, which is 2:15. H:MM with a colon is also accepted.
+     */
+    fun parseFormEntry(text: String): Int? {
+        parseHm(text)?.let { return it }
+        val d = digits.matchEntire(text)?.groupValues?.get(1) ?: return null
+        val minutes = d.takeLast(2).toInt()
+        val hours = d.dropLast(2).ifEmpty { "0" }.toInt()
+        return hours * 60 + minutes
+    }
+
     /** Formats minutes as H:MM, for example 135 as 2:15. */
     fun formatHm(minutes: Int): String {
         require(minutes >= 0) { "negative duration" }

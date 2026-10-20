@@ -34,6 +34,14 @@ class KeysAndTimesTest {
         listOf("24:00", "12:60", "1230", "12:5", "", "ab:cd").forEach { assertNull(it, ClockTime.parse(it)) }
     }
 
+    @Test fun clockTimeFormEntryAcceptsDigits() {
+        assertEquals("13:05", ClockTime.parseFormEntry("1305").toString())
+        assertEquals("09:05", ClockTime.parseFormEntry("905").toString())
+        assertEquals("00:00", ClockTime.parseFormEntry("000").toString())
+        assertEquals("09:30", ClockTime.parseFormEntry("9:30").toString())
+        listOf("13", "5", "2400", "1260", "13050", "", "ab:cd").forEach { assertNull(it, ClockTime.parseFormEntry(it)) }
+    }
+
     @Test fun minutesBetweenRequiresLandingAfterLaunch() {
         val launch = ClockTime.parse("13:05")!!
         assertEquals(271, ClockTime.minutesBetween(launch, ClockTime.parse("17:36")!!))

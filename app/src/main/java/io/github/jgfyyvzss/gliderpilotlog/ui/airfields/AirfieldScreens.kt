@@ -1,4 +1,4 @@
-﻿package io.github.jgfyyvzss.gliderpilotlog.ui.airfields
+package io.github.jgfyyvzss.gliderpilotlog.ui.airfields
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -58,6 +59,9 @@ import io.github.jgfyyvzss.gliderpilotlog.core.Keys
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
+/** The picker option meaning no default. */
+private const val NONE = ""
+
 /** The default IGC match radius, from Appendix D. */
 const val DEFAULT_MATCH_RADIUS_M = 1000
 
@@ -96,6 +100,8 @@ class AirfieldEditViewModel(private val repo: LogbookRepository, private val id:
     var radius by mutableStateOf("")
     var archived by mutableStateOf(false)
     val clubs = mutableStateListOf<ClubEntity>()
+    var defaultClubId by mutableStateOf<String?>(null)
+    var defaultLaunchTypeId by mutableStateOf<String?>(null)
     var error by mutableStateOf<String?>(null)
     var loaded by mutableStateOf(id == null)
         private set
@@ -103,6 +109,7 @@ class AirfieldEditViewModel(private val repo: LogbookRepository, private val id:
         private set
 
     val allClubs = repo.observeClubs()
+    val launchTypes = repo.observeLaunchTypes()
 
     init {
         if (id != null) viewModelScope.launch {
@@ -113,6 +120,8 @@ class AirfieldEditViewModel(private val repo: LogbookRepository, private val id:
                 elevation = a.elevationM?.toString() ?: ""
                 radius = a.matchRadiusM?.toString() ?: ""
                 archived = a.archived
+                defaultClubId = a.defaultClubId
+                defaultLaunchTypeId = a.defaultLaunchTypeId
                 clubs.addAll(repo.clubsFor(id))
             }
             loaded = true
@@ -121,6 +130,11 @@ class AirfieldEditViewModel(private val repo: LogbookRepository, private val id:
 
     fun addClub(club: ClubEntity) {
         if (clubs.none { it.id == club.id }) clubs.add(club)
+    }
+
+    fun removeClub(club: ClubEntity) {
+        clubs.remove(club)
+        if (defaultClubId == club.id) defaultClubId = null
     }
 
     /** Creates a club by name, or reuses the existing one with that name, and links it. */
@@ -145,7 +159,7 @@ class AirfieldEditViewModel(private val repo: LogbookRepository, private val id:
         if (radius.isNotBlank() && parseInt(radius) == null) { error = "Match radius must be whole metres"; return@launch }
         val r = repo.saveAirfield(
             id, name, parseDouble(latitude), parseDouble(longitude), parseInt(elevation), parseInt(radius),
-            clubs.map { it.id }, archived,
+            clubs.map { it.id }, archived, defaultClubId, defaultLaunchTypeId,
         )
         when (r) {
             is SaveResult.Saved -> done = true
@@ -163,12 +177,13 @@ fun AirfieldEditScreen(id: String?, onDone: () -> Unit) {
     val vm: AirfieldEditViewModel = viewModel(factory = vmFactory { AirfieldEditViewModel(it.repository, id) })
     LaunchedEffect(vm.done) { if (vm.done) onDone() }
     val allClubs by vm.allClubs.collectAsStateWithLifecycle(emptyList())
+    val launchTypes by vm.launchTypes.collectAsStateWithLifecycle(emptyList())
     var newClubOpen by rememberSaveable { mutableStateOf(false) }
     if (!vm.loaded) return
 
     val decimal = KeyboardOptions(keyboardType = KeyboardType.Text)
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         OutlinedTextField(vm.name, { vm.name = it; vm.error = null }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
@@ -191,7 +206,7 @@ fun AirfieldEditScreen(id: String?, onDone: () -> Unit) {
             vm.clubs.forEach { c ->
                 InputChip(
                     selected = false,
-                    onClick = { vm.clubs.remove(c) },
+                    onClick = { vm.removeClub(c) },
                     label = { Text(c.name) },
                     trailingIcon = { Icon(Icons.Default.Close, contentDescription = "Remove ${c.name}") },
                 )
@@ -205,6 +220,23 @@ fun AirfieldEditScreen(id: String?, onDone: () -> Unit) {
             onPick = { picked -> available.firstOrNull { it.id == picked }?.let(vm::addClub) },
         )
         OutlinedButton(onClick = { newClubOpen = true }) { Text("New club") }
+
+        Text("Flight form defaults", style = MaterialTheme.typography.titleSmall)
+        if (vm.clubs.size > 1) {
+            PickerField(
+                label = "Default club",
+                selectedId = vm.defaultClubId ?: NONE,
+                options = listOf(PickerOption(NONE, "None")) + vm.clubs.map { PickerOption(it.id, it.name) },
+                onPick = { vm.defaultClubId = it.takeIf { id -> id != NONE } },
+            )
+        }
+        PickerField(
+            label = "Default launch type",
+            selectedId = vm.defaultLaunchTypeId ?: NONE,
+            options = listOf(PickerOption(NONE, "None")) +
+                launchTypes.filter { !it.archived || it.id == vm.defaultLaunchTypeId }.map { PickerOption(it.id, it.name) },
+            onPick = { vm.defaultLaunchTypeId = it.takeIf { id -> id != NONE } },
+        )
 
         if (id != null) {
             Row(verticalAlignment = Alignment.CenterVertically) {

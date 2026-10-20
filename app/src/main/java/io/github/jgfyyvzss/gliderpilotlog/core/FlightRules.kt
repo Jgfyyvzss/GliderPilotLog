@@ -68,8 +68,8 @@ object FlightRules {
 
     /** Minutes between the typed launch and landing times, when both are valid and landing is later. */
     fun durationFromTimes(launchText: String, landingText: String): Int? {
-        val launch = ClockTime.parse(launchText) ?: return null
-        val landing = ClockTime.parse(landingText) ?: return null
+        val launch = ClockTime.parseFormEntry(launchText) ?: return null
+        val landing = ClockTime.parseFormEntry(landingText) ?: return null
         return ClockTime.minutesBetween(launch, landing)
     }
 
@@ -85,9 +85,9 @@ object FlightRules {
 
         if (draft.date == null) errors[FlightField.DATE] = "Choose the flight date"
 
-        val duration = Durations.parseHm(draft.durationText)
+        val duration = Durations.parseFormEntry(draft.durationText)
         when {
-            duration == null -> errors[FlightField.DURATION] = "Enter the duration as H:MM"
+            duration == null -> errors[FlightField.DURATION] = "Enter the duration as digits, for example 324 for 3:24"
             !Durations.isValidFlightDuration(duration) -> errors[FlightField.DURATION] =
                 "Duration must be between 0:01 and 24:00"
         }
@@ -153,8 +153,8 @@ object FlightRules {
 
     private fun parseOptionalTime(text: String, field: FlightField, errors: MutableMap<FlightField, String>): ClockTime? {
         if (text.isBlank()) return null
-        return ClockTime.parse(text) ?: run {
-            errors[field] = "Enter a 24-hour time as HH:MM"
+        return ClockTime.parseFormEntry(text) ?: run {
+            errors[field] = "Enter a 24-hour time, for example 1305"
             null
         }
     }

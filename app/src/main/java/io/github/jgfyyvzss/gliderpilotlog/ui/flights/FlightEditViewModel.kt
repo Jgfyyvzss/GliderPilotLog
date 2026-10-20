@@ -16,6 +16,7 @@ import io.github.jgfyyvzss.gliderpilotlog.core.Role
 import io.github.jgfyyvzss.gliderpilotlog.data.ClubEntity
 import io.github.jgfyyvzss.gliderpilotlog.data.FlightEntity
 import io.github.jgfyyvzss.gliderpilotlog.data.LogbookRepository
+import io.github.jgfyyvzss.gliderpilotlog.data.SaveResult
 import io.github.jgfyyvzss.gliderpilotlog.data.Settings
 import io.github.jgfyyvzss.gliderpilotlog.data.SettingsRepository
 import java.time.LocalDate
@@ -45,6 +46,8 @@ class FlightEditViewModel(
     /** Set once the pilot has seen the warnings, so the next save goes ahead. */
     private var warningsShownFor: FlightDraft? = null
     private var profileName = ""
+    /** A launch type the pilot picked is never replaced by an airfield's default. */
+    private var launchTypeChosen = id != null
 
     val isNew get() = id == null
 
@@ -104,7 +107,10 @@ class FlightEditViewModel(
     fun setDuration(text: String) = edit(FlightField.DURATION) { it.copy(durationText = text) }
     fun setGlider(id: String) = edit(FlightField.GLIDER) { it.copy(gliderId = id) }
     fun setClub(id: String) = edit(FlightField.CLUB) { it.copy(clubId = id) }
-    fun setLaunchType(id: String) = edit(FlightField.LAUNCH_TYPE) { it.copy(launchTypeId = id) }
+    fun setLaunchType(id: String) {
+        launchTypeChosen = true
+        edit(FlightField.LAUNCH_TYPE) { it.copy(launchTypeId = id) }
+    }
     fun setPicName(text: String) = edit(FlightField.PIC_NAME) { it.copy(picName = text) }
     fun setNotes(text: String) = edit(null) { it.copy(notes = text) }
     fun setLandingChoice(choice: LandingChoice) = edit(null) { it.copy(landingChoice = choice) }
@@ -112,15 +118,40 @@ class FlightEditViewModel(
     fun setLandingAirfield(id: String) = edit(FlightField.LANDING_AIRFIELD) { it.copy(landingAirfieldId = id) }
     fun setLandingPlace(text: String) = edit(FlightField.LANDING_PLACE) { it.copy(landingPlace = text) }
 
-    /** The club is set silently when the airfield has exactly one, and offered when it has more. */
+    /**
+     * The club is set silently when the airfield has exactly one, and offered when it has more, starting at the
+     * airfield's default club. The airfield's default launch type fills the launch type unless the pilot chose one.
+     */
     fun setAirfield(id: String) {
         edit(FlightField.AIRFIELD) { it.copy(airfieldId = id) }
         viewModelScope.launch {
+            val airfield = repo.airfield(id)
             val clubs = repo.clubsFor(id)
             airfieldClubs = clubs
             val keep = draft.clubId?.takeIf { c -> clubs.any { it.id == c } }
-            draft = draft.copy(clubId = if (clubs.size == 1) clubs.single().id else keep)
+            val default = airfield?.defaultClubId?.takeIf { c -> clubs.any { it.id == c } }
+            draft = draft.copy(
+                clubId = if (clubs.size == 1) clubs.single().id else keep ?: default,
+                launchTypeId = if (launchTypeChosen) draft.launchTypeId else airfield?.defaultLaunchTypeId,
+            )
             errors = errors - FlightField.CLUB
+            if (draft.launchTypeId != null) errors = errors - FlightField.LAUNCH_TYPE
+        }
+    }
+
+    /** Creates a glider from the flight form and selects it. Reports a rejection message, or null on success. */
+    fun addGlider(registration: String, type: String, onResult: (String?) -> Unit) = viewModelScope.launch {
+        when (val r = repo.saveGlider(null, registration, type, archived = false)) {
+            is SaveResult.Saved -> { setGlider(r.id); onResult(null) }
+            is SaveResult.Rejected -> onResult(r.message)
+        }
+    }
+
+    /** Creates an airfield by name from the flight form and selects it. Coordinates and clubs are added later. */
+    fun addAirfield(name: String, onResult: (String?) -> Unit) = viewModelScope.launch {
+        when (val r = repo.saveAirfield(null, name, null, null, null, null, emptyList(), archived = false)) {
+            is SaveResult.Saved -> { setAirfield(r.id); onResult(null) }
+            is SaveResult.Rejected -> onResult(r.message)
         }
     }
 

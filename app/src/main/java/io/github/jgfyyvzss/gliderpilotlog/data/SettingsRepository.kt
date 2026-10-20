@@ -1,4 +1,4 @@
-﻿package io.github.jgfyyvzss.gliderpilotlog.data
+package io.github.jgfyyvzss.gliderpilotlog.data
 
 import android.content.Context
 import androidx.datastore.preferences.core.Preferences

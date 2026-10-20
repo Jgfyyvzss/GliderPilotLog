@@ -17,7 +17,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ImportBatchEntity::class,
         FlightEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 abstract class LogbookDatabase : RoomDatabase() {
@@ -27,11 +27,18 @@ abstract class LogbookDatabase : RoomDatabase() {
     abstract fun launchTypeDao(): LaunchTypeDao
     abstract fun flightDao(): FlightDao
 
-    /** Creates the partial indexes and triggers, and seeds launch types and opening balances. */
+    /**
+     * Creates the partial indexes and triggers and seeds launch types and opening balances. The indexes and
+     * triggers are also ensured on every open, so a migration that rebuilds a table cannot leave them out.
+     */
     object CreateCallback : RoomDatabase.Callback() {
         override fun onCreate(db: SupportSQLiteDatabase) {
             SchemaSql.createExtras(db::execSQL)
             SchemaSql.seed(db::execSQL)
+        }
+
+        override fun onOpen(db: SupportSQLiteDatabase) {
+            SchemaSql.createExtras(db::execSQL)
         }
     }
 
@@ -40,6 +47,7 @@ abstract class LogbookDatabase : RoomDatabase() {
 
         fun build(context: Context): LogbookDatabase =
             Room.databaseBuilder(context, LogbookDatabase::class.java, FILE_NAME)
+                .addMigrations(*ALL_MIGRATIONS)
                 .addCallback(CreateCallback)
                 .build()
 
