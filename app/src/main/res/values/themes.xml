@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The window behind the Compose content. Light here, dark in values-night, so it matches the app in both modes. -->
+    <style name="Theme.Soarlogs" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

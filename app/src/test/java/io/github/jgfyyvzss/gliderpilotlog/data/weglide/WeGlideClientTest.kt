@@ -39,7 +39,7 @@ class WeGlideClientTest {
         val request = server.takeRequest()
         assertEquals("GET", request.method)
         assertEquals("/v1/aircraft", request.path)
-        assertEquals("soarlogs/1.2.3 (Android)", request.getHeader("User-Agent"))
+        assertEquals("Mozilla/5.0 (Linux; Android) soarlogs/1.2.3", request.getHeader("User-Agent"))
     }
 
     @Test fun anErrorStatusIsAFailureWithTheStartOfTheMessage() = runTest {

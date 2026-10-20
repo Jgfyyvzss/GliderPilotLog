@@ -1,6 +1,7 @@
 package io.github.jgfyyvzss.gliderpilotlog.data.weglide
 
 import java.io.IOException
+import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -37,6 +38,12 @@ class OkHttpWeGlideApi(
                 if (response.code == 200) ApiResult.Ok(body)
                 else ApiResult.Failed("WeGlide answered ${response.code}: ${body.take(300)}")
             }
+        } catch (e: UnknownHostException) {
+            // Also what Android reports when the app's data use is switched off in its app settings.
+            ApiResult.Failed(
+                "Could not reach WeGlide. Check the phone is online, and that soarlogs is allowed to use data " +
+                    "(Android Settings, Apps, soarlogs, Data usage).",
+            )
         } catch (e: IOException) {
             ApiResult.Failed("Could not reach WeGlide: ${e.message ?: e.javaClass.simpleName}")
         }
@@ -51,7 +58,11 @@ class OkHttpWeGlideApi(
             .writeTimeout(60, TimeUnit.SECONDS)
             .build()
 
-        /** For example `soarlogs/1.0.0 (Android)`. */
-        fun userAgent(appVersion: String) = "soarlogs/$appVersion (Android)"
+        /**
+         * For example `Mozilla/5.0 (Linux; Android) soarlogs/1.0.0`. WeGlide's firewall refuses unknown User-Agents
+         * such as `soarlogs/1.0.0 (Android)` with an empty 403 (tested 2026-10-21), but lets browser-style ones
+         * through, so this form passes while still naming the app.
+         */
+        fun userAgent(appVersion: String) = "Mozilla/5.0 (Linux; Android) soarlogs/$appVersion"
     }
 }
