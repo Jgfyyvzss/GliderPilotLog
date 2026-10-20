@@ -46,6 +46,7 @@ import io.github.jgfyyvzss.gliderpilotlog.ui.settings.FirstRunScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.settings.LaunchTypesScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.settings.OpeningBalancesScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.settings.SettingsScreen
+import io.github.jgfyyvzss.gliderpilotlog.ui.settings.SpreadsheetsScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.totals.TotalsScreen
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
@@ -54,6 +55,7 @@ import kotlinx.serialization.Serializable
 @Serializable object FlightsRoute
 @Serializable object TotalsRoute
 @Serializable object OpeningBalancesRoute
+@Serializable object SpreadsheetsRoute
 @Serializable object AirfieldsRoute
 @Serializable object GlidersRoute
 @Serializable object SettingsRoute
@@ -99,6 +101,7 @@ private fun MainScreens() {
         destination?.hasRoute(ClubsRoute::class) == true -> "Clubs"
         destination?.hasRoute(LaunchTypesRoute::class) == true -> "Launch types"
         destination?.hasRoute(OpeningBalancesRoute::class) == true -> "Opening balances"
+        destination?.hasRoute(SpreadsheetsRoute::class) == true -> "Spreadsheets (CSV)"
         destination?.hasRoute(FlightEditRoute::class) == true ->
             if (entry?.toRoute<FlightEditRoute>()?.id == null) "New flight" else "Flight"
         destination?.hasRoute(AirfieldEditRoute::class) == true ->
@@ -170,11 +173,13 @@ private fun MainScreens() {
                     onClubs = { nav.navigate(ClubsRoute) },
                     onLaunchTypes = { nav.navigate(LaunchTypesRoute) },
                     onOpeningBalances = { nav.navigate(OpeningBalancesRoute) },
+                    onSpreadsheets = { nav.navigate(SpreadsheetsRoute) },
                 )
             }
             composable<ClubsRoute> { ClubsScreen() }
             composable<LaunchTypesRoute> { LaunchTypesScreen() }
             composable<OpeningBalancesRoute> { OpeningBalancesScreen() }
+            composable<SpreadsheetsRoute> { SpreadsheetsScreen() }
         }
     }
 }

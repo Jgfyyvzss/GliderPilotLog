@@ -22,6 +22,9 @@ interface GliderDao {
     @Query("SELECT * FROM glider WHERE id = :id")
     suspend fun get(id: String): GliderEntity?
 
+    @Query("SELECT * FROM glider WHERE id = :id")
+    fun observe(id: String): Flow<GliderEntity?>
+
     @Query("SELECT * FROM glider WHERE deleted_at IS NULL AND registration_key = :key AND id != :exceptId LIMIT 1")
     suspend fun findLiveByKey(key: String, exceptId: String = ""): GliderEntity?
 
@@ -149,6 +152,17 @@ interface FlightDao {
 
     @Query("SELECT * FROM flight WHERE id = :id")
     suspend fun get(id: String): FlightEntity?
+
+    /** A glider's live flights on one day, for the aircraft logbook calculator. */
+    @Query("SELECT * FROM flight WHERE deleted_at IS NULL AND glider_id = :gliderId AND date = :date ORDER BY log_no")
+    suspend fun onDay(gliderId: String, date: String): List<FlightEntity>
+
+    /** The gliders flown on one day, ignoring any filter. */
+    @Query(
+        "SELECT DISTINCT g.* FROM glider g JOIN flight f ON f.glider_id = g.id " +
+            "WHERE f.deleted_at IS NULL AND f.date = :date ORDER BY g.registration_key",
+    )
+    suspend fun glidersOnDay(date: String): List<GliderEntity>
 
     /** The filtered list, built by [FlightQueries.list]. */
     @RawQuery(observedEntities = [FlightEntity::class, GliderEntity::class, AirfieldEntity::class, LaunchTypeEntity::class])

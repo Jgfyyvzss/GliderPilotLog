@@ -10,6 +10,7 @@ import io.github.jgfyyvzss.gliderpilotlog.core.FlightValidation
 import io.github.jgfyyvzss.gliderpilotlog.core.Keys
 import io.github.jgfyyvzss.gliderpilotlog.core.Role
 import io.github.jgfyyvzss.gliderpilotlog.core.RoleTotal
+import io.github.jgfyyvzss.gliderpilotlog.core.weglide.WeGlideAircraft
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -51,6 +52,42 @@ class LogbookRepository(
         if (existing == null) gliders.insert(row) else gliders.update(row)
         return SaveResult.Saved(row.id)
     }
+
+    fun observeGlider(id: String): Flow<GliderEntity?> = gliders.observe(id)
+
+    /**
+     * Stores the total last written in the aircraft logbook, as the calculator's default. Minutes and date are set
+     * together; the flight count is optional. Passing null minutes clears all three.
+     */
+    suspend fun saveLogbookTotal(gliderId: String, minutes: Int?, flights: Int?, date: LocalDate?): SaveResult {
+        val g = gliders.get(gliderId) ?: return SaveResult.Rejected("The glider no longer exists")
+        if (minutes != null && (minutes < 0 || date == null)) return SaveResult.Rejected("Enter the hours and the date they apply to")
+        if (flights != null && flights < 0) return SaveResult.Rejected("Flights cannot be negative")
+        gliders.update(
+            g.copy(
+                logbookTotalMinutes = minutes,
+                logbookTotalFlights = flights.takeIf { minutes != null },
+                logbookTotalDate = date?.toString().takeIf { minutes != null },
+                updatedAt = now(),
+            ),
+        )
+        return SaveResult.Saved(gliderId)
+    }
+
+    /**
+     * Sets the glider's WeGlide aircraft and replaces its type with WeGlide's name, which is lost once saved but stays
+     * editable by hand. Null clears the ID and keeps the type as it is.
+     */
+    suspend fun setWeGlideAircraft(gliderId: String, aircraft: WeGlideAircraft?): SaveResult {
+        val g = gliders.get(gliderId) ?: return SaveResult.Rejected("The glider no longer exists")
+        val type = aircraft?.name ?: g.type
+        gliders.update(g.copy(weglideAircraftId = aircraft?.id, type = type, incomplete = type.isBlank(), updatedAt = now()))
+        return SaveResult.Saved(gliderId)
+    }
+
+    /** The glider's live flights on [date], and the gliders flown that day. */
+    suspend fun flightsOnDay(gliderId: String, date: LocalDate) = flights.onDay(gliderId, date.toString())
+    suspend fun glidersOnDay(date: LocalDate) = flights.glidersOnDay(date.toString())
 
     // Airfields and clubs
 

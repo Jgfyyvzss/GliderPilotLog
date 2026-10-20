@@ -48,6 +48,7 @@ import io.github.jgfyyvzss.gliderpilotlog.core.ClockTime
 import io.github.jgfyyvzss.gliderpilotlog.core.FlightFilter
 import io.github.jgfyyvzss.gliderpilotlog.core.Role
 import io.github.jgfyyvzss.gliderpilotlog.data.Settings
+import io.github.jgfyyvzss.gliderpilotlog.ui.ColonTransformation
 import io.github.jgfyyvzss.gliderpilotlog.ui.PickerField
 import io.github.jgfyyvzss.gliderpilotlog.ui.PickerOption
 import io.github.jgfyyvzss.gliderpilotlog.ui.appContainer
@@ -172,9 +173,9 @@ private fun FilterSheet(
             if (showLaunchTimes) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(launchFrom, { launchFrom = it; error = null }, label = { Text("Launch from") },
-                        placeholder = { Text("1000") }, singleLine = true, keyboardOptions = numeric, modifier = Modifier.weight(1f))
+                        placeholder = { Text("10:00") }, singleLine = true, keyboardOptions = numeric, visualTransformation = ColonTransformation, modifier = Modifier.weight(1f))
                     OutlinedTextField(launchTo, { launchTo = it; error = null }, label = { Text("Launch to") },
-                        placeholder = { Text("1200") }, singleLine = true, keyboardOptions = numeric, modifier = Modifier.weight(1f))
+                        placeholder = { Text("12:00") }, singleLine = true, keyboardOptions = numeric, visualTransformation = ColonTransformation, modifier = Modifier.weight(1f))
                 }
             }
 

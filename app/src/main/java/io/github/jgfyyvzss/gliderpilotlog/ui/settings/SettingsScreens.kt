@@ -55,6 +55,7 @@ import io.github.jgfyyvzss.gliderpilotlog.ui.Badge
 import io.github.jgfyyvzss.gliderpilotlog.ui.airfields.NameDialog
 import io.github.jgfyyvzss.gliderpilotlog.ui.appContainer
 import io.github.jgfyyvzss.gliderpilotlog.ui.vmFactory
+import io.github.jgfyyvzss.gliderpilotlog.ui.weglide.AircraftListSection
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -85,7 +86,7 @@ private val identifierSuggestions = listOf("Licence number", "Membership number"
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun SettingsScreen(onClubs: () -> Unit, onLaunchTypes: () -> Unit, onOpeningBalances: () -> Unit) {
+fun SettingsScreen(onClubs: () -> Unit, onLaunchTypes: () -> Unit, onOpeningBalances: () -> Unit, onSpreadsheets: () -> Unit) {
     val container = appContainer()
     val settings by container.settings.settings.collectAsStateWithLifecycle(null)
     val vm: ProfileViewModel = viewModel(factory = vmFactory { ProfileViewModel(it.settings) })
@@ -174,6 +175,15 @@ fun SettingsScreen(onClubs: () -> Unit, onLaunchTypes: () -> Unit, onOpeningBala
 
         HorizontalDivider()
         BackupSection()
+        ListItem(
+            headlineContent = { Text("Spreadsheets (CSV)") },
+            supportingContent = { Text("Export, import, and undo the last import") },
+            modifier = Modifier.clickable(onClick = onSpreadsheets),
+        )
+
+        HorizontalDivider()
+        Text("WeGlide", style = MaterialTheme.typography.titleMedium)
+        AircraftListSection()
 
         HorizontalDivider()
         Text("Lists", style = MaterialTheme.typography.titleMedium)

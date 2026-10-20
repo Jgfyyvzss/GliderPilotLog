@@ -39,6 +39,7 @@ import io.github.jgfyyvzss.gliderpilotlog.core.Role
 import io.github.jgfyyvzss.gliderpilotlog.data.LogbookRepository
 import io.github.jgfyyvzss.gliderpilotlog.data.OpeningBalanceEntity
 import io.github.jgfyyvzss.gliderpilotlog.data.SaveResult
+import io.github.jgfyyvzss.gliderpilotlog.ui.ColonTransformation
 import io.github.jgfyyvzss.gliderpilotlog.ui.shortText
 import io.github.jgfyyvzss.gliderpilotlog.ui.vmFactory
 import java.time.Instant
@@ -117,11 +118,11 @@ fun OpeningBalancesScreen() {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     d.hoursText, { vm.update(i, d.copy(hoursText = it)) }, label = { Text("Hours") },
-                    placeholder = { Text("12345") }, singleLine = true,
+                    placeholder = { Text("123:45") }, singleLine = true, visualTransformation = ColonTransformation,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     supportingText = {
                         val m = Durations.parseFormEntry(d.hoursText)
-                        if (m != null && !d.hoursText.contains(':')) Text("= ${Durations.formatHm(m)}")
+                        if (m != null && ColonTransformation.display(d.hoursText.trim()) != Durations.formatHm(m)) Text("= ${Durations.formatHm(m)}")
                     },
                     modifier = Modifier.weight(1f),
                 )

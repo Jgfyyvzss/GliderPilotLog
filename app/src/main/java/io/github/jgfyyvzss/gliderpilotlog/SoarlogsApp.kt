@@ -5,11 +5,15 @@ import androidx.annotation.VisibleForTesting
 import io.github.jgfyyvzss.gliderpilotlog.data.BackupFolder
 import io.github.jgfyyvzss.gliderpilotlog.data.BackupScheduler
 import io.github.jgfyyvzss.gliderpilotlog.data.BackupService
+import io.github.jgfyyvzss.gliderpilotlog.data.CsvService
 import io.github.jgfyyvzss.gliderpilotlog.data.FilterStore
 import io.github.jgfyyvzss.gliderpilotlog.data.LogbookDatabase
 import io.github.jgfyyvzss.gliderpilotlog.data.LogbookRepository
 import io.github.jgfyyvzss.gliderpilotlog.data.SettingsRepository
 import io.github.jgfyyvzss.gliderpilotlog.data.TotalsService
+import io.github.jgfyyvzss.gliderpilotlog.data.weglide.AircraftCatalog
+import io.github.jgfyyvzss.gliderpilotlog.data.weglide.OkHttpWeGlideApi
+import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -22,6 +26,14 @@ class SoarlogsApp : Application() {
     val totals by lazy { TotalsService(repository, settings) }
     val backup by lazy { BackupService(database, settings, appVersion()) }
     val backupFolder by lazy { BackupFolder(this, backup, settings) }
+    val aircraft by lazy {
+        AircraftCatalog(
+            savedFile = File(filesDir, "weglide-aircraft.json"),
+            bundled = { assets.open("weglide-aircraft.json").use { it.readBytes().decodeToString() } },
+            api = OkHttpWeGlideApi(OkHttpWeGlideApi.userAgent(appVersion())),
+        )
+    }
+    val csv by lazy { CsvService(database, aircraftName = { id -> aircraft.find(id)?.name }) }
 
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var schedulerStarted = false

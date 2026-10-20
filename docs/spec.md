@@ -103,7 +103,7 @@ The home screen offers New flight and From IGC immediately, and navigation cover
 The calculator adds a day's flying to the aircraft logbook total, for the legal aircraft logbook. It never touches the database totals. The glider record keeps the last logbook total the pilot wrote, as a default only, because others may fly the aircraft and the figure can drift from the real logbook.
 
 1. The pilot confirms the day's flights.
-2. In the Flights list, flights are grouped by date and glider, and each group has an "Add to aircraft logbook" button.
+2. In the Flights list, each day has a header row with an "Aircraft logbook" button. Flights stay in date and log number order, because a day's gliders often alternate. With one glider flown that day the calculator opens straight away; with several, the pilot picks the glider first. The calculator includes all that glider's live flights for the day, even ones the active filter hides, and the pilot can untick any.
 3. The calculator opens with the day's total hours as H:MM and the number of flights, both prefilled and editable, with a checklist of the included flights that updates both figures.
 4. The logbook total fields are prefilled from the glider's stored values, with the date they apply to shown beside them. The pilot overwrites them when they differ from the aircraft logbook, for example after someone else flew the glider, and the calculator shows the new total.
 5. For flying the app doesn't know about, the pilot adds extra H:MM and flight entries. The same calculator opens from the Gliders screen with the stored total and no flights, for fully manual use.
@@ -114,7 +114,7 @@ The calculator adds a day's flying to the aircraft logbook total, for the legal 
 - **Double-add warning:** if the stored date is on or after the day being added, the calculator warns that the day may already have been added, because adding the same day twice is the easiest way to corrupt the figure.
 - **Gliders screen:** a glider's detail shows the stored figures, for example "Logbook total as last entered: 1234:56, 5678 flights, 18/10/26", and lets the pilot edit or clear them by hand. The flights count is optional and may be removed later.
 
-The count is labelled "Flights", as everywhere in the app, because a flight is one landing. Role does not matter here, since airframe time counts for every role. Hours can be shown as H:MM or decimal, selectable in Settings. H:MM is exact to the minute, and decimal hours are shown to one place, for example 4.5.
+The count is labelled "Flights", as everywhere in the app, because a flight is one landing. Role does not matter here, since airframe time counts for every role. Hours can be shown as H:MM or decimal, selectable in Settings. H:MM is exact to the minute, and decimal hours are shown to one place, for example 4.5. The calculator's hours fields accept digits with the last two as minutes (123456 is 1234:56), H:MM, or decimal hours (1234.9), so airframe totals past 10,000 hours fit, and results follow the Settings choice. When the glider has no stored flight count, the new total's count stays blank unless a before count is entered.
 
 ## IGC import
 
@@ -232,14 +232,17 @@ CSV is for spreadsheets and other systems, not for backup. The app exports fligh
 - **Required columns:** `date` (YYYY-MM-DD), `glider` (registration), `duration` (H:MM or whole minutes), `airfield` and `role` (PIC, STUDENT, INSTRUCTOR, COACH or MUTUAL).
 - **Launch type:** expected as `launch_type`. If the column is missing or some cells are blank, the import screen asks once for a default for those rows. An unknown non-blank value fails with the list of valid names.
 - **Log number:** if a `log_no` column is present, every cell must be a valid, unused positive integer. If it is absent, the screen offers once to number the rows from the current maximum plus one in file order.
-- **Optional columns:** `club` and `notes`.
+- **Pilot in command:** `pic`, required on STUDENT and MUTUAL rows. On PIC, INSTRUCTOR and COACH rows a blank cell can take the profile name.
+- **Optional columns:** `club`, `notes`, and the launch time, landing time and landing place columns described in Appendix C.
 - **Validation:** the whole file is checked first, every error is reported with its row number, and nothing is imported if any row fails. A summary is shown, then everything is committed in one transaction.
 
 **Unmatched gliders and airfields**
 
 - The confirmation screen lists them and creates minimal stub records: registration only for a glider, name only for an airfield. Stubs are flagged incomplete until the pilot fills them in.
 - Each unmatched name has a "use existing…" dropdown to avoid near-duplicates such as "Mt Beauty" and "Mount Beauty".
-- Every import is tagged with a batch ID, and Settings offers "Undo last import", which also removes that batch's unused stubs.
+- Every import, of flights, gliders or airfields, is tagged with a batch ID, and Settings offers "Undo last import", which also removes that batch's unused stubs. Undo can be repeated, each time removing the most recent remaining import. It removes the batch's flights even if they were edited since, keeps any glider or airfield the batch created that another live flight now uses, and leaves clubs and club links the import created. Removed records are kept as tombstones so a later Merge respects the removal, and the confirmation shows the counts first.
+
+**Export:** Settings, Spreadsheets (CSV), Export to a folder writes all live flights (not the current filter), gliders and airfields as three timestamped files, for example `soarlogs-flights-20261021-1405.csv`.
 
 **Gliders and airfields files:** each has its own export and import (gliders: registration and type; airfields: name, coordinates and club names), so a fleet or field list can be loaded without parsing it from the log.
 
@@ -333,6 +336,10 @@ All files are UTF-8 with a comma delimiter, a single header row, and RFC 4180 qu
 | launch\_type | Prompted if missing or blank | A launch type name, matched ignoring case. |
 | club | Optional | Club name. A club that doesn't exist is created and linked to the airfield. A blank cell leaves the club unset, even for an airfield with several clubs. |
 | notes | Optional | Free text. |
+| pic | Required on STUDENT and MUTUAL rows | The pilot in command's name. A blank cell on a PIC, INSTRUCTOR or COACH row can take the profile name. |
+| launch\_time, landing\_time | Optional | HH:MM, local 24-hour. Landing after launch. |
+| landing\_airfield | Optional | An airfield name, matched like `airfield`. Not with landing\_place. |
+| landing\_place | Optional | Free text. Not with landing\_airfield. |
 
 **gliders.csv:** `registration` (required), `type` (required), `weglide_aircraft_id` (optional positive integer), and `weglide_aircraft_name` (written on export for readability, ignored on import).
 
@@ -340,7 +347,8 @@ All files are UTF-8 with a comma delimiter, a single header row, and RFC 4180 qu
 
 **Behaviour**
 
-- A glider or airfield row whose key already exists is skipped and reported, never updated. Airfields without coordinates are flagged incomplete.
+- A glider or airfield row whose key already exists, in the logbook or earlier in the file, is skipped and reported, never updated. Airfields without coordinates are flagged incomplete.
+- Role and launch type values match ignoring case. A blank club cell is filled only when the airfield ends up with exactly one club.
 - A flights import first resolves gliders and airfields, offering stubs and the "use existing…" choice for unmatched names, then asks about the launch type and log number defaults if needed, then commits everything in one transaction tagged with a batch ID.
 - Errors are listed as file, row (the header is row 1), column, the value found and what was expected, for example `Row 14, date: found 18/10/26, expected YYYY-MM-DD`. Show up to 200 errors, then a count of the rest.
 
@@ -386,7 +394,7 @@ The record layouts below come from my knowledge of the IGC format, because I cou
 All WeGlide code sits behind one interface with a fake implementation for tests. The base URL is a single constant, `https://api.weglide.org`, with `GET /v1/aircraft` and `POST /v1/igcfile`. The pilot supplied both paths, and the shared host is an assumption to check with a first real call.
 
 - **Headers:** every request sends a `User-Agent` of the form `<app name>/<version> (Android)`, for example `soarlogs/1.0.0 (Android)`.
-- **Aircraft list:** GET with no credentials. The response is a JSON array whose entries have `id`, `name`, `kind`, `sc_class` and `dmst_index`. Skip entries without a numeric `id` and a string `name`. Cache the raw response in a file in app-private storage, load the cache first, refresh on request and automatically when it is older than 30 days, and keep the cache if a refresh fails. With no cache and no network, show a message.
+- **Aircraft list:** GET with no credentials. The response is a JSON array whose entries have `id`, `name`, `kind`, `sc_class` and `dmst_index`. Skip entries without a numeric `id` and a string `name`. The app ships with a copy of the list (`assets/weglide-aircraft.json`, from WeGlide, redistribution confirmed by the pilot) and uses it until the pilot taps Update in Settings. An update saves the raw response in app-private storage, which then replaces the bundled copy, and keeps the list in use if it fails or returns nothing usable. There is no automatic refresh, because new types are rare. Settings shows the number of aircraft and the date of the last update.
 - **Search:** lower-case both strings, remove accents, and remove everything except letters and digits. Rank exact matches first, then starts-with, then contains, ties by name. Show the name with its `kind` and `sc_class` exactly as returned.
 - **Picking:** store the ID on the glider and replace its type with WeGlide's name, after showing the confirmation line described above.
 - **Upload gate:** a glider needs a `weglide_aircraft_id`, and the pilot needs the WeGlide ID and date of birth in Settings. If any is missing, prompt for it instead of failing.
@@ -405,6 +413,21 @@ All WeGlide code sits behind one interface with a fake implementation for tests.
 - **Permissions:** INTERNET only for the first releases. The LXNAV download, if it is built, adds the Bluetooth permissions described in its section. Files are read and written through the system document pickers, with a persisted tree permission for the backup folder, so no storage permissions are needed.
 - **Scheduled backups:** after each saved change, if at least the set number of changes (default 20) or days (default 7) have passed since the last export, enqueue a one-time WorkManager job. Changes are counted from `updated_at`, so no counter is stored. The Home screen nudges when there are flights and the last backup is more than 7 days old or missing. Keep the last 10 files, named glider-logbook-YYYYMMDD-HHMMSS.json.
 - **Display:** dates use the device locale's short format, durations use the Settings choice, the UI is English, Material dynamic colour is used, dark mode follows the system, and rotation must not lose form state. Touch targets are at least 48 dp.
+
+## Appendix G: GAus MOSP logbook requirements
+7.9 Pilot personal logbook
+7.9.1. All pilots must keep a personal logbook in which to record the following information:
+(a) the person’s name and date of birth.
+(b) the person’s Gliding Australia membership number.
+(c) name(s) of pilot-in-command (PIC);
+(d) date of flight;
+(e) place of departure and arrival;
+(f) type/model and registration of the sailplane;
+(g) total time of flight;
+(h) launching method
+(i) accumulated total time of flight;
+(j) details on pilot function, namely PIC including solo, dual or as Flight Instructor; and
+(k) operational conditions (e.g. aerobatics).
 
 **Tests**
 
@@ -428,9 +451,10 @@ The first three steps give a usable logbook with safe backups before any integra
 3. **JSON backup, restore and scheduled copies.** Done when an export, import and export round trip is identical, Restore into an empty database reproduces the original, Merge reports a log number collision, scheduled exports write timestamped files to the chosen folder, and first-run restore works.
 4. **CSV export and import, including stubs and undo.** Done when the exports re-import cleanly, the pilot's prepared flights CSV and 14-glider table import, errors name their rows, and Undo last import removes the batch and its unused stubs.
 5. **Aircraft logbook calculator.** Done when a day's flights sum correctly, unticking a flight updates hours and flights, extra manual entries work, results match a hand calculation including overflow, the stored logbook total prefills and can be overwritten, Save new total writes the result and the flying day back, and the double-add warning appears.
-6. **IGC import.** Done when the sample files give the logbook's date and duration to within a minute, airfield matching and the create prompt work, multi-segment files list their segments, the form is pre-filled, and an IGC file shared from another app opens the flow.
-7. **WeGlide upload.** Done when the aircraft list downloads, caches and searches, picking an entry sets the ID and type, mock-server tests cover success and failure, and one manual upload with the pilot's own account succeeds.
-8. **OGN import.** Not to be started until it has its own specification. The LXNAV flight download is likewise not a build step until its prototype, described in its own section, has worked.
+6. **WeGlide aircraft list.** Done when the bundled list loads and searches, Update in Settings replaces it and keeps it on failure, picking an entry on a glider sets the ID and type after showing the change, the Gliders list marks gliders without a WeGlide type, the gliders export writes `weglide_aircraft_name`, and mock-server and fake tests cover success and failure. Moved ahead of IGC import so each glider's type is settled early.
+7. **IGC import.** Done when the sample files give the logbook's date and duration to within a minute, airfield matching and the create prompt work, multi-segment files list their segments, the form is pre-filled, and an IGC file shared from another app opens the flow.
+8. **WeGlide upload.** Done when mock-server tests cover upload success and failure, the upload gate prompts for anything missing, and one manual upload with the pilot's own account succeeds.
+9. **OGN import.** Not to be started until it has its own specification. The LXNAV flight download is likewise not a build step until its prototype, described in its own section, has worked.
 
 ## Decisions and open points
 

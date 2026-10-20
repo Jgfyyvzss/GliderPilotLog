@@ -38,11 +38,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import io.github.jgfyyvzss.gliderpilotlog.core.ClockTime
 import io.github.jgfyyvzss.gliderpilotlog.core.Durations
 import io.github.jgfyyvzss.gliderpilotlog.core.FlightField
 import io.github.jgfyyvzss.gliderpilotlog.core.LandingChoice
 import io.github.jgfyyvzss.gliderpilotlog.core.Role
+import io.github.jgfyyvzss.gliderpilotlog.ui.ColonTransformation
 import io.github.jgfyyvzss.gliderpilotlog.ui.PickerField
 import io.github.jgfyyvzss.gliderpilotlog.ui.PickerOption
 import io.github.jgfyyvzss.gliderpilotlog.ui.gliders.pickerLabel
@@ -135,23 +135,24 @@ fun FlightEditScreen(id: String?, onDone: () -> Unit) {
         if (settings.recordTimes) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
-                    d.launchTimeText, vm::setLaunchTime, label = { Text("Launch") }, placeholder = { Text("1305") },
+                    d.launchTimeText, vm::setLaunchTime, label = { Text("Launch") }, placeholder = { Text("13:05") },
                     singleLine = true, isError = FlightField.LAUNCH_TIME in e, keyboardOptions = numeric,
-                    supportingText = timeHint(d.launchTimeText), modifier = Modifier.weight(1f),
+                    visualTransformation = ColonTransformation, modifier = Modifier.weight(1f),
                 )
                 OutlinedTextField(
-                    d.landingTimeText, vm::setLandingTime, label = { Text("Landing") }, placeholder = { Text("1736") },
+                    d.landingTimeText, vm::setLandingTime, label = { Text("Landing") }, placeholder = { Text("17:36") },
                     singleLine = true, isError = FlightField.LANDING_TIME in e, keyboardOptions = numeric,
-                    supportingText = timeHint(d.landingTimeText), modifier = Modifier.weight(1f),
+                    visualTransformation = ColonTransformation, modifier = Modifier.weight(1f),
                 )
             }
             (e[FlightField.LAUNCH_TIME] ?: e[FlightField.LANDING_TIME])?.let { ErrorText(it) }
         }
 
         OutlinedTextField(
-            d.durationText, vm::setDuration, label = { Text("Duration") }, placeholder = { Text("324") },
+            d.durationText, vm::setDuration, label = { Text("Duration") }, placeholder = { Text("3:24") },
             singleLine = true, isError = FlightField.DURATION in e, keyboardOptions = numeric,
             supportingText = { Text(e[FlightField.DURATION] ?: durationHint(d.durationText)) },
+            visualTransformation = ColonTransformation,
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -276,15 +277,10 @@ private fun durationHint(text: String): String {
     val minutes = Durations.parseFormEntry(text)
     return when {
         minutes == null || text.isBlank() -> "Digits: 51 is 0:51, 324 is 3:24"
-        text.contains(':') && Durations.parseHm(text) == minutes && text.trim() == Durations.formatHm(minutes) -> " "
+        // The field already shows the colon, so only overflow such as 1:75 needs the result spelled out.
+        ColonTransformation.display(text.trim()) == Durations.formatHm(minutes) -> " "
         else -> "= ${Durations.formatHm(minutes)}"
     }
-}
-
-private fun timeHint(text: String): (@Composable () -> Unit)? {
-    if (text.isBlank() || text.contains(':')) return null
-    val t = ClockTime.parseFormEntry(text) ?: return null
-    return { Text("= $t") }
 }
 
 @Composable

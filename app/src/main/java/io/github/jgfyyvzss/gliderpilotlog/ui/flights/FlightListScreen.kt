@@ -1,6 +1,22 @@
 package io.github.jgfyyvzss.gliderpilotlog.ui.flights
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.paging.insertSeparators
+import androidx.paging.map
+import io.github.jgfyyvzss.gliderpilotlog.data.GliderEntity
+import io.github.jgfyyvzss.gliderpilotlog.ui.gliders.pickerLabel
+import io.github.jgfyyvzss.gliderpilotlog.ui.logbook.LogbookCalculatorSheet
+import java.time.LocalDate
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -40,16 +56,44 @@ import io.github.jgfyyvzss.gliderpilotlog.ui.vmFactory
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flatMapLatest
 
-class FlightListViewModel(repo: LogbookRepository, filterStore: FilterStore) : ViewModel() {
-    val filter = filterStore.filter
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val flights = filterStore.filter.flatMapLatest { f ->
-        Pager(PagingConfig(pageSize = 60, enablePlaceholders = false)) { repo.pagedFlights(f) }.flow
-    }.cachedIn(viewModelScope)
+/** A list entry: a day header, or a flight. */
+sealed interface FlightListItem {
+    data class Day(val date: String) : FlightListItem
+    data class Flight(val row: FlightListRow) : FlightListItem
 }
 
-/** Newest first by date then log number, filtered by the shared filter. The logbook calculator comes in step 5. */
+class FlightListViewModel(private val repo: LogbookRepository, filterStore: FilterStore) : ViewModel() {
+    val filter = filterStore.filter
+
+    /** Flights with a header before the first flight of each day. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val flights = filterStore.filter.flatMapLatest { f ->
+        Pager(PagingConfig(pageSize = 60, enablePlaceholders = false)) { repo.pagedFlights(f) }.flow.map { page ->
+            page.map<FlightListRow, FlightListItem> { FlightListItem.Flight(it) }.insertSeparators { before, after ->
+                val a = (after as? FlightListItem.Flight)?.row ?: return@insertSeparators null
+                val b = (before as? FlightListItem.Flight)?.row
+                if (b == null || b.date != a.date) FlightListItem.Day(a.date) else null
+            }
+        }
+    }.cachedIn(viewModelScope)
+
+    /** The day and glider the calculator is open for. */
+    var calculator by mutableStateOf<Pair<String, LocalDate>?>(null)
+    /** Gliders to choose from when more than one flew on the chosen day. */
+    var chooseGlider by mutableStateOf<Pair<LocalDate, List<GliderEntity>>?>(null)
+
+    /** Opens the calculator for a day, straight away for one glider or after a choice for several. */
+    fun openCalculator(date: LocalDate) = viewModelScope.launch {
+        val gliders = repo.glidersOnDay(date)
+        when (gliders.size) {
+            0 -> Unit
+            1 -> calculator = gliders.single().id to date
+            else -> chooseGlider = date to gliders
+        }
+    }
+}
+
+/** Newest first by date then log number, filtered by the shared filter, with an aircraft logbook button per day. */
 @Composable
 fun FlightListScreen(onOpen: (String) -> Unit, onNew: () -> Unit) {
     val vm: FlightListViewModel = viewModel(factory = vmFactory { FlightListViewModel(it.repository, it.filter) })
@@ -63,14 +107,23 @@ fun FlightListScreen(onOpen: (String) -> Unit, onNew: () -> Unit) {
                 Text(if (filter.isActive) "No flights match the filter." else "No flights yet. Tap + to log one.", Modifier.padding(16.dp))
             }
             LazyColumn(Modifier.fillMaxSize()) {
-                items(items.itemCount, key = items.itemKey { it.id }) { index ->
-                    val row = items[index] ?: return@items
-                    ListItem(
-                        headlineContent = { Text(row.firstLine()) },
-                        supportingContent = { Text(row.secondLine(settings.hoursDisplay)) },
-                        modifier = Modifier.clickable { onOpen(row.id) },
-                    )
-                    HorizontalDivider()
+                items(
+                    items.itemCount,
+                    key = items.itemKey { if (it is FlightListItem.Day) "day-${it.date}" else (it as FlightListItem.Flight).row.id },
+                ) { index ->
+                    when (val item = items[index]) {
+                        is FlightListItem.Day -> DayHeader(item.date) { vm.openCalculator(LocalDate.parse(item.date)) }
+                        is FlightListItem.Flight -> {
+                            val row = item.row
+                            ListItem(
+                                headlineContent = { Text(row.firstLine()) },
+                                supportingContent = { Text(row.secondLine(settings.hoursDisplay)) },
+                                modifier = Modifier.clickable { onOpen(row.id) },
+                            )
+                            HorizontalDivider()
+                        }
+                        null -> Unit
+                    }
                 }
             }
         }
@@ -78,8 +131,38 @@ fun FlightListScreen(onOpen: (String) -> Unit, onNew: () -> Unit) {
             Icon(Icons.Default.Add, contentDescription = "New flight")
         }
     }
+
+    vm.chooseGlider?.let { (date, gliders) ->
+        AlertDialog(
+            onDismissRequest = { vm.chooseGlider = null },
+            title = { Text("Which glider?") },
+            text = {
+                Column {
+                    gliders.forEach { g ->
+                        ListItem(
+                            headlineContent = { Text(g.pickerLabel()) },
+                            modifier = Modifier.clickable { vm.chooseGlider = null; vm.calculator = g.id to date },
+                        )
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = { TextButton(onClick = { vm.chooseGlider = null }) { Text("Cancel") } },
+        )
+    }
+    vm.calculator?.let { (gliderId, date) -> LogbookCalculatorSheet(gliderId, date) { vm.calculator = null } }
 }
 
+@Composable
+private fun DayHeader(isoDate: String, onLogbook: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer).padding(start = 16.dp, end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(isoDateShort(isoDate), Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
+        TextButton(onClick = onLogbook) { Text("Aircraft logbook") }
+    }
+}
 /** For example `340 · 17/10/26 · FQM Hornet`. */
 fun FlightListRow.firstLine(): String =
     listOf(logNo.toString(), isoDateShort(date), "$registration $gliderType".trim()).joinToString(" · ")
