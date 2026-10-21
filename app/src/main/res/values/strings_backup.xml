@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_title">Backup</string>
+    <string name="backup_folder">Backup folder</string>
+    <string name="backup_folder_not_set">Not set. Tap to choose a folder, which can be a cloud-synced one.</string>
+    <string name="backup_folder_lost">The chosen folder can no longer be reached. Tap to choose again.</string>
+    <string name="backup_folder_set">Backup folder set</string>
+    <string name="backup_folder_unusable">That folder cannot be used for backups</string>
+    <string name="backup_last">Last backup: %1$s</string>
+    <string name="backup_after">Back up automatically after</string>
+    <string name="backup_changes">Changes</string>
+    <string name="backup_days">Days</string>
+    <string name="backup_auto_off">Automatic backups are off.</string>
+    <string name="backup_auto_hint">Whichever comes first, once something has changed. 0 turns a trigger off. The last 10 backups are kept.</string>
+    <string name="backup_now">Back up now</string>
+    <string name="backup_restore">Restore</string>
+    <string name="backup_merge">Merge</string>
+    <string name="backup_restore_merge_hint">Restore loads a backup into an empty logbook, settings and profile included. Merge combines a backup with this phone\'s logbook, keeping the newer copy of each record, and leaves settings as they are.</string>
+    <string name="backup_written">Backed up to %1$s</string>
+    <string name="backup_no_folder">Choose a backup folder first</string>
+    <string name="backup_failed">Backup failed: %1$s</string>
+    <string name="backup_restored">Logbook restored</string>
+    <string name="backup_merged">Backup merged</string>
+    <string name="backup_nothing_changed">Nothing was changed</string>
+    <string name="backup_more_problems">and %1$d more</string>
+    <string name="backup_restore_title">Restore this backup?</string>
+    <!-- %1$s is the backup's date; %2$s to %5$s are counts such as "12 flights". -->
+    <string name="backup_restore_text">Backup from %1$s: %2$s, %3$s, %4$s and %5$s. Your settings and pilot profile will be replaced by the backup\'s.</string>
+    <string name="backup_merge_title">Merge this backup?</string>
+    <string name="backup_merge_text">Backup from %1$s with %2$s. %3$d records will be added and %4$d updated with a newer copy; %5$d are already up to date. Settings stay as they are.</string>
+    <string name="backup_unknown_date">an unknown date</string>
+
+    <string name="first_run_welcome">Welcome to soarlogs</string>
+    <string name="first_run_text">Start a new logbook, or restore one from a backup file.</string>
+    <string name="first_run_fresh">Start fresh</string>
+    <string name="first_run_restore">Restore from backup</string>
+
+    <plurals name="count_flights">
+        <item quantity="one">%1$d flight</item>
+        <item quantity="other">%1$d flights</item>
+    </plurals>
+    <plurals name="count_gliders">
+        <item quantity="one">%1$d glider</item>
+        <item quantity="other">%1$d gliders</item>
+    </plurals>
+    <plurals name="count_airfields">
+        <item quantity="one">%1$d airfield</item>
+        <item quantity="other">%1$d airfields</item>
+    </plurals>
+    <plurals name="count_clubs">
+        <item quantity="one">%1$d club</item>
+        <item quantity="other">%1$d clubs</item>
+    </plurals>
+</resources>

@@ -1,5 +1,8 @@
 package io.github.jgfyyvzss.gliderpilotlog.core.backup
 
+import io.github.jgfyyvzss.gliderpilotlog.core.Msg
+import io.github.jgfyyvzss.gliderpilotlog.core.MsgKey
+import io.github.jgfyyvzss.gliderpilotlog.core.msg
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -9,7 +12,7 @@ import kotlinx.serialization.json.jsonPrimitive
 
 sealed interface DecodeResult {
     data class Ok(val file: BackupFile) : DecodeResult
-    data class Refused(val message: String) : DecodeResult
+    data class Refused(val message: Msg) : DecodeResult
 }
 
 /** Reads and writes the backup file with stable output, so an export, import and export round trip is identical. */
@@ -45,25 +48,24 @@ object BackupCodec {
 
     fun decode(text: String): DecodeResult {
         val root = runCatching { reader.parseToJsonElement(text).jsonObject }.getOrNull()
-            ?: return DecodeResult.Refused("This is not a logbook backup file: it is not valid JSON.")
+            ?: return DecodeResult.Refused(msg(MsgKey.BACKUP_NOT_JSON))
         val format = runCatching { root["format"]?.jsonPrimitive?.content }.getOrNull()
-        if (format != BACKUP_FORMAT) return DecodeResult.Refused("This is not a logbook backup file.")
+        if (format != BACKUP_FORMAT) return DecodeResult.Refused(msg(MsgKey.BACKUP_NOT_BACKUP))
         val version = runCatching { root["format_version"]?.jsonPrimitive?.intOrNull }.getOrNull()
-            ?: return DecodeResult.Refused("The backup file has no format version.")
+            ?: return DecodeResult.Refused(msg(MsgKey.BACKUP_NO_VERSION))
         if (version > BACKUP_FORMAT_VERSION) {
-            return DecodeResult.Refused(
-                "This backup was made by a newer version of the app (format $version). Update the app, then try again.",
-            )
+            return DecodeResult.Refused(msg(MsgKey.BACKUP_NEWER, version))
+
         }
-        if (version < 1) return DecodeResult.Refused("Unknown backup format version $version.")
+        if (version < 1) return DecodeResult.Refused(msg(MsgKey.BACKUP_UNKNOWN_VERSION, version))
 
         var json = root
         for (v in version until BACKUP_FORMAT_VERSION) {
-            val step = upgrades[v] ?: return DecodeResult.Refused("No upgrade from backup format $v.")
+            val step = upgrades[v] ?: return DecodeResult.Refused(msg(MsgKey.BACKUP_NO_UPGRADE, v))
             json = step(json)
         }
         return runCatching { DecodeResult.Ok(reader.decodeFromJsonElement(BackupFile.serializer(), json)) }
-            .getOrElse { DecodeResult.Refused("The backup file is damaged or incomplete: ${it.message?.take(200)}") }
+            .getOrElse { DecodeResult.Refused(msg(MsgKey.BACKUP_DAMAGED, it.message?.take(200) ?: "")) }
     }
 
     /** The file with its export time cleared, for comparing two exports. */

@@ -1,5 +1,8 @@
 package io.github.jgfyyvzss.gliderpilotlog.data.weglide
 
+import io.github.jgfyyvzss.gliderpilotlog.core.MsgKey
+import io.github.jgfyyvzss.gliderpilotlog.core.msg
+import io.github.jgfyyvzss.gliderpilotlog.english
 import java.io.File
 import java.nio.file.Files
 import kotlinx.coroutines.test.runTest
@@ -44,9 +47,9 @@ class WeGlideClientTest {
 
     @Test fun anErrorStatusIsAFailureWithTheStartOfTheMessage() = runTest {
         server.enqueue(MockResponse().setResponseCode(503).setBody("Service unavailable " + "x".repeat(500)))
-        val r = api().fetchAircraftJson() as ApiResult.Failed
-        assertTrue(r.message, r.message.startsWith("WeGlide answered 503: Service unavailable"))
-        assertTrue(r.message.length < 340)
+        val r = (api().fetchAircraftJson() as ApiResult.Failed).message.english()
+        assertTrue(r, r.startsWith("WeGlide answered 503: Service unavailable"))
+        assertTrue(r.length < 340)
     }
 
     @Test fun anUnreachableServerIsAFailure() = runTest {
@@ -68,7 +71,7 @@ class WeGlideClientTest {
         assertEquals(listOf("Bundled"), first.aircraft.map { it.name })
         assertNull(first.updatedAt)
 
-        assertEquals(Result.success(2), catalog.update())
+        assertEquals(AircraftUpdate.Updated(2), catalog.update())
         assertEquals(listOf("ASK 21", "Discus 2"), catalog.list.value!!.aircraft.map { it.name })
         assertEquals(1000L, catalog.list.value!!.updatedAt)
         assertTrue(saved.exists())
@@ -80,15 +83,15 @@ class WeGlideClientTest {
 
     @Test fun failedOrUnusableUpdatesKeepTheListInUse() = runTest {
         val saved = File(dir, "aircraft.json")
-        val fake = FakeApi(ApiResult.Failed("Could not reach WeGlide: timeout"))
+        val fake = FakeApi(ApiResult.Failed(msg(MsgKey.WEGLIDE_UNREACHABLE, "timeout")))
         val catalog = AircraftCatalog(saved, bundled = { """[{"id":9,"name":"Bundled"}]""" }, api = fake)
         catalog.load()
 
-        assertEquals("Could not reach WeGlide: timeout", catalog.update().exceptionOrNull()?.message)
+        assertEquals("Could not reach WeGlide: timeout", (catalog.update() as AircraftUpdate.Failed).message.english())
         fake.answer = ApiResult.Ok("<html>maintenance</html>")
-        assertEquals("WeGlide sent no usable aircraft list", catalog.update().exceptionOrNull()?.message)
+        assertEquals(AircraftUpdate.Failed(msg(MsgKey.WEGLIDE_NO_LIST)), catalog.update())
         fake.answer = ApiResult.Ok("[]")
-        assertTrue(catalog.update().isFailure)
+        assertTrue(catalog.update() is AircraftUpdate.Failed)
 
         assertEquals(listOf("Bundled"), catalog.list.value!!.aircraft.map { it.name })
         assertTrue(!saved.exists())

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Flights list -->
+    <string name="flights_none_match">No flights match the filter.</string>
+    <string name="flights_none_yet">No flights yet. Tap + to log one.</string>
+    <string name="flights_which_glider">Which glider?</string>
+    <string name="flights_aircraft_logbook">Aircraft logbook</string>
+
+    <!-- Flight form -->
+    <string name="flight_log_no">Log no.</string>
+    <string name="flight_glider">Glider</string>
+    <string name="flight_airfield">Airfield</string>
+    <string name="flight_club">Club</string>
+    <string name="flight_launch_type">Launch type</string>
+    <string name="flight_pic">Pilot in command</string>
+    <string name="flight_launch">Launch</string>
+    <string name="flight_landing">Landing</string>
+    <string name="flight_duration">Duration</string>
+    <!-- Keep the digits and times as they are: they show how typing works. -->
+    <string name="flight_duration_hint">Digits: 51 is 0:51, 324 is 3:24</string>
+    <string name="flight_landing_place">Landing place</string>
+    <string name="flight_same_as_departure">Same as departure</string>
+    <string name="flight_other_place">Other place</string>
+    <string name="flight_landing_airfield">Landing airfield</string>
+    <string name="flight_where_ended">Where the flight ended</string>
+    <string name="flight_notes">Notes</string>
+    <string name="flight_save_anyway">Save anyway</string>
+    <string name="flight_delete">Delete flight</string>
+    <string name="flight_delete_title">Delete flight %1$s?</string>
+    <string name="flight_delete_text">Its log number becomes free if it is the highest.</string>
+    <string name="flight_new_airfield_hint">Add coordinates and clubs later from the Airfields screen.</string>
+
+    <!-- Filter -->
+    <string name="filter_button">Filter</string>
+    <string name="filter_title">Filter flights</string>
+    <string name="filter_from">From</string>
+    <string name="filter_to">To</string>
+    <string name="filter_log_from">Log no. from</string>
+    <string name="filter_log_to">Log no. to</string>
+    <string name="filter_launch_from">Launch from</string>
+    <string name="filter_launch_to">Launch to</string>
+    <string name="filter_clear_all">Clear all</string>
+    <string name="filter_apply">Apply</string>
+    <string name="filter_bad_time">Enter launch times as 24-hour digits, for example 1305</string>
+    <string name="filter_dates_reversed">The From date is after the To date</string>
+    <string name="filter_chip_glider">Glider %1$s</string>
+    <string name="filter_chip_from">From %1$s</string>
+    <string name="filter_chip_to">To %1$s</string>
+    <string name="filter_chip_log">Log %1$s–%2$s</string>
+    <string name="filter_chip_launch">Launch %1$s–%2$s</string>
+    <string name="filter_chip_remove">Remove %1$s filter</string>
+</resources>

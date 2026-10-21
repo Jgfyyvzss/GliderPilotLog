@@ -1,5 +1,8 @@
 package io.github.jgfyyvzss.gliderpilotlog.data.weglide
 
+import io.github.jgfyyvzss.gliderpilotlog.core.Msg
+import io.github.jgfyyvzss.gliderpilotlog.core.MsgKey
+import io.github.jgfyyvzss.gliderpilotlog.core.msg
 import io.github.jgfyyvzss.gliderpilotlog.core.weglide.WeGlideAircraft
 import io.github.jgfyyvzss.gliderpilotlog.core.weglide.WeGlideAircraftList
 import java.io.File
@@ -12,6 +15,13 @@ import kotlinx.coroutines.withContext
 
 /** The aircraft list in use and where it came from. [updatedAt] is null for the copy bundled with the app. */
 data class AircraftListState(val aircraft: List<WeGlideAircraft>, val updatedAt: Long?)
+
+/** The outcome of updating the aircraft list from WeGlide. */
+sealed interface AircraftUpdate {
+    data class Updated(val count: Int) : AircraftUpdate
+    /** The list in use is kept. */
+    data class Failed(val message: Msg) : AircraftUpdate
+}
 
 /**
  * WeGlide's aircraft list. The app ships with a copy and uses it until the pilot updates the list from Settings,
@@ -40,23 +50,21 @@ class AircraftCatalog(
 
     suspend fun find(id: Long): WeGlideAircraft? = load().aircraft.firstOrNull { it.id == id }
 
-    /** Downloads the current list. Returns the number of aircraft, or a message when nothing changed. */
-    suspend fun update(): Result<Int> {
+    /** Downloads the current list and saves it, or keeps the list in use and says why. */
+    suspend fun update(): AircraftUpdate {
         val body = when (val r = api.fetchAircraftJson()) {
-            is ApiResult.Failed -> return Result.failure(IllegalStateException(r.message))
+            is ApiResult.Failed -> return AircraftUpdate.Failed(r.message)
             is ApiResult.Ok -> r.value
         }
         val aircraft = WeGlideAircraftList.parse(body)
-        if (aircraft.isNullOrEmpty()) return Result.failure(IllegalStateException("WeGlide sent no usable aircraft list"))
-        withContext(Dispatchers.IO) {
+        if (aircraft.isNullOrEmpty()) return AircraftUpdate.Failed(msg(MsgKey.WEGLIDE_NO_LIST))
+        val saved = withContext(Dispatchers.IO) {
             val temp = File(savedFile.parentFile, savedFile.name + ".tmp")
             temp.writeText(body)
-            if (!temp.renameTo(savedFile)) {
-                savedFile.delete()
-                check(temp.renameTo(savedFile)) { "The aircraft list could not be saved" }
-            }
+            temp.renameTo(savedFile) || (savedFile.delete() && temp.renameTo(savedFile))
         }
+        if (!saved) return AircraftUpdate.Failed(msg(MsgKey.AIRCRAFT_SAVE_FAILED))
         lock.withLock { state.value = AircraftListState(aircraft, now()) }
-        return Result.success(aircraft.size)
+        return AircraftUpdate.Updated(aircraft.size)
     }
 }

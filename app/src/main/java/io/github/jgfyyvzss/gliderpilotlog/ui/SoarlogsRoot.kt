@@ -2,6 +2,7 @@ package io.github.jgfyyvzss.gliderpilotlog.ui
 
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
+import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
@@ -25,6 +26,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import io.github.jgfyyvzss.gliderpilotlog.R
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -65,14 +68,14 @@ import kotlinx.serialization.Serializable
 @Serializable data class AirfieldEditRoute(val id: String? = null)
 @Serializable data class GliderEditRoute(val id: String? = null)
 
-private data class TopLevel(val route: Any, val label: String, val icon: ImageVector)
+private data class TopLevel(val route: Any, @StringRes val label: Int, val icon: ImageVector)
 
 private val topLevel = listOf(
-    TopLevel(HomeRoute, "Home", Icons.Default.Home),
-    TopLevel(FlightsRoute, "Flights", Icons.AutoMirrored.Filled.List),
-    TopLevel(TotalsRoute, "Totals", Icons.Default.TableChart),
-    TopLevel(AirfieldsRoute, "Airfields", Icons.Default.Place),
-    TopLevel(GlidersRoute, "Gliders", Icons.Default.AirplanemodeActive),
+    TopLevel(HomeRoute, R.string.nav_home, Icons.Default.Home),
+    TopLevel(FlightsRoute, R.string.nav_flights, Icons.AutoMirrored.Filled.List),
+    TopLevel(TotalsRoute, R.string.nav_totals, Icons.Default.TableChart),
+    TopLevel(AirfieldsRoute, R.string.nav_airfields, Icons.Default.Place),
+    TopLevel(GlidersRoute, R.string.nav_gliders, Icons.Default.AirplanemodeActive),
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -97,35 +100,35 @@ private fun MainScreens() {
     val destination = entry?.destination
     val current = topLevel.firstOrNull { t -> destination?.hasRoute(t.route::class) == true }
     val title = current?.label ?: when {
-        destination?.hasRoute(SettingsRoute::class) == true -> "Settings"
-        destination?.hasRoute(ClubsRoute::class) == true -> "Clubs"
-        destination?.hasRoute(LaunchTypesRoute::class) == true -> "Launch types"
-        destination?.hasRoute(OpeningBalancesRoute::class) == true -> "Opening balances"
-        destination?.hasRoute(SpreadsheetsRoute::class) == true -> "Spreadsheets (CSV)"
+        destination?.hasRoute(SettingsRoute::class) == true -> R.string.title_settings
+        destination?.hasRoute(ClubsRoute::class) == true -> R.string.title_clubs
+        destination?.hasRoute(LaunchTypesRoute::class) == true -> R.string.title_launch_types
+        destination?.hasRoute(OpeningBalancesRoute::class) == true -> R.string.title_opening_balances
+        destination?.hasRoute(SpreadsheetsRoute::class) == true -> R.string.title_spreadsheets
         destination?.hasRoute(FlightEditRoute::class) == true ->
-            if (entry?.toRoute<FlightEditRoute>()?.id == null) "New flight" else "Flight"
+            if (entry?.toRoute<FlightEditRoute>()?.id == null) R.string.title_new_flight else R.string.title_flight
         destination?.hasRoute(AirfieldEditRoute::class) == true ->
-            if (entry?.toRoute<AirfieldEditRoute>()?.id == null) "New airfield" else "Airfield"
+            if (entry?.toRoute<AirfieldEditRoute>()?.id == null) R.string.title_new_airfield else R.string.title_airfield
         destination?.hasRoute(GliderEditRoute::class) == true ->
-            if (entry?.toRoute<GliderEditRoute>()?.id == null) "New glider" else "Glider"
-        else -> ""
+            if (entry?.toRoute<GliderEditRoute>()?.id == null) R.string.title_new_glider else R.string.title_glider
+        else -> null
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (current == topLevel[0]) "soarlogs" else title) },
+                title = { Text(if (current == topLevel[0]) stringResource(R.string.app_name) else title?.let { stringResource(it) } ?: "") },
                 navigationIcon = {
                     if (current == null) {
                         IconButton(onClick = { nav.popBackStack() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                         }
                     }
                 },
                 actions = {
                     if (current != null) {
                         IconButton(onClick = { nav.navigate(SettingsRoute) }) {
-                            Icon(Icons.Default.Settings, contentDescription = "Settings")
+                            Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.title_settings))
                         }
                     }
                 },
@@ -140,7 +143,7 @@ private fun MainScreens() {
                             onClick = { nav.navigateTopLevel(t.route) },
 
                             icon = { Icon(t.icon, contentDescription = null) },
-                            label = { Text(t.label) },
+                            label = { Text(stringResource(t.label)) },
                         )
                     }
                 }

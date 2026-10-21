@@ -129,6 +129,7 @@ data class FlightListRow(
     @ColumnInfo(name = "glider_type") val gliderType: String,
     @ColumnInfo(name = "airfield_name") val airfieldName: String,
     @ColumnInfo(name = "launch_type_name") val launchTypeName: String,
+    @ColumnInfo(name = "launch_type_id") val launchTypeId: String,
 )
 
 /** Enough about a flight to name it in a duplicate log number message. */
@@ -185,7 +186,7 @@ object FlightQueries {
         return SimpleSQLiteQuery(
             """
             SELECT f.id, f.log_no, f.date, f.duration_minutes, f.role,
-                   g.registration, g.type AS glider_type, a.name AS airfield_name, lt.name AS launch_type_name
+                   g.registration, g.type AS glider_type, a.name AS airfield_name, lt.name AS launch_type_name, f.launch_type_id
             FROM flight f
             JOIN glider g ON g.id = f.glider_id
             JOIN airfield a ON a.id = f.airfield_id

@@ -8,19 +8,20 @@ import io.github.jgfyyvzss.gliderpilotlog.core.FlightFilter
 import io.github.jgfyyvzss.gliderpilotlog.core.FlightRules
 import io.github.jgfyyvzss.gliderpilotlog.core.FlightValidation
 import io.github.jgfyyvzss.gliderpilotlog.core.Keys
+import io.github.jgfyyvzss.gliderpilotlog.core.Msg
+import io.github.jgfyyvzss.gliderpilotlog.core.MsgKey
+import io.github.jgfyyvzss.gliderpilotlog.core.msg
 import io.github.jgfyyvzss.gliderpilotlog.core.Role
 import io.github.jgfyyvzss.gliderpilotlog.core.RoleTotal
 import io.github.jgfyyvzss.gliderpilotlog.core.weglide.WeGlideAircraft
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 /** The outcome of saving a record. */
 sealed interface SaveResult {
     data class Saved(val id: String) : SaveResult
-    data class Rejected(val message: String) : SaveResult
+    data class Rejected(val message: Msg) : SaveResult
 }
 
 class LogbookRepository(
@@ -41,10 +42,10 @@ class LogbookRepository(
 
     suspend fun saveGlider(id: String?, registration: String, type: String, archived: Boolean): SaveResult {
         val reg = registration.trim()
-        if (reg.isEmpty()) return SaveResult.Rejected("Enter the registration")
+        if (reg.isEmpty()) return SaveResult.Rejected(msg(MsgKey.REGISTRATION_REQUIRED))
         val key = Keys.registrationKey(reg)
         gliders.findLiveByKey(key, id ?: "")?.let {
-            return SaveResult.Rejected("${it.registration} is already in the glider list")
+            return SaveResult.Rejected(msg(MsgKey.GLIDER_EXISTS, it.registration))
         }
         val existing = id?.let { gliders.get(it) }
         val row = (existing ?: GliderEntity(id = Keys.newId(), registration = reg, registrationKey = key, type = "", incomplete = true, updatedAt = 0))
@@ -60,9 +61,9 @@ class LogbookRepository(
      * together; the flight count is optional. Passing null minutes clears all three.
      */
     suspend fun saveLogbookTotal(gliderId: String, minutes: Int?, flights: Int?, date: LocalDate?): SaveResult {
-        val g = gliders.get(gliderId) ?: return SaveResult.Rejected("The glider no longer exists")
-        if (minutes != null && (minutes < 0 || date == null)) return SaveResult.Rejected("Enter the hours and the date they apply to")
-        if (flights != null && flights < 0) return SaveResult.Rejected("Flights cannot be negative")
+        val g = gliders.get(gliderId) ?: return SaveResult.Rejected(msg(MsgKey.GLIDER_GONE))
+        if (minutes != null && (minutes < 0 || date == null)) return SaveResult.Rejected(msg(MsgKey.LOGBOOK_HOURS_AND_DATE))
+        if (flights != null && flights < 0) return SaveResult.Rejected(msg(MsgKey.FLIGHTS_NEGATIVE))
         gliders.update(
             g.copy(
                 logbookTotalMinutes = minutes,
@@ -79,7 +80,7 @@ class LogbookRepository(
      * editable by hand. Null clears the ID and keeps the type as it is.
      */
     suspend fun setWeGlideAircraft(gliderId: String, aircraft: WeGlideAircraft?): SaveResult {
-        val g = gliders.get(gliderId) ?: return SaveResult.Rejected("The glider no longer exists")
+        val g = gliders.get(gliderId) ?: return SaveResult.Rejected(msg(MsgKey.GLIDER_GONE))
         val type = aircraft?.name ?: g.type
         gliders.update(g.copy(weglideAircraftId = aircraft?.id, type = type, incomplete = type.isBlank(), updatedAt = now()))
         return SaveResult.Saved(gliderId)
@@ -109,14 +110,14 @@ class LogbookRepository(
         defaultLaunchTypeId: String? = null,
     ): SaveResult {
         val trimmed = name.trim()
-        if (trimmed.isEmpty()) return SaveResult.Rejected("Enter the airfield name")
-        if ((latitude == null) != (longitude == null)) return SaveResult.Rejected("Enter both latitude and longitude, or neither")
-        if (latitude != null && latitude !in -90.0..90.0) return SaveResult.Rejected("Latitude must be between -90 and 90")
-        if (longitude != null && longitude !in -180.0..180.0) return SaveResult.Rejected("Longitude must be between -180 and 180")
-        if (matchRadiusM != null && matchRadiusM <= 0) return SaveResult.Rejected("Match radius must be above 0")
+        if (trimmed.isEmpty()) return SaveResult.Rejected(msg(MsgKey.AIRFIELD_NAME_REQUIRED))
+        if ((latitude == null) != (longitude == null)) return SaveResult.Rejected(msg(MsgKey.COORDINATES_BOTH))
+        if (latitude != null && latitude !in -90.0..90.0) return SaveResult.Rejected(msg(MsgKey.LATITUDE_RANGE))
+        if (longitude != null && longitude !in -180.0..180.0) return SaveResult.Rejected(msg(MsgKey.LONGITUDE_RANGE))
+        if (matchRadiusM != null && matchRadiusM <= 0) return SaveResult.Rejected(msg(MsgKey.RADIUS_POSITIVE))
         val key = Keys.nameKey(trimmed)
         airfields.findLiveByKey(key, id ?: "")?.let {
-            return SaveResult.Rejected("${it.name} is already in the airfield list")
+            return SaveResult.Rejected(msg(MsgKey.AIRFIELD_EXISTS, it.name))
         }
         return db.withTransaction {
             val existing = id?.let { airfields.get(it) }
@@ -139,10 +140,10 @@ class LogbookRepository(
 
     suspend fun saveClub(id: String?, name: String): SaveResult {
         val trimmed = name.trim()
-        if (trimmed.isEmpty()) return SaveResult.Rejected("Enter the club name")
+        if (trimmed.isEmpty()) return SaveResult.Rejected(msg(MsgKey.CLUB_NAME_REQUIRED))
         val key = Keys.nameKey(trimmed)
         clubs.findLiveByKey(key, id ?: "")?.let {
-            return SaveResult.Rejected("${it.name} is already in the club list")
+            return SaveResult.Rejected(msg(MsgKey.CLUB_EXISTS, it.name))
         }
         val existing = id?.let { clubs.get(it) }
         val row = (existing ?: ClubEntity(id = Keys.newId(), name = trimmed, nameKey = key, updatedAt = 0))
@@ -157,10 +158,10 @@ class LogbookRepository(
 
     suspend fun saveLaunchType(id: String?, name: String, archived: Boolean): SaveResult {
         val trimmed = name.trim()
-        if (trimmed.isEmpty()) return SaveResult.Rejected("Enter the launch type name")
+        if (trimmed.isEmpty()) return SaveResult.Rejected(msg(MsgKey.LAUNCH_TYPE_NAME_REQUIRED))
         val key = Keys.nameKey(trimmed)
         launchTypes.findLiveByKey(key, id ?: "")?.let {
-            return SaveResult.Rejected("${it.name} is already in the launch type list")
+            return SaveResult.Rejected(msg(MsgKey.LAUNCH_TYPE_EXISTS, it.name))
         }
         val existing = id?.let { launchTypes.get(it) }
         val row = existing?.copy(name = trimmed, nameKey = key, archived = archived, updatedAt = now())
@@ -189,7 +190,7 @@ class LogbookRepository(
 
     /** Saves the five balances together. Minutes and flights must not be negative. */
     suspend fun saveOpeningBalances(balances: List<OpeningBalanceEntity>): SaveResult {
-        if (balances.any { it.minutes < 0 || it.flights < 0 }) return SaveResult.Rejected("Balances cannot be negative")
+        if (balances.any { it.minutes < 0 || it.flights < 0 }) return SaveResult.Rejected(msg(MsgKey.BALANCES_NEGATIVE))
         val time = now()
         openingBalances.update(balances.map { it.copy(updatedAt = time) })
         return SaveResult.Saved("opening_balance")
@@ -244,8 +245,7 @@ class LogbookRepository(
         flights.update(existing.copy(updatedAt = time, deletedAt = time))
     }
 
-    private fun FlightLabel.describe(): String {
-        val shown = runCatching { LocalDate.parse(date).format(DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT)) }.getOrDefault(date)
-        return "the flight on $shown in $registration"
-    }
+    /** "the flight on 17/10/26 in FQM", with the date shown in the pilot's format by the UI. */
+    private fun FlightLabel.describe(): Msg =
+        msg(MsgKey.FLIGHT_ON, runCatching { LocalDate.parse(date) }.getOrDefault(date), registration)
 }

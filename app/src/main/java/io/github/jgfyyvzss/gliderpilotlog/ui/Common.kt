@@ -23,6 +23,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import io.github.jgfyyvzss.gliderpilotlog.R
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.CreationExtras
@@ -57,7 +59,7 @@ fun PickerField(
     onPick: (String) -> Unit,
     modifier: Modifier = Modifier,
     error: String? = null,
-    placeholder: String = "Choose",
+    placeholder: String? = null,
     selectedLabel: String? = null,
     addNewLabel: String? = null,
     onAddNew: (() -> Unit)? = null,
@@ -70,7 +72,7 @@ fun PickerField(
             onValueChange = {},
             readOnly = true,
             label = { Text(label) },
-            placeholder = { Text(placeholder) },
+            placeholder = { Text(placeholder ?: stringResource(R.string.common_choose)) },
             trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
             isError = error != null,
             supportingText = error?.let { { Text(it) } },
@@ -84,12 +86,12 @@ fun PickerField(
             title = { Text(label) },
             text = {
                 if (options.isEmpty() && onAddNew == null) {
-                    Text("Nothing to choose yet. Add one first.")
+                    Text(stringResource(R.string.picker_empty))
                 } else {
                     LazyColumn(Modifier.heightIn(max = 420.dp)) {
                         if (onAddNew != null) item {
                             ListItem(
-                                headlineContent = { Text("+ ${addNewLabel ?: "New"}", color = MaterialTheme.colorScheme.primary) },
+                                headlineContent = { Text(stringResource(R.string.picker_add_new, addNewLabel ?: stringResource(R.string.common_new)), color = MaterialTheme.colorScheme.primary) },
                                 modifier = Modifier.clickable {
                                     open = false
                                     onAddNew()
@@ -115,7 +117,7 @@ fun PickerField(
                 }
             },
             confirmButton = {},
-            dismissButton = { TextButton(onClick = { open = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { open = false }) { Text(stringResource(R.string.common_cancel)) } },
         )
     }
 }

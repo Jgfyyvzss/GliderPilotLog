@@ -29,6 +29,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import io.github.jgfyyvzss.gliderpilotlog.R
+import io.github.jgfyyvzss.gliderpilotlog.ui.UiText
+import io.github.jgfyyvzss.gliderpilotlog.ui.label
+import io.github.jgfyyvzss.gliderpilotlog.ui.text
+import io.github.jgfyyvzss.gliderpilotlog.ui.uiText
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -55,8 +61,8 @@ class OpeningBalancesViewModel(private val repo: LogbookRepository) : ViewModel(
     val drafts = mutableStateListOf<BalanceDraft>()
     var loaded by mutableStateOf(false)
         private set
-    var message by mutableStateOf<String?>(null)
-    var error by mutableStateOf<String?>(null)
+    var message by mutableStateOf<UiText?>(null)
+    var error by mutableStateOf<UiText?>(null)
     private var stored: Map<String, OpeningBalanceEntity> = emptyMap()
 
     init {
@@ -85,13 +91,13 @@ class OpeningBalancesViewModel(private val repo: LogbookRepository) : ViewModel(
         val rows = drafts.map { d ->
             val minutes = if (d.hoursText.isBlank()) 0 else Durations.parseFormEntry(d.hoursText)
             val flights = if (d.flightsText.isBlank()) 0 else d.flightsText.trim().toIntOrNull()
-            if (minutes == null) { error = "${d.role.label}: enter hours as digits or H:MM, for example 12345 for 123:45"; return@launch }
-            if (flights == null || flights < 0) { error = "${d.role.label}: enter flights as a whole number"; return@launch }
+            if (minutes == null) { error = uiText(R.string.balances_bad_hours, d.role); return@launch }
+            if (flights == null || flights < 0) { error = uiText(R.string.balances_bad_flights, d.role); return@launch }
             OpeningBalanceEntity(role = d.role.name, asOfDate = d.asOf?.toString(), minutes = minutes, flights = flights, updatedAt = 0)
         }
         when (val r = repo.saveOpeningBalances(rows)) {
-            is SaveResult.Saved -> message = "Opening balances saved"
-            is SaveResult.Rejected -> error = r.message
+            is SaveResult.Saved -> message = uiText(R.string.balances_saved)
+            is SaveResult.Rejected -> error = UiText.Message(r.message)
         }
     }
 }
@@ -109,15 +115,15 @@ fun OpeningBalancesScreen() {
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
-            "Enter the totals from the last page of your paper logbook. They are added to Totals when no filter is active.",
+            stringResource(R.string.balances_intro),
             style = MaterialTheme.typography.bodySmall,
         )
         vm.drafts.forEachIndexed { i, d ->
             HorizontalDivider()
-            Text(d.role.label, style = MaterialTheme.typography.titleSmall)
+            Text(d.role.label(), style = MaterialTheme.typography.titleSmall)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
-                    d.hoursText, { vm.update(i, d.copy(hoursText = it)) }, label = { Text("Hours") },
+                    d.hoursText, { vm.update(i, d.copy(hoursText = it)) }, label = { Text(stringResource(R.string.common_hours)) },
                     placeholder = { Text("123:45") }, singleLine = true, visualTransformation = ColonTransformation,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     supportingText = {
@@ -127,22 +133,22 @@ fun OpeningBalancesScreen() {
                     modifier = Modifier.weight(1f),
                 )
                 OutlinedTextField(
-                    d.flightsText, { vm.update(i, d.copy(flightsText = it.filter(Char::isDigit))) }, label = { Text("Flights") },
+                    d.flightsText, { vm.update(i, d.copy(flightsText = it.filter(Char::isDigit))) }, label = { Text(stringResource(R.string.common_flights)) },
                     singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f),
                 )
             }
             Box(Modifier.fillMaxWidth()) {
                 OutlinedTextField(
-                    d.asOf?.shortText() ?: "", {}, readOnly = true, label = { Text("As of") },
-                    placeholder = { Text("Date of the last paper entry") }, modifier = Modifier.fillMaxWidth(),
+                    d.asOf?.shortText() ?: "", {}, readOnly = true, label = { Text(stringResource(R.string.common_as_of)) },
+                    placeholder = { Text(stringResource(R.string.balances_date_hint)) }, modifier = Modifier.fillMaxWidth(),
                 )
                 Box(Modifier.matchParentSize().clickable { pickingFor = i })
             }
         }
-        vm.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        Button(onClick = { vm.save() }, modifier = Modifier.fillMaxWidth()) { Text("Save") }
-        vm.message?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+        vm.error?.let { Text(it.text(), color = MaterialTheme.colorScheme.error) }
+        Button(onClick = { vm.save() }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.common_save)) }
+        vm.message?.let { Text(it.text(), style = MaterialTheme.typography.bodySmall) }
     }
 
     pickingFor?.let { i ->
@@ -156,10 +162,10 @@ fun OpeningBalancesScreen() {
                 TextButton(onClick = {
                     vm.update(i, d.copy(asOf = state.selectedDateMillis?.let { Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate() }))
                     pickingFor = null
-                }) { Text("OK") }
+                }) { Text(stringResource(R.string.common_ok)) }
             },
             dismissButton = {
-                TextButton(onClick = { vm.update(i, d.copy(asOf = null)); pickingFor = null }) { Text("Clear") }
+                TextButton(onClick = { vm.update(i, d.copy(asOf = null)); pickingFor = null }) { Text(stringResource(R.string.common_clear)) }
             },
         ) { DatePicker(state) }
     }

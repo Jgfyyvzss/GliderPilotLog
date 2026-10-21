@@ -6,8 +6,10 @@ import androidx.test.platform.app.InstrumentationRegistry
 import io.github.jgfyyvzss.gliderpilotlog.core.ClockTime
 import io.github.jgfyyvzss.gliderpilotlog.core.FlightFilter
 import io.github.jgfyyvzss.gliderpilotlog.core.Keys
+import io.github.jgfyyvzss.gliderpilotlog.core.MsgKey
 import io.github.jgfyyvzss.gliderpilotlog.core.Role
 import io.github.jgfyyvzss.gliderpilotlog.core.RoleTotal
+import io.github.jgfyyvzss.gliderpilotlog.core.msg
 import java.time.LocalDate
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -111,6 +113,6 @@ class TotalsQueryTest {
 
     @Test fun negativeBalancesAreRejected() = runTest {
         val balances = repo.observeOpeningBalances().first().map { it.copy(minutes = -1) }
-        assertEquals(SaveResult.Rejected("Balances cannot be negative"), repo.saveOpeningBalances(balances))
+        assertEquals(SaveResult.Rejected(msg(MsgKey.BALANCES_NEGATIVE)), repo.saveOpeningBalances(balances))
     }
 }

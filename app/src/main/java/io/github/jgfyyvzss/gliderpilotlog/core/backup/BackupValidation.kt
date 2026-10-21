@@ -2,7 +2,10 @@ package io.github.jgfyyvzss.gliderpilotlog.core.backup
 
 import io.github.jgfyyvzss.gliderpilotlog.core.ClockTime
 import io.github.jgfyyvzss.gliderpilotlog.core.Durations
+import io.github.jgfyyvzss.gliderpilotlog.core.Msg
+import io.github.jgfyyvzss.gliderpilotlog.core.MsgKey
 import io.github.jgfyyvzss.gliderpilotlog.core.Role
+import io.github.jgfyyvzss.gliderpilotlog.core.msg
 import java.time.LocalDate
 
 /**
@@ -13,22 +16,25 @@ object BackupValidation {
     private val sources = setOf("MANUAL", "IGC", "CSV")
     private val roles = Role.entries.map { it.name }.toSet()
 
-    fun validate(file: BackupFile): List<String> {
-        val p = mutableListOf<String>()
-        fun ts(what: String, value: String?, nullable: Boolean = false) {
-            if (value == null) { if (!nullable) p += "$what has no time"; return }
-            if (BackupTime.fromIso(value) == null) p += "$what has an unreadable time: $value"
+    fun validate(file: BackupFile): List<Msg> {
+        val p = mutableListOf<Msg>()
+        fun ts(what: Msg, value: String?, nullable: Boolean = false) {
+            if (value == null) {
+                if (!nullable) p += msg(MsgKey.BK_NO_TIME, what)
+                return
+            }
+            if (BackupTime.fromIso(value) == null) p += msg(MsgKey.BK_BAD_TIME, what, value)
         }
-        fun <T> dupIds(table: String, rows: List<T>, id: (T) -> String) {
-            rows.groupingBy(id).eachCount().filter { it.value > 1 }.keys.forEach { p += "$table: id $it appears more than once" }
+        fun <T> dupIds(table: MsgKey, rows: List<T>, id: (T) -> String) {
+            rows.groupingBy(id).eachCount().filter { it.value > 1 }.keys.forEach { p += msg(MsgKey.BK_DUPLICATE_ID, msg(table), it) }
         }
 
-        dupIds("Launch types", file.launchTypes) { it.id }
-        dupIds("Clubs", file.clubs) { it.id }
-        dupIds("Airfields", file.airfields) { it.id }
-        dupIds("Gliders", file.gliders) { it.id }
-        dupIds("Flights", file.flights) { it.id }
-        dupIds("Import batches", file.importBatches) { it.id }
+        dupIds(MsgKey.BK_TABLE_LAUNCH_TYPES, file.launchTypes) { it.id }
+        dupIds(MsgKey.BK_TABLE_CLUBS, file.clubs) { it.id }
+        dupIds(MsgKey.BK_TABLE_AIRFIELDS, file.airfields) { it.id }
+        dupIds(MsgKey.BK_TABLE_GLIDERS, file.gliders) { it.id }
+        dupIds(MsgKey.BK_TABLE_FLIGHTS, file.flights) { it.id }
+        dupIds(MsgKey.BK_TABLE_IMPORT_BATCHES, file.importBatches) { it.id }
 
         val launchTypeIds = file.launchTypes.map { it.id }.toSet()
         val clubIds = file.clubs.map { it.id }.toSet()
@@ -36,78 +42,81 @@ object BackupValidation {
         val gliderIds = file.gliders.map { it.id }.toSet()
 
         file.launchTypes.forEach { t ->
-            if (t.name.isBlank()) p += "Launch type ${t.id} has no name"
-            ts("Launch type ${t.name}", t.updatedAt); ts("Launch type ${t.name}", t.deletedAt, nullable = true)
+            val n = msg(MsgKey.BK_LAUNCH_TYPE, t.name.ifBlank { t.id })
+            if (t.name.isBlank()) p += msg(MsgKey.BK_NO_NAME, n)
+            ts(n, t.updatedAt); ts(n, t.deletedAt, nullable = true)
         }
         file.clubs.forEach { c ->
-            if (c.name.isBlank()) p += "Club ${c.id} has no name"
-            ts("Club ${c.name}", c.updatedAt); ts("Club ${c.name}", c.deletedAt, nullable = true)
+            val n = msg(MsgKey.BK_CLUB, c.name.ifBlank { c.id })
+            if (c.name.isBlank()) p += msg(MsgKey.BK_NO_NAME, n)
+            ts(n, c.updatedAt); ts(n, c.deletedAt, nullable = true)
         }
         file.airfields.forEach { a ->
-            val n = "Airfield ${a.name}"
-            if (a.name.isBlank()) p += "Airfield ${a.id} has no name"
-            a.clubIds.filter { it !in clubIds }.forEach { p += "$n refers to a missing club $it" }
-            if (a.defaultClubId != null && a.defaultClubId !in a.clubIds) p += "$n has a default club that is not one of its clubs"
-            if (a.defaultLaunchTypeId != null && a.defaultLaunchTypeId !in launchTypeIds) p += "$n refers to a missing launch type"
-            if ((a.latitude == null) != (a.longitude == null)) p += "$n has only one coordinate"
-            a.latitude?.let { if (it !in -90.0..90.0) p += "$n has latitude out of range" }
-            a.longitude?.let { if (it !in -180.0..180.0) p += "$n has longitude out of range" }
+            val n = msg(MsgKey.BK_AIRFIELD, a.name.ifBlank { a.id })
+            if (a.name.isBlank()) p += msg(MsgKey.BK_NO_NAME, n)
+            a.clubIds.filter { it !in clubIds }.forEach { p += msg(MsgKey.BK_MISSING_CLUB, n, it) }
+            if (a.defaultClubId != null && a.defaultClubId !in a.clubIds) p += msg(MsgKey.BK_DEFAULT_CLUB, n)
+            if (a.defaultLaunchTypeId != null && a.defaultLaunchTypeId !in launchTypeIds) p += msg(MsgKey.BK_MISSING_LAUNCH_TYPE, n)
+            if ((a.latitude == null) != (a.longitude == null)) p += msg(MsgKey.BK_ONE_COORDINATE, n)
+            a.latitude?.let { if (it !in -90.0..90.0) p += msg(MsgKey.BK_LATITUDE_RANGE, n) }
+            a.longitude?.let { if (it !in -180.0..180.0) p += msg(MsgKey.BK_LONGITUDE_RANGE, n) }
             ts(n, a.updatedAt); ts(n, a.deletedAt, nullable = true)
         }
         file.gliders.forEach { g ->
-            if (g.registration.isBlank()) p += "Glider ${g.id} has no registration"
-            g.logbookTotalDate?.let { if (parseDate(it) == null) p += "Glider ${g.registration} has an unreadable logbook date" }
-            ts("Glider ${g.registration}", g.updatedAt); ts("Glider ${g.registration}", g.deletedAt, nullable = true)
+            val n = msg(MsgKey.BK_GLIDER, g.registration.ifBlank { g.id })
+            if (g.registration.isBlank()) p += msg(MsgKey.BK_NO_REGISTRATION, n)
+            g.logbookTotalDate?.let { if (parseDate(it) == null) p += msg(MsgKey.BK_BAD_LOGBOOK_DATE, n) }
+            ts(n, g.updatedAt); ts(n, g.deletedAt, nullable = true)
         }
         file.flights.forEach { f ->
-            val n = "Flight ${f.logNo}"
-            if (f.logNo <= 0) p += "$n: the log number must be above 0"
-            if (parseDate(f.date) == null) p += "$n: unreadable date ${f.date}"
-            if (!Durations.isValidFlightDuration(f.durationMinutes)) p += "$n: duration ${f.durationMinutes} minutes is out of range"
-            if (f.gliderId !in gliderIds) p += "$n refers to a missing glider"
-            if (f.airfieldId !in airfieldIds) p += "$n refers to a missing airfield"
-            if (f.clubId != null && f.clubId !in clubIds) p += "$n refers to a missing club"
-            if (f.launchTypeId !in launchTypeIds) p += "$n refers to a missing launch type"
-            if (f.landingAirfieldId != null && f.landingAirfieldId !in airfieldIds) p += "$n refers to a missing landing airfield"
-            if (f.landingAirfieldId != null && f.landingPlace != null) p += "$n has both a landing airfield and a landing place"
-            if (f.role !in roles) p += "$n: unknown role ${f.role}"
-            if (f.source !in sources) p += "$n: unknown source ${f.source}"
-            if (f.picName.isBlank()) p += "$n has no pilot in command"
-            val launch = f.launchTime?.let { ClockTime.parse(it) ?: run { p += "$n: unreadable launch time"; null } }
-            val landing = f.landingTime?.let { ClockTime.parse(it) ?: run { p += "$n: unreadable landing time"; null } }
-            if (launch != null && landing != null && ClockTime.minutesBetween(launch, landing) == null) p += "$n: landing is not after launch"
+            val n = msg(MsgKey.BK_FLIGHT, f.logNo)
+            if (f.logNo <= 0) p += msg(MsgKey.BK_LOG_NO_POSITIVE, n)
+            if (parseDate(f.date) == null) p += msg(MsgKey.BK_BAD_DATE, n, f.date)
+            if (!Durations.isValidFlightDuration(f.durationMinutes)) p += msg(MsgKey.BK_DURATION_RANGE, n, f.durationMinutes)
+            if (f.gliderId !in gliderIds) p += msg(MsgKey.BK_MISSING_GLIDER, n)
+            if (f.airfieldId !in airfieldIds) p += msg(MsgKey.BK_MISSING_AIRFIELD, n)
+            if (f.clubId != null && f.clubId !in clubIds) p += msg(MsgKey.BK_MISSING_CLUB, n, f.clubId)
+            if (f.launchTypeId !in launchTypeIds) p += msg(MsgKey.BK_MISSING_LAUNCH_TYPE, n)
+            if (f.landingAirfieldId != null && f.landingAirfieldId !in airfieldIds) p += msg(MsgKey.BK_MISSING_LANDING_AIRFIELD, n)
+            if (f.landingAirfieldId != null && f.landingPlace != null) p += msg(MsgKey.BK_BOTH_LANDING, n)
+            if (f.role !in roles) p += msg(MsgKey.BK_UNKNOWN_ROLE, n, f.role)
+            if (f.source !in sources) p += msg(MsgKey.BK_UNKNOWN_SOURCE, n, f.source)
+            if (f.picName.isBlank()) p += msg(MsgKey.BK_NO_PIC, n)
+            val launch = f.launchTime?.let { ClockTime.parse(it) ?: run { p += msg(MsgKey.BK_BAD_LAUNCH_TIME, n); null } }
+            val landing = f.landingTime?.let { ClockTime.parse(it) ?: run { p += msg(MsgKey.BK_BAD_LANDING_TIME, n); null } }
+            if (launch != null && landing != null && ClockTime.minutesBetween(launch, landing) == null) p += msg(MsgKey.BK_LANDING_BEFORE_LAUNCH, n)
             ts(n, f.updatedAt); ts(n, f.deletedAt, nullable = true)
         }
         file.openingBalances.forEach { b ->
-            if (b.role !in roles) p += "Opening balance for unknown role ${b.role}"
-            if (b.minutes < 0 || b.flights < 0) p += "Opening balance for ${b.role} is negative"
-            b.asOfDate?.let { if (parseDate(it) == null) p += "Opening balance for ${b.role} has an unreadable date" }
-            ts("Opening balance ${b.role}", b.updatedAt)
+            if (b.role !in roles) p += msg(MsgKey.BK_BALANCE_ROLE, b.role)
+            if (b.minutes < 0 || b.flights < 0) p += msg(MsgKey.BK_BALANCE_NEGATIVE, b.role)
+            b.asOfDate?.let { if (parseDate(it) == null) p += msg(MsgKey.BK_BALANCE_DATE, b.role) }
+            ts(msg(MsgKey.BK_BALANCE, b.role), b.updatedAt)
         }
         file.openingBalances.groupingBy { it.role }.eachCount().filter { it.value > 1 }.keys
-            .forEach { p += "Opening balance for $it appears more than once" }
-        file.importBatches.forEach { ts("Import batch ${it.fileName}", it.createdAt) }
+            .forEach { p += msg(MsgKey.BK_BALANCE_DUPLICATE, it) }
+        file.importBatches.forEach { ts(msg(MsgKey.BK_BATCH, it.fileName), it.createdAt) }
 
         p += liveCollisions(file)
         return p
     }
 
     /** Live rows that would break a uniqueness rule, such as two different flights with one log number. */
-    fun liveCollisions(file: BackupFile): List<String> {
-        val p = mutableListOf<String>()
+    fun liveCollisions(file: BackupFile): List<Msg> {
+        val p = mutableListOf<Msg>()
         val gliderReg = file.gliders.associate { it.id to it.registration }
+        fun describe(f: BackupFlight) = msg(MsgKey.FLIGHT_ON, parseDate(f.date) ?: f.date, gliderReg[f.gliderId] ?: "?")
         file.flights.filter { it.deletedAt == null }.groupBy { it.logNo }.filter { it.value.size > 1 }.forEach { (logNo, flights) ->
-            val which = flights.joinToString(" and ") { "the flight on ${it.date} in ${gliderReg[it.gliderId] ?: "?"}" }
-            p += "Log number $logNo is used by two different flights: $which"
+            p += msg(MsgKey.BK_LOG_NO_COLLISION, logNo, describe(flights[0]), describe(flights[1]))
         }
-        fun <T> unique(what: String, rows: List<T>, live: (T) -> Boolean, key: (T) -> String, label: (T) -> String) {
+        fun <T> unique(rows: List<T>, live: (T) -> Boolean, key: (T) -> String, what: (T) -> Msg) {
             rows.filter(live).groupBy(key).filter { it.value.size > 1 }.values
-                .forEach { same -> p += "$what ${label(same.first())} appears more than once with different ids" }
+                .forEach { same -> p += msg(MsgKey.BK_DUPLICATE_KEY, what(same.first())) }
         }
-        unique("Glider", file.gliders, { it.deletedAt == null }, { it.registrationKey }, { it.registration })
-        unique("Airfield", file.airfields, { it.deletedAt == null }, { it.nameKey }, { it.name })
-        unique("Club", file.clubs, { it.deletedAt == null }, { it.nameKey }, { it.name })
-        unique("Launch type", file.launchTypes, { it.deletedAt == null }, { it.nameKey }, { it.name })
+        unique(file.gliders, { it.deletedAt == null }, { it.registrationKey }, { msg(MsgKey.BK_GLIDER, it.registration) })
+        unique(file.airfields, { it.deletedAt == null }, { it.nameKey }, { msg(MsgKey.BK_AIRFIELD, it.name) })
+        unique(file.clubs, { it.deletedAt == null }, { it.nameKey }, { msg(MsgKey.BK_CLUB, it.name) })
+        unique(file.launchTypes, { it.deletedAt == null }, { it.nameKey }, { msg(MsgKey.BK_LAUNCH_TYPE, it.name) })
         return p
     }
 

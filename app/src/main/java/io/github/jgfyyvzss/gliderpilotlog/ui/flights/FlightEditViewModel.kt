@@ -11,6 +11,7 @@ import io.github.jgfyyvzss.gliderpilotlog.core.FlightField
 import io.github.jgfyyvzss.gliderpilotlog.core.FlightRules
 import io.github.jgfyyvzss.gliderpilotlog.core.FlightValidation
 import io.github.jgfyyvzss.gliderpilotlog.core.LandingChoice
+import io.github.jgfyyvzss.gliderpilotlog.core.Msg
 import io.github.jgfyyvzss.gliderpilotlog.core.PicName
 import io.github.jgfyyvzss.gliderpilotlog.core.Role
 import io.github.jgfyyvzss.gliderpilotlog.data.ClubEntity
@@ -32,9 +33,9 @@ class FlightEditViewModel(
 ) : ViewModel() {
     var draft by mutableStateOf(FlightDraft())
         private set
-    var errors by mutableStateOf<Map<FlightField, String>>(emptyMap())
+    var errors by mutableStateOf<Map<FlightField, Msg>>(emptyMap())
         private set
-    var warnings by mutableStateOf<List<String>>(emptyList())
+    var warnings by mutableStateOf<List<Msg>>(emptyList())
         private set
     /** The clubs linked to the chosen airfield. */
     var airfieldClubs by mutableStateOf<List<ClubEntity>>(emptyList())
@@ -140,7 +141,7 @@ class FlightEditViewModel(
     }
 
     /** Creates a glider from the flight form and selects it. Reports a rejection message, or null on success. */
-    fun addGlider(registration: String, type: String, onResult: (String?) -> Unit) = viewModelScope.launch {
+    fun addGlider(registration: String, type: String, onResult: (Msg?) -> Unit) = viewModelScope.launch {
         when (val r = repo.saveGlider(null, registration, type, archived = false)) {
             is SaveResult.Saved -> { setGlider(r.id); onResult(null) }
             is SaveResult.Rejected -> onResult(r.message)
@@ -148,7 +149,7 @@ class FlightEditViewModel(
     }
 
     /** Creates an airfield by name from the flight form and selects it. Coordinates and clubs are added later. */
-    fun addAirfield(name: String, onResult: (String?) -> Unit) = viewModelScope.launch {
+    fun addAirfield(name: String, onResult: (Msg?) -> Unit) = viewModelScope.launch {
         when (val r = repo.saveAirfield(null, name, null, null, null, null, emptyList(), archived = false)) {
             is SaveResult.Saved -> { setAirfield(r.id); onResult(null) }
             is SaveResult.Rejected -> onResult(r.message)

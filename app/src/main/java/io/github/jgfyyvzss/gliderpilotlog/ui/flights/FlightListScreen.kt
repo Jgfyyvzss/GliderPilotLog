@@ -33,6 +33,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import io.github.jgfyyvzss.gliderpilotlog.R
+import io.github.jgfyyvzss.gliderpilotlog.ui.label
+import io.github.jgfyyvzss.gliderpilotlog.ui.launchTypeName
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -104,7 +108,7 @@ fun FlightListScreen(onOpen: (String) -> Unit, onNew: () -> Unit) {
         Column(Modifier.fillMaxSize()) {
             FilterBar()
             if (items.itemCount == 0) {
-                Text(if (filter.isActive) "No flights match the filter." else "No flights yet. Tap + to log one.", Modifier.padding(16.dp))
+                Text(stringResource(if (filter.isActive) R.string.flights_none_match else R.string.flights_none_yet), Modifier.padding(16.dp))
             }
             LazyColumn(Modifier.fillMaxSize()) {
                 items(
@@ -128,14 +132,14 @@ fun FlightListScreen(onOpen: (String) -> Unit, onNew: () -> Unit) {
             }
         }
         FloatingActionButton(onClick = onNew, modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
-            Icon(Icons.Default.Add, contentDescription = "New flight")
+            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.home_new_flight))
         }
     }
 
     vm.chooseGlider?.let { (date, gliders) ->
         AlertDialog(
             onDismissRequest = { vm.chooseGlider = null },
-            title = { Text("Which glider?") },
+            title = { Text(stringResource(R.string.flights_which_glider)) },
             text = {
                 Column {
                     gliders.forEach { g ->
@@ -147,7 +151,7 @@ fun FlightListScreen(onOpen: (String) -> Unit, onNew: () -> Unit) {
                 }
             },
             confirmButton = {},
-            dismissButton = { TextButton(onClick = { vm.chooseGlider = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { vm.chooseGlider = null }) { Text(stringResource(R.string.common_cancel)) } },
         )
     }
     vm.calculator?.let { (gliderId, date) -> LogbookCalculatorSheet(gliderId, date) { vm.calculator = null } }
@@ -160,15 +164,18 @@ private fun DayHeader(isoDate: String, onLogbook: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(isoDateShort(isoDate), Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
-        TextButton(onClick = onLogbook) { Text("Aircraft logbook") }
+        TextButton(onClick = onLogbook) { Text(stringResource(R.string.flights_aircraft_logbook)) }
     }
 }
+
 /** For example `340 · 17/10/26 · FQM Hornet`. */
 fun FlightListRow.firstLine(): String =
     listOf(logNo.toString(), isoDateShort(date), "$registration $gliderType".trim()).joinToString(" · ")
 
-/** For example `YMBT · Winch · PIC · 4:31`. */
+/** For example `YMBT · Winch · PIC · 4:31`, with role and seeded launch type in the pilot's language. */
+@Composable
 fun FlightListRow.secondLine(display: HoursDisplay = HoursDisplay.HM): String {
-    val roleLabel = runCatching { Role.valueOf(role).label }.getOrDefault(role)
-    return listOf(airfieldName, launchTypeName, roleLabel, HoursFormat.format(durationMinutes, display)).joinToString(" · ")
+    val roleLabel = Role.entries.firstOrNull { it.name == role }?.label() ?: role
+    return listOf(airfieldName, launchTypeName(launchTypeId, launchTypeName), roleLabel, HoursFormat.format(durationMinutes, display))
+        .joinToString(" · ")
 }

@@ -33,6 +33,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import io.github.jgfyyvzss.gliderpilotlog.R
+import io.github.jgfyyvzss.gliderpilotlog.ui.UiText
+import io.github.jgfyyvzss.gliderpilotlog.ui.gliders.pickerLabel
+import io.github.jgfyyvzss.gliderpilotlog.ui.text
+import io.github.jgfyyvzss.gliderpilotlog.ui.uiText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -77,7 +83,7 @@ class LogbookCalculatorViewModel(private val repo: LogbookRepository, private va
     var beforeText by mutableStateOf("")
     var beforeFlightsText by mutableStateOf("")
     var date by mutableStateOf(day ?: LocalDate.now())
-    var error by mutableStateOf<String?>(null)
+    var error by mutableStateOf<UiText?>(null)
     /** Set once the pilot has seen the double-add warning for the current figures. */
     var warningSeen by mutableStateOf(false)
         private set
@@ -132,13 +138,13 @@ class LogbookCalculatorViewModel(private val repo: LogbookRepository, private va
         get() = LogbookCalculator.mayAlreadyInclude(glider?.logbookTotalDate?.let(LocalDate::parse), date)
 
     fun save() {
-        val c = calc() ?: run { error = "Enter hours as digits, H:MM or decimal hours, and flights as whole numbers"; return }
-        if (beforeText.isBlank()) { error = "Enter the logbook total before this flying"; return }
+        val c = calc() ?: run { error = uiText(R.string.logbook_bad_figures); return }
+        if (beforeText.isBlank()) { error = uiText(R.string.logbook_need_before); return }
         if (mayAlreadyInclude && !warningSeen) { warningSeen = true; return }
         viewModelScope.launch {
             when (val r = repo.saveLogbookTotal(gliderId, c.newMinutes, c.newFlights, date)) {
                 is SaveResult.Saved -> saved = true
-                is SaveResult.Rejected -> error = r.message
+                is SaveResult.Rejected -> error = UiText.Message(r.message)
             }
         }
     }
@@ -165,12 +171,12 @@ fun LogbookCalculatorSheet(gliderId: String, day: LocalDate?, onDismiss: () -> U
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             val g = vm.glider ?: return@Column
-            Text("Aircraft logbook: ${g.registration}${if (g.type.isNotBlank()) ", ${g.type}" else ""}", style = MaterialTheme.typography.titleMedium)
-            Text("Adds a day's flying to the total in the glider's own logbook. Your own totals are not changed.",
+            Text(stringResource(R.string.logbook_title, g.pickerLabel()), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.logbook_intro),
                 style = MaterialTheme.typography.bodySmall)
 
             if (!vm.isManual) {
-                Text("Flights on ${vm.date.shortText()}", style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.logbook_flights_on, vm.date.shortText()), style = MaterialTheme.typography.titleSmall)
                 vm.flights.forEach { f ->
                     Row(Modifier.fillMaxWidth().clickable { vm.toggle(f.id) }, verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(checked = f.id in vm.ticked, onCheckedChange = { vm.toggle(f.id) })
@@ -181,37 +187,37 @@ fun LogbookCalculatorSheet(gliderId: String, day: LocalDate?, onDismiss: () -> U
                 }
             }
 
-            Text(if (vm.isManual) "Flying to add" else "Day total", style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(if (vm.isManual) R.string.logbook_flying_to_add else R.string.logbook_day_total), style = MaterialTheme.typography.titleSmall)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(vm.dayText, { vm.dayText = it; vm.changed() }, label = { Text("Hours") }, singleLine = true,
+                OutlinedTextField(vm.dayText, { vm.dayText = it; vm.changed() }, label = { Text(stringResource(R.string.common_hours)) }, singleLine = true,
                     keyboardOptions = decimal, supportingText = hint(vm.dayText, display), visualTransformation = ColonTransformation, modifier = Modifier.weight(1f))
-                OutlinedTextField(vm.dayFlightsText, { vm.dayFlightsText = it.filter(Char::isDigit); vm.changed() }, label = { Text("Flights") },
+                OutlinedTextField(vm.dayFlightsText, { vm.dayFlightsText = it.filter(Char::isDigit); vm.changed() }, label = { Text(stringResource(R.string.common_flights)) },
                     singleLine = true, keyboardOptions = number, modifier = Modifier.weight(1f))
             }
-            Text("Extra flying not in this app", style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.logbook_extra), style = MaterialTheme.typography.titleSmall)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(vm.extraText, { vm.extraText = it; vm.changed() }, label = { Text("Hours") }, singleLine = true,
+                OutlinedTextField(vm.extraText, { vm.extraText = it; vm.changed() }, label = { Text(stringResource(R.string.common_hours)) }, singleLine = true,
                     keyboardOptions = decimal, supportingText = hint(vm.extraText, display), visualTransformation = ColonTransformation, modifier = Modifier.weight(1f))
-                OutlinedTextField(vm.extraFlightsText, { vm.extraFlightsText = it.filter(Char::isDigit); vm.changed() }, label = { Text("Flights") },
+                OutlinedTextField(vm.extraFlightsText, { vm.extraFlightsText = it.filter(Char::isDigit); vm.changed() }, label = { Text(stringResource(R.string.common_flights)) },
                     singleLine = true, keyboardOptions = number, modifier = Modifier.weight(1f))
             }
 
-            Text("Logbook total before", style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.logbook_before), style = MaterialTheme.typography.titleSmall)
             Text(
-                g.logbookTotalDate?.let { "Last entered for ${LocalDate.parse(it).shortText()}. Overwrite it if the aircraft logbook differs." }
-                    ?: "No total stored yet. Enter the last total from the aircraft logbook.",
+                g.logbookTotalDate?.let { stringResource(R.string.logbook_before_dated, LocalDate.parse(it).shortText()) }
+                    ?: stringResource(R.string.logbook_before_none),
                 style = MaterialTheme.typography.bodySmall,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(vm.beforeText, { vm.beforeText = it; vm.changed() }, label = { Text("Hours") }, singleLine = true,
+                OutlinedTextField(vm.beforeText, { vm.beforeText = it; vm.changed() }, label = { Text(stringResource(R.string.common_hours)) }, singleLine = true,
                     keyboardOptions = decimal, supportingText = hint(vm.beforeText, display), visualTransformation = ColonTransformation, modifier = Modifier.weight(1f))
                 OutlinedTextField(vm.beforeFlightsText, { vm.beforeFlightsText = it.filter(Char::isDigit); vm.changed() },
-                    label = { Text("Flights (optional)") }, singleLine = true, keyboardOptions = number, modifier = Modifier.weight(1f))
+                    label = { Text(stringResource(R.string.common_flights_optional)) }, singleLine = true, keyboardOptions = number, modifier = Modifier.weight(1f))
             }
 
             if (vm.isManual) {
                 Box(Modifier.fillMaxWidth()) {
-                    OutlinedTextField(vm.date.shortText(), {}, readOnly = true, label = { Text("The new total applies to") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(vm.date.shortText(), {}, readOnly = true, label = { Text(stringResource(R.string.logbook_applies_to)) }, modifier = Modifier.fillMaxWidth())
                     Box(Modifier.matchParentSize().clickable { pickDate = true })
                 }
             }
@@ -219,22 +225,27 @@ fun LogbookCalculatorSheet(gliderId: String, day: LocalDate?, onDismiss: () -> U
             HorizontalDivider()
             val c = vm.calc()
             Text(
-                if (c == null) "New total: check the figures above"
-                else "New total: ${HoursFormat.format(c.newMinutes, display)}" + (c.newFlights?.let { ", $it flights" } ?: ""),
+                when {
+                    c == null -> stringResource(R.string.logbook_new_total_check)
+                    c.newFlights == null -> stringResource(R.string.logbook_new_total, HoursFormat.format(c.newMinutes, display))
+                    else -> stringResource(R.string.logbook_new_total_flights, HoursFormat.format(c.newMinutes, display), c.newFlights!!)
+                },
                 style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
             )
             if (vm.mayAlreadyInclude) {
                 Text(
-                    "The stored total is dated ${g.logbookTotalDate?.let { LocalDate.parse(it).shortText() }}, on or after " +
-                        "${vm.date.shortText()}, so this day may already be included. Adding a day twice corrupts the total.",
+                    stringResource(
+                        R.string.logbook_double_add,
+                        g.logbookTotalDate?.let { LocalDate.parse(it).shortText() } ?: "", vm.date.shortText(),
+                    ),
                     color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium,
                 )
             }
-            vm.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            vm.error?.let { Text(it.text(), color = MaterialTheme.colorScheme.error) }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Close") }
+                OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.common_close)) }
                 Button(onClick = vm::save, enabled = c != null, modifier = Modifier.weight(1f)) {
-                    Text(if (vm.mayAlreadyInclude && vm.warningSeen) "Save anyway" else "Save new total")
+                    Text(stringResource(if (vm.mayAlreadyInclude && vm.warningSeen) R.string.flight_save_anyway else R.string.logbook_save))
                 }
             }
         }
@@ -248,9 +259,9 @@ fun LogbookCalculatorSheet(gliderId: String, day: LocalDate?, onDismiss: () -> U
                 TextButton(onClick = {
                     state.selectedDateMillis?.let { vm.date = Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate(); vm.changed() }
                     pickDate = false
-                }) { Text("OK") }
+                }) { Text(stringResource(R.string.common_ok)) }
             },
-            dismissButton = { TextButton(onClick = { pickDate = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { pickDate = false }) { Text(stringResource(R.string.common_cancel)) } },
         ) { DatePicker(state) }
     }
 }
@@ -258,7 +269,7 @@ fun LogbookCalculatorSheet(gliderId: String, day: LocalDate?, onDismiss: () -> U
 /** Shows what a typed figure means, for example 123456 as = 1234:56. */
 private fun hint(text: String, display: HoursDisplay): (@Composable () -> Unit)? {
     if (text.isBlank()) return null
-    val m = LogbookCalculator.parseHours(text) ?: return { Text("Digits, H:MM or decimal hours") }
+    val m = LogbookCalculator.parseHours(text) ?: return { Text(stringResource(R.string.logbook_hours_hint)) }
     val shown = HoursFormat.format(m, display)
     // The field already shows the colon, so the result is only spelled out when it reads differently.
     if (ColonTransformation.display(text.trim()) == shown) return null

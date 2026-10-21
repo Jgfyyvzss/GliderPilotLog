@@ -26,6 +26,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import io.github.jgfyyvzss.gliderpilotlog.R
+import io.github.jgfyyvzss.gliderpilotlog.data.weglide.AircraftUpdate
+import io.github.jgfyyvzss.gliderpilotlog.ui.UiText
+import io.github.jgfyyvzss.gliderpilotlog.ui.text
+import io.github.jgfyyvzss.gliderpilotlog.ui.uiText
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.jgfyyvzss.gliderpilotlog.core.weglide.AircraftSearch
@@ -42,16 +48,17 @@ fun AircraftListSection() {
     val state by app.aircraft.list.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
-    var message by rememberSaveable { mutableStateOf<String?>(null) }
+    var message by remember { mutableStateOf<UiText?>(null) }
     LaunchedEffect(Unit) { app.aircraft.load() }
 
     ListItem(
-        headlineContent = { Text("WeGlide aircraft list") },
+        headlineContent = { Text(stringResource(R.string.weglide_list)) },
         supportingContent = {
             Text(
                 state?.let { s ->
-                    "${s.aircraft.size} aircraft, " + (s.updatedAt?.let { "updated ${lastBackupText(it)}" } ?: "the copy bundled with the app")
-                } ?: "Loading",
+                    s.updatedAt?.let { stringResource(R.string.weglide_list_updated, s.aircraft.size, lastBackupText(it)) }
+                        ?: stringResource(R.string.weglide_list_bundled, s.aircraft.size)
+                } ?: stringResource(R.string.weglide_loading),
             )
         },
         trailingContent = {
@@ -59,13 +66,16 @@ fun AircraftListSection() {
                 busy = true
                 message = null
                 scope.launch {
-                    message = app.aircraft.update().fold({ "Updated: $it aircraft" }, { "Not updated: ${it.message}" })
+                    message = when (val r = app.aircraft.update()) {
+                        is AircraftUpdate.Updated -> uiText(R.string.weglide_updated, r.count)
+                        is AircraftUpdate.Failed -> uiText(R.string.weglide_not_updated, r.message)
+                    }
                     busy = false
                 }
-            }, enabled = !busy) { Text(if (busy) "Updating" else "Update") }
+            }, enabled = !busy) { Text(stringResource(if (busy) R.string.weglide_updating else R.string.weglide_update)) }
         },
     )
-    message?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+    message?.let { Text(it.text(), style = MaterialTheme.typography.bodySmall) }
 }
 
 /**
@@ -84,19 +94,19 @@ fun WeGlideTypeSection(gliderId: String, onTypeChanged: (String) -> Unit) {
     val current = g.weglideAircraftId?.let { id -> state?.aircraft?.firstOrNull { it.id == id } }
 
     HorizontalDivider()
-    Text("WeGlide type", style = MaterialTheme.typography.titleMedium)
+    Text(stringResource(R.string.weglide_type), style = MaterialTheme.typography.titleMedium)
     Text(
         when {
-            g.weglideAircraftId == null -> "Not set. WeGlide upload needs it, so WeGlide does not have to guess the variant."
-            current == null -> "WeGlide aircraft ${g.weglideAircraftId}, not in the current list"
+            g.weglideAircraftId == null -> stringResource(R.string.weglide_type_not_set)
+            current == null -> stringResource(R.string.weglide_type_unknown, g.weglideAircraftId.toString())
             else -> current.label
         },
     )
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilledTonalButton(onClick = { choosing = true }, modifier = Modifier.weight(1f)) { Text("Choose") }
+        FilledTonalButton(onClick = { choosing = true }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.common_choose)) }
         if (g.weglideAircraftId != null) {
             OutlinedButton(onClick = { scope.launch { app.repository.setWeGlideAircraft(gliderId, null) } }, modifier = Modifier.weight(1f)) {
-                Text("Clear")
+                Text(stringResource(R.string.common_clear))
             }
         }
     }
@@ -136,24 +146,23 @@ private fun AircraftPicker(
             title = { Text(pick.label) },
             text = {
                 Text(
-                    if (currentType == pick.name) "The type stays ${pick.name}."
-                    else "Type will change from ${currentType.ifBlank { "(blank)" }} to ${pick.name}. The old text is not kept, " +
-                        "but the type stays editable by hand.",
+                    if (currentType == pick.name) stringResource(R.string.weglide_type_stays, pick.name)
+                    else stringResource(R.string.weglide_type_changes, currentType.ifBlank { stringResource(R.string.weglide_blank) }, pick.name),
                 )
             },
-            confirmButton = { TextButton(onClick = { onPick(pick) }) { Text("Save") } },
-            dismissButton = { TextButton(onClick = { confirming = null }) { Text("Back") } },
+            confirmButton = { TextButton(onClick = { onPick(pick) }) { Text(stringResource(R.string.common_save)) } },
+            dismissButton = { TextButton(onClick = { confirming = null }) { Text(stringResource(R.string.common_back)) } },
         )
         return
     }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("WeGlide aircraft") },
+        title = { Text(stringResource(R.string.weglide_aircraft)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(query, { query = it }, label = { Text("Search") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                if (results.isEmpty()) Text("No match. Try fewer letters, for example ASK.")
+                OutlinedTextField(query, { query = it }, label = { Text(stringResource(R.string.weglide_search)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                if (results.isEmpty()) Text(stringResource(R.string.weglide_no_match))
                 LazyColumn(Modifier.heightIn(max = 380.dp)) {
                     items(results, key = { it.id }) { a ->
                         ListItem(headlineContent = { Text(a.label) }, modifier = Modifier.clickable { confirming = a })
@@ -162,6 +171,6 @@ private fun AircraftPicker(
             }
         },
         confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
     )
 }

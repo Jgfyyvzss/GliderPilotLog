@@ -40,6 +40,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import io.github.jgfyyvzss.gliderpilotlog.R
+import io.github.jgfyyvzss.gliderpilotlog.ui.launchTypeName
+import io.github.jgfyyvzss.gliderpilotlog.ui.text
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -65,7 +70,7 @@ class ProfileViewModel(private val settings: SettingsRepository) : ViewModel() {
     val identifiers = mutableStateListOf<PilotIdentifier>()
     var loaded by mutableStateOf(false)
         private set
-    var savedMessage by mutableStateOf<String?>(null)
+    var savedMessage by mutableStateOf<Int?>(null)
 
     init {
         viewModelScope.launch {
@@ -78,11 +83,11 @@ class ProfileViewModel(private val settings: SettingsRepository) : ViewModel() {
 
     fun save() = viewModelScope.launch {
         settings.setPilotProfile(name, identifiers.toList())
-        savedMessage = "Profile saved"
+        savedMessage = R.string.settings_profile_saved
     }
 }
 
-private val identifierSuggestions = listOf("Licence number", "Membership number", "ARN")
+private val identifierSuggestions = listOf(R.string.settings_id_licence, R.string.settings_id_membership, R.string.settings_id_arn)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -96,99 +101,101 @@ fun SettingsScreen(onClubs: () -> Unit, onLaunchTypes: () -> Unit, onOpeningBala
         Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("Pilot profile", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.settings_profile), style = MaterialTheme.typography.titleMedium)
         if (vm.loaded) {
             OutlinedTextField(
                 vm.name, { vm.name = it; vm.savedMessage = null },
-                label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.common_name)) }, singleLine = true, modifier = Modifier.fillMaxWidth(),
             )
-            Text("The default pilot in command for PIC, Instructor and Coach flights.", style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.settings_profile_name_hint), style = MaterialTheme.typography.bodySmall)
             vm.identifiers.forEachIndexed { i, id ->
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         id.label, { vm.identifiers[i] = id.copy(label = it); vm.savedMessage = null },
-                        label = { Text("Label") }, singleLine = true, modifier = Modifier.weight(1f),
+                        label = { Text(stringResource(R.string.settings_id_label)) }, singleLine = true, modifier = Modifier.weight(1f),
                     )
                     OutlinedTextField(
                         id.value, { vm.identifiers[i] = id.copy(value = it); vm.savedMessage = null },
-                        label = { Text("Number") }, singleLine = true, modifier = Modifier.weight(1f),
+                        label = { Text(stringResource(R.string.settings_id_number)) }, singleLine = true, modifier = Modifier.weight(1f),
                     )
                     IconButton(onClick = { vm.identifiers.removeAt(i); vm.savedMessage = null }) {
-                        Icon(Icons.Default.Delete, contentDescription = "Remove")
+                        Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.common_delete))
                     }
                 }
                 if (id.label.isBlank()) {
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        identifierSuggestions.forEach { s ->
+                        identifierSuggestions.forEach { res ->
+                            // The chosen label is stored as text in the pilot's language, like a label they typed.
+                            val s = stringResource(res)
                             SuggestionChip(onClick = { vm.identifiers[i] = id.copy(label = s) }, label = { Text(s) })
                         }
                     }
                 }
             }
-            OutlinedButton(onClick = { vm.identifiers.add(PilotIdentifier("", "")) }) { Text("Add a number") }
-            Button(onClick = { vm.save() }, modifier = Modifier.fillMaxWidth()) { Text("Save profile") }
-            vm.savedMessage?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+            OutlinedButton(onClick = { vm.identifiers.add(PilotIdentifier("", "")) }) { Text(stringResource(R.string.settings_id_add)) }
+            Button(onClick = { vm.save() }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.settings_profile_save)) }
+            vm.savedMessage?.let { Text(stringResource(it), style = MaterialTheme.typography.bodySmall) }
         }
 
         HorizontalDivider()
-        Text("Flight form", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.settings_flight_form), style = MaterialTheme.typography.titleMedium)
         settings?.let { s ->
             SwitchRow(
-                "Record landing place",
-                "Adds a landing place to the flight form, for outlandings.",
+                stringResource(R.string.settings_record_place),
+                stringResource(R.string.settings_record_place_hint),
                 s.recordLandingPlace,
             ) { on -> scope.launch { container.settings.setRecordLandingPlace(on) } }
             SwitchRow(
-                "Record launch and landing times",
-                "Adds launch and landing times to the flight form.",
+                stringResource(R.string.settings_record_times),
+                stringResource(R.string.settings_record_times_hint),
                 s.recordTimes,
             ) { on -> scope.launch { container.settings.setRecordTimes(on) } }
         }
 
         HorizontalDivider()
-        Text("Totals", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.nav_totals), style = MaterialTheme.typography.titleMedium)
         settings?.let { s ->
-            Text("Hours display")
+            Text(stringResource(R.string.settings_hours_display))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(
                     selected = s.hoursDisplay == HoursDisplay.HM,
                     onClick = { scope.launch { container.settings.setHoursDisplay(HoursDisplay.HM) } },
-                    label = { Text("H:MM") },
+                    label = { Text(stringResource(R.string.settings_hours_hm)) },
                 )
                 FilterChip(
                     selected = s.hoursDisplay == HoursDisplay.DECIMAL,
                     onClick = { scope.launch { container.settings.setHoursDisplay(HoursDisplay.DECIMAL) } },
-                    label = { Text("Decimal") },
+                    label = { Text(stringResource(R.string.settings_hours_decimal)) },
                 )
             }
             SwitchRow(
-                "Instructor and Coach count as PIC",
-                "The PIC row in Totals also includes Instructor and Coach flights.",
+                stringResource(R.string.settings_instruction_pic),
+                stringResource(R.string.settings_instruction_pic_hint),
                 s.instructionCountsAsPic,
             ) { on -> scope.launch { container.settings.setInstructionCountsAsPic(on) } }
         }
         ListItem(
-            headlineContent = { Text("Opening balances") },
-            supportingContent = { Text("Totals carried over from your paper logbook") },
+            headlineContent = { Text(stringResource(R.string.title_opening_balances)) },
+            supportingContent = { Text(stringResource(R.string.settings_balances_hint)) },
             modifier = Modifier.clickable(onClick = onOpeningBalances),
         )
 
         HorizontalDivider()
         BackupSection()
         ListItem(
-            headlineContent = { Text("Spreadsheets (CSV)") },
-            supportingContent = { Text("Export, import, and undo the last import") },
+            headlineContent = { Text(stringResource(R.string.title_spreadsheets)) },
+            supportingContent = { Text(stringResource(R.string.settings_spreadsheets_hint)) },
             modifier = Modifier.clickable(onClick = onSpreadsheets),
         )
 
         HorizontalDivider()
-        Text("WeGlide", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.settings_weglide), style = MaterialTheme.typography.titleMedium)
         AircraftListSection()
 
         HorizontalDivider()
-        Text("Lists", style = MaterialTheme.typography.titleMedium)
-        ListItem(headlineContent = { Text("Clubs") }, modifier = Modifier.clickable(onClick = onClubs))
-        ListItem(headlineContent = { Text("Launch types") }, modifier = Modifier.clickable(onClick = onLaunchTypes))
+        Text(stringResource(R.string.settings_lists), style = MaterialTheme.typography.titleMedium)
+        ListItem(headlineContent = { Text(stringResource(R.string.title_clubs)) }, modifier = Modifier.clickable(onClick = onClubs))
+        ListItem(headlineContent = { Text(stringResource(R.string.title_launch_types)) }, modifier = Modifier.clickable(onClick = onLaunchTypes))
     }
 }
 
@@ -210,26 +217,27 @@ fun ClubsScreen() {
     val scope = rememberCoroutineScope()
     var editing by rememberSaveable { mutableStateOf<String?>(null) } // a club id, or "" for a new club
     var error by rememberSaveable { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
 
     Box(Modifier.fillMaxSize()) {
         LazyColumn(Modifier.fillMaxSize()) {
             error?.let { item { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) } }
-            if (clubs.isEmpty()) item { Text("No clubs yet. Clubs can also be added from an airfield.", Modifier.padding(16.dp)) }
+            if (clubs.isEmpty()) item { Text(stringResource(R.string.clubs_none_yet), Modifier.padding(16.dp)) }
             items(clubs, key = ClubEntity::id) { c ->
                 ListItem(headlineContent = { Text(c.name) }, modifier = Modifier.clickable { editing = c.id; error = null })
                 HorizontalDivider()
             }
         }
         FloatingActionButton(onClick = { editing = ""; error = null }, modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
-            Icon(Icons.Default.Add, contentDescription = "Add club")
+            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.clubs_new))
         }
     }
 
     editing?.let { id ->
         val club = clubs.firstOrNull { it.id == id }
-        NameDialog(title = if (club == null) "New club" else "Rename club", initial = club?.name ?: "", onDismiss = { editing = null }) { name ->
+        NameDialog(title = stringResource(if (club == null) R.string.clubs_new else R.string.clubs_rename), initial = club?.name ?: "", onDismiss = { editing = null }) { name ->
             scope.launch {
-                (repo.saveClub(club?.id, name) as? SaveResult.Rejected)?.let { error = it.message }
+                (repo.saveClub(club?.id, name) as? SaveResult.Rejected)?.let { error = it.message.text(context) }
                 editing = null
             }
         }
@@ -243,21 +251,22 @@ fun LaunchTypesScreen() {
     val scope = rememberCoroutineScope()
     var editing by rememberSaveable { mutableStateOf<String?>(null) } // a launch type id, or "" for a new one
     var error by rememberSaveable { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
 
     Box(Modifier.fillMaxSize()) {
         LazyColumn(Modifier.fillMaxSize()) {
             error?.let { item { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) } }
             items(types, key = LaunchTypeEntity::id) { t ->
                 ListItem(
-                    headlineContent = { Text(t.name) },
-                    trailingContent = { if (t.archived) Badge("Archived") },
+                    headlineContent = { Text(launchTypeName(t.id, t.name)) },
+                    trailingContent = { if (t.archived) Badge(stringResource(R.string.common_archived)) },
                     modifier = Modifier.clickable { editing = t.id; error = null },
                 )
                 HorizontalDivider()
             }
         }
         FloatingActionButton(onClick = { editing = ""; error = null }, modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
-            Icon(Icons.Default.Add, contentDescription = "Add launch type")
+            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.launch_types_new))
         }
     }
 
@@ -265,20 +274,20 @@ fun LaunchTypesScreen() {
         val type = types.firstOrNull { it.id == id }
         var archived by rememberSaveable(id) { mutableStateOf(type?.archived ?: false) }
         NameDialog(
-            title = if (type == null) "New launch type" else "Launch type",
+            title = stringResource(if (type == null) R.string.launch_types_new else R.string.flight_launch_type),
             initial = type?.name ?: "",
             onDismiss = { editing = null },
             extra = {
                 if (type != null) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Archived", Modifier.weight(1f))
+                        Text(stringResource(R.string.common_archived), Modifier.weight(1f))
                         Switch(checked = archived, onCheckedChange = { archived = it })
                     }
                 }
             },
         ) { name ->
             scope.launch {
-                (repo.saveLaunchType(type?.id, name, archived) as? SaveResult.Rejected)?.let { error = it.message }
+                (repo.saveLaunchType(type?.id, name, archived) as? SaveResult.Rejected)?.let { error = it.message.text(context) }
                 editing = null
             }
         }

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="nav_home">Home</string>
+    <string name="nav_flights">Flights</string>
+    <string name="nav_totals">Totals</string>
+    <string name="nav_airfields">Airfields</string>
+    <string name="nav_gliders">Gliders</string>
+
+    <string name="title_settings">Settings</string>
+    <string name="title_clubs">Clubs</string>
+    <string name="title_launch_types">Launch types</string>
+    <string name="title_opening_balances">Opening balances</string>
+    <string name="title_spreadsheets">Spreadsheets (CSV)</string>
+    <string name="title_new_flight">New flight</string>
+    <string name="title_flight">Flight</string>
+    <string name="title_new_airfield">New airfield</string>
+    <string name="title_airfield">Airfield</string>
+    <string name="title_new_glider">New glider</string>
+    <string name="title_glider">Glider</string>
+</resources>

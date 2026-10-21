@@ -5,6 +5,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import io.github.jgfyyvzss.gliderpilotlog.core.FlightDraft
 import io.github.jgfyyvzss.gliderpilotlog.core.Keys
 import io.github.jgfyyvzss.gliderpilotlog.core.Role
+import io.github.jgfyyvzss.gliderpilotlog.ui.text
 import java.time.LocalDate
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -53,12 +54,12 @@ class CsvServiceTest {
         val out = csv(source)
         val t = csv(target)
         val gliders = t.prepareGliders(out.exportGliders())
-        assertEquals(emptyList<String>(), gliders.errors.map { it.message })
+        assertEquals(emptyList<String>(), gliders.errors.map { it.message.text(context) })
         t.commitGliders(gliders, "gliders.csv")
         val airfields = t.prepareAirfields(out.exportAirfields())
         t.commitAirfields(airfields, "airfields.csv")
         val flights = t.prepareFlights(out.exportFlights())
-        assertEquals(emptyList<String>(), flights.errors.map { it.message })
+        assertEquals(emptyList<String>(), flights.errors.map { it.message.text(context) })
         assertTrue(flights.unmatchedGliders.isEmpty() && flights.unmatchedAirfields.isEmpty())
         t.commitFlights(flights, FlightImportChoices(), "flights.csv")
 
@@ -81,7 +82,7 @@ class CsvServiceTest {
             "2026-10-19,GZY,30,Benalla,PIC,Pat,\r\n"
         val t = csv(target)
         val imp = t.prepareFlights(text)
-        assertEquals(emptyList<String>(), imp.errors.map { it.message })
+        assertEquals(emptyList<String>(), imp.errors.map { it.message.text(context) })
         assertEquals(3, imp.rowsNeedingLaunchType)
         assertEquals(1, imp.rowsNeedingProfileName)
         val result = t.commitFlights(

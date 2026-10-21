@@ -1,12 +1,12 @@
 package io.github.jgfyyvzss.gliderpilotlog.core
 
-/** Every flight lands in exactly one role bucket. Stored as the enum name. */
-enum class Role(val label: String) {
-    PIC("PIC"),
-    STUDENT("Student"),
-    INSTRUCTOR("Instructor"),
-    COACH("Coach"),
-    MUTUAL("Mutual");
+/** Every flight lands in exactly one role bucket. Stored and exported as the enum name; the UI shows a translated label. */
+enum class Role {
+    PIC,
+    STUDENT,
+    INSTRUCTOR,
+    COACH,
+    MUTUAL;
 
     val isDual: Boolean get() = this != PIC
 

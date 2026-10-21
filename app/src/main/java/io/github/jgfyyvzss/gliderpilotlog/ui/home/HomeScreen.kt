@@ -19,6 +19,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import io.github.jgfyyvzss.gliderpilotlog.R
+import io.github.jgfyyvzss.gliderpilotlog.ui.label
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -48,21 +52,21 @@ fun HomeScreen(onNewFlight: () -> Unit, onTotals: () -> Unit, onBackup: () -> Un
     ) {
         Button(onClick = onNewFlight, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
             Icon(Icons.Default.Add, contentDescription = null)
-            Text("  New flight")
+            Text("  " + stringResource(R.string.home_new_flight))
         }
         table?.let { t ->
             Card(Modifier.fillMaxWidth().clickable(onClick = onTotals)) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Totals", style = MaterialTheme.typography.titleMedium)
-                    CardRow(if (t.picIncludesInstruction) "PIC *" else "PIC", t.rows.getValue(Role.PIC), settings)
-                    CardRow("Combined", t.combined, settings)
+                    Text(stringResource(R.string.nav_totals), style = MaterialTheme.typography.titleMedium)
+                    CardRow(Role.PIC.label() + if (t.picIncludesInstruction) " *" else "", t.rows.getValue(Role.PIC), settings)
+                    CardRow(stringResource(R.string.totals_combined), t.combined, settings)
                 }
             }
         }
         // Nudges when there are flights and the last backup is stale or missing.
         val stale = hasFlights && BackupSchedule.isStale(settings.lastBackupAt, System.currentTimeMillis())
         Text(
-            "Last backed up: ${lastBackupText(settings.lastBackupAt)}" + if (stale) ". Tap to back up." else "",
+            stringResource(if (stale) R.string.home_last_backup_stale else R.string.home_last_backup, lastBackupText(settings.lastBackupAt)),
             color = if (stale) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.fillMaxWidth().clickable(onClick = onBackup).padding(vertical = 8.dp),
@@ -75,6 +79,6 @@ private fun CardRow(label: String, total: RoleTotal, settings: Settings) {
     Row(Modifier.fillMaxWidth()) {
         Text(label, Modifier.weight(1.4f))
         Text(HoursFormat.format(total.minutes, settings.hoursDisplay), Modifier.weight(1f), textAlign = TextAlign.End)
-        Text("${total.flights} flights", Modifier.weight(1.2f), textAlign = TextAlign.End)
+        Text(pluralStringResource(R.plurals.home_flights, total.flights, total.flights), Modifier.weight(1.2f), textAlign = TextAlign.End)
     }
 }

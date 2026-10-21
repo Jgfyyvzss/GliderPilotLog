@@ -1,5 +1,8 @@
 package io.github.jgfyyvzss.gliderpilotlog.data
 
+import io.github.jgfyyvzss.gliderpilotlog.core.Msg
+import io.github.jgfyyvzss.gliderpilotlog.core.MsgKey
+import io.github.jgfyyvzss.gliderpilotlog.core.msg
 import io.github.jgfyyvzss.gliderpilotlog.core.backup.BackupAirfield
 import io.github.jgfyyvzss.gliderpilotlog.core.backup.BackupClub
 import io.github.jgfyyvzss.gliderpilotlog.core.backup.BackupCodec
@@ -28,7 +31,7 @@ sealed interface Prepared {
     data class Restore(val file: BackupFile, val contents: BackupContents) : Prepared
     data class Merge(val merged: BackupFile, val contents: BackupContents, val summary: MergeSummary) : Prepared
     /** Nothing is written. [problems] lists every reason, such as a log number collision. */
-    data class Refused(val problems: List<String>) : Prepared
+    data class Refused(val problems: List<Msg>) : Prepared
 }
 
 /** Export, Restore and Merge of the whole logbook as one JSON backup file. */
@@ -92,7 +95,7 @@ class BackupService(
             is DecodeResult.Refused -> return Prepared.Refused(listOf(d.message))
             is DecodeResult.Ok -> d.file
         }
-        if (!isEmpty()) return Prepared.Refused(listOf("Restore needs an empty logbook. Use Merge to combine a backup with the flights on this phone."))
+        if (!isEmpty()) return Prepared.Refused(listOf(msg(MsgKey.BACKUP_NEEDS_EMPTY)))
         val problems = BackupValidation.validate(file)
         return if (problems.isEmpty()) Prepared.Restore(file, contents(file)) else Prepared.Refused(problems)
     }

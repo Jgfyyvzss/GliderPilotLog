@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_new_flight">New flight</string>
+    <string name="home_last_backup">Last backed up: %1$s</string>
+    <string name="home_last_backup_stale">Last backed up: %1$s. Tap to back up.</string>
+    <plurals name="home_flights">
+        <item quantity="one">%1$d flight</item>
+        <item quantity="other">%1$d flights</item>
+    </plurals>
+
+    <string name="totals_role">Role</string>
+    <string name="totals_combined">Combined</string>
+    <string name="totals_own_time">Your own time as a pilot, not aircraft time.</string>
+    <string name="totals_with_balances">Includes your opening balances.</string>
+    <string name="totals_filtered">Filter active: only matching flights count, and opening balances are left out.</string>
+    <string name="totals_pic_includes">* PIC also includes Instructor and Coach flights.</string>
+</resources>

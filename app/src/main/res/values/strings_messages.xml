@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Messages built by the plain-Kotlin code as Msg values. One string per MsgKey, named msg_<key>. -->
+<resources>
+    <!-- Flight form -->
+    <string name="msg_log_no_positive">Enter a whole number above 0</string>
+    <string name="msg_log_no_used">Log number %1$d is already used by %2$s</string>
+    <string name="msg_flight_on">the flight on %1$s in %2$s</string>
+    <string name="msg_date_required">Choose the flight date</string>
+    <string name="msg_duration_format">Enter the duration as digits, for example 324 for 3:24</string>
+    <string name="msg_duration_range">Duration must be between 0:01 and 24:00</string>
+    <string name="msg_glider_required">Choose a glider</string>
+    <string name="msg_airfield_required">Choose an airfield</string>
+    <string name="msg_club_required">Choose a club</string>
+    <string name="msg_launch_type_required">Choose a launch type</string>
+    <string name="msg_pic_required">Enter the pilot in command</string>
+    <string name="msg_pic_other_required">Enter the name of the pilot in command</string>
+    <string name="msg_time_format">Enter a 24-hour time, for example 1305</string>
+    <string name="msg_landing_after_launch">Landing must be after launch</string>
+    <string name="msg_landing_airfield_required">Choose the landing airfield</string>
+    <string name="msg_landing_place_required">Describe where the flight ended</string>
+    <string name="msg_times_disagree">The duration %1$s differs from launch to landing (%2$s)</string>
+
+    <!-- Records -->
+    <string name="msg_registration_required">Enter the registration</string>
+    <string name="msg_glider_exists">%1$s is already in the glider list</string>
+    <string name="msg_glider_gone">The glider no longer exists</string>
+    <string name="msg_logbook_hours_and_date">Enter the hours and the date they apply to</string>
+    <string name="msg_flights_negative">Flights cannot be negative</string>
+    <string name="msg_airfield_name_required">Enter the airfield name</string>
+    <string name="msg_coordinates_both">Enter both latitude and longitude, or neither</string>
+    <string name="msg_latitude_range">Latitude must be between -90 and 90</string>
+    <string name="msg_longitude_range">Longitude must be between -180 and 180</string>
+    <string name="msg_radius_positive">Match radius must be above 0</string>
+    <string name="msg_airfield_exists">%1$s is already in the airfield list</string>
+    <string name="msg_club_name_required">Enter the club name</string>
+    <string name="msg_club_exists">%1$s is already in the club list</string>
+    <string name="msg_launch_type_name_required">Enter the launch type name</string>
+    <string name="msg_launch_type_exists">%1$s is already in the launch type list</string>
+    <string name="msg_balances_negative">Balances cannot be negative</string>
+
+    <!-- CSV import. Column names, YYYY-MM-DD, HH:MM, H:MM and the role names are file vocabulary: keep them as they are. -->
+    <string name="msg_csv_error_found">Row %1$d, %2$s: found %3$s, expected %4$s</string>
+    <string name="msg_csv_error_column">Row %1$d, %2$s: expected %3$s</string>
+    <string name="msg_csv_error_row">Row %1$d: expected %2$s</string>
+    <string name="msg_csv_blank">blank</string>
+    <string name="msg_csv_expect_header">a header row</string>
+    <string name="msg_csv_expect_column">a %1$s column</string>
+    <string name="msg_csv_expect_positive">a whole number above 0</string>
+    <string name="msg_csv_expect_whole">a whole number</string>
+    <string name="msg_csv_expect_log_no_free">a log number not already in the logbook</string>
+    <string name="msg_csv_expect_log_no_unique">a log number not used earlier in the file (row %1$d)</string>
+    <string name="msg_csv_expect_date">YYYY-MM-DD</string>
+    <string name="msg_csv_expect_duration">H:MM or whole minutes</string>
+    <string name="msg_csv_expect_duration_range">between 1 minute and 24:00</string>
+    <string name="msg_csv_expect_registration">a glider registration</string>
+    <string name="msg_csv_expect_airfield">an airfield name</string>
+    <string name="msg_csv_expect_role">PIC, STUDENT, INSTRUCTOR, COACH or MUTUAL</string>
+    <string name="msg_csv_expect_launch_type">one of %1$s</string>
+    <string name="msg_csv_expect_pic">the name of the pilot in command on a %1$s row</string>
+    <string name="msg_csv_expect_time">HH:MM</string>
+    <string name="msg_csv_expect_after_launch">a time after the launch time %1$s</string>
+    <string name="msg_csv_expect_one_landing">landing_airfield or landing_place, not both</string>
+    <string name="msg_csv_expect_flight_row">at least one flight row</string>
+    <string name="msg_csv_expect_glider_type">the glider type</string>
+    <string name="msg_csv_expect_latitude">decimal degrees between -90 and 90</string>
+    <string name="msg_csv_expect_longitude">decimal degrees between -180 and 180</string>
+    <string name="msg_csv_expect_both_coordinates">both latitude and longitude, or neither</string>
+    <string name="msg_csv_unused_column">Column %1$s is not used and was ignored</string>
+    <string name="msg_csv_skip_glider_exists">Row %1$d: %2$s is already in the glider list</string>
+    <string name="msg_csv_skip_airfield_exists">Row %1$d: %2$s is already in the airfield list</string>
+    <string name="msg_csv_skip_repeat">Row %1$d: %2$s appears earlier in the file</string>
+
+    <!-- Backup file, restore and merge -->
+    <string name="msg_backup_not_json">This is not a logbook backup file: it is not valid JSON.</string>
+    <string name="msg_backup_not_backup">This is not a logbook backup file.</string>
+    <string name="msg_backup_no_version">The backup file has no format version.</string>
+    <string name="msg_backup_newer">This backup was made by a newer version of the app (format %1$d). Update the app, then try again.</string>
+    <string name="msg_backup_unknown_version">Unknown backup format version %1$d.</string>
+    <string name="msg_backup_no_upgrade">No upgrade from backup format %1$d.</string>
+    <string name="msg_backup_damaged">The backup file is damaged or incomplete: %1$s</string>
+    <string name="msg_backup_needs_empty">Restore needs an empty logbook. Use Merge to combine a backup with the flights on this phone.</string>
+    <string name="msg_backup_file_unreadable">The file could not be read.</string>
+    <string name="msg_backup_folder_refused">The backup folder would not accept a new file</string>
+    <string name="msg_backup_write_failed">The backup file could not be written</string>
+    <string name="msg_backup_failed">The backup could not be written: %1$s</string>
+
+    <!-- Backup validation: the first group names what a problem is about -->
+    <string name="msg_bk_table_launch_types">Launch types</string>
+    <string name="msg_bk_table_clubs">Clubs</string>
+    <string name="msg_bk_table_airfields">Airfields</string>
+    <string name="msg_bk_table_gliders">Gliders</string>
+    <string name="msg_bk_table_flights">Flights</string>
+    <string name="msg_bk_table_import_batches">Import batches</string>
+    <string name="msg_bk_launch_type">Launch type %1$s</string>
+    <string name="msg_bk_club">Club %1$s</string>
+    <string name="msg_bk_airfield">Airfield %1$s</string>
+    <string name="msg_bk_glider">Glider %1$s</string>
+    <string name="msg_bk_flight">Flight %1$d</string>
+    <string name="msg_bk_balance">Opening balance %1$s</string>
+    <string name="msg_bk_batch">Import batch %1$s</string>
+    <string name="msg_bk_duplicate_id">%1$s: id %2$s appears more than once</string>
+    <string name="msg_bk_no_time">%1$s has no time</string>
+    <string name="msg_bk_bad_time">%1$s has an unreadable time: %2$s</string>
+    <string name="msg_bk_no_name">%1$s has no name</string>
+    <string name="msg_bk_no_registration">%1$s has no registration</string>
+    <string name="msg_bk_missing_club">%1$s refers to a missing club %2$s</string>
+    <string name="msg_bk_default_club">%1$s has a default club that is not one of its clubs</string>
+    <string name="msg_bk_missing_launch_type">%1$s refers to a missing launch type</string>
+    <string name="msg_bk_one_coordinate">%1$s has only one coordinate</string>
+    <string name="msg_bk_latitude_range">%1$s has latitude out of range</string>
+    <string name="msg_bk_longitude_range">%1$s has longitude out of range</string>
+    <string name="msg_bk_bad_logbook_date">%1$s has an unreadable logbook date</string>
+    <string name="msg_bk_log_no_positive">%1$s: the log number must be above 0</string>
+    <string name="msg_bk_bad_date">%1$s: unreadable date %2$s</string>
+    <string name="msg_bk_duration_range">%1$s: duration %2$d minutes is out of range</string>
+    <string name="msg_bk_missing_glider">%1$s refers to a missing glider</string>
+    <string name="msg_bk_missing_airfield">%1$s refers to a missing airfield</string>
+    <string name="msg_bk_missing_landing_airfield">%1$s refers to a missing landing airfield</string>
+    <string name="msg_bk_both_landing">%1$s has both a landing airfield and a landing place</string>
+    <string name="msg_bk_unknown_role">%1$s: unknown role %2$s</string>
+    <string name="msg_bk_unknown_source">%1$s: unknown source %2$s</string>
+    <string name="msg_bk_no_pic">%1$s has no pilot in command</string>
+    <string name="msg_bk_bad_launch_time">%1$s: unreadable launch time</string>
+    <string name="msg_bk_bad_landing_time">%1$s: unreadable landing time</string>
+    <string name="msg_bk_landing_before_launch">%1$s: landing is not after launch</string>
+    <string name="msg_bk_balance_role">Opening balance for unknown role %1$s</string>
+    <string name="msg_bk_balance_negative">Opening balance for %1$s is negative</string>
+    <string name="msg_bk_balance_date">Opening balance for %1$s has an unreadable date</string>
+    <string name="msg_bk_balance_duplicate">Opening balance for %1$s appears more than once</string>
+    <string name="msg_bk_log_no_collision">Log number %1$d is used by two different flights: %2$s and %3$s</string>
+    <string name="msg_bk_duplicate_key">%1$s appears more than once with different ids</string>
+
+    <!-- WeGlide -->
+    <string name="msg_weglide_status">WeGlide answered %1$d: %2$s</string>
+    <string name="msg_weglide_no_host">Could not reach WeGlide. Check the phone is online, and that soarlogs is allowed to use data (Android Settings, Apps, soarlogs, Data usage).</string>
+    <string name="msg_weglide_unreachable">Could not reach WeGlide: %1$s</string>
+    <string name="msg_weglide_no_list">WeGlide sent no usable aircraft list</string>
+    <string name="msg_aircraft_save_failed">The aircraft list could not be saved</string>
+</resources>

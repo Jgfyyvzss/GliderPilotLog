@@ -8,6 +8,7 @@ The specification is [docs/spec.md](docs/spec.md).
 - The appendices hold proposed defaults. Follow them, but ask before changing a default, and ask for any value the specification leaves open. The app name is soarlogs, the package ID is `io.github.jgfyyvzss.gliderpilotlog`, and the minimum Android version is API 26.
 - Check library versions, Android APIs and the IGC record layouts against official documentation instead of relying on memory. Prefer stable releases.
 - Keep the `core` package free of `android.*` imports, and keep all WeGlide code behind one interface with a fake implementation.
+- Put every piece of text the pilot sees in the `res/values/strings_*.xml` files, never as a literal in Kotlin. Code in `core` returns a `Msg` (a `MsgKey` with arguments), and each new key needs a `msg_` string and a line in `MsgKey.res()`. Keep CSV columns, JSON keys and stored values language-neutral.
 - Write the tests listed in Appendix F as part of each step, and run them before reporting a step as done.
 - Never log, export or commit the WeGlide ID, the date of birth or any other credential. Never keep an IGC file after an import or upload.
 - Do not make real WeGlide requests from automated tests. A manual upload with the pilot's own account happens only when the pilot asks for it.

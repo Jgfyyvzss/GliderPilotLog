@@ -17,11 +17,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -33,18 +33,26 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.jgfyyvzss.gliderpilotlog.R
 import io.github.jgfyyvzss.gliderpilotlog.SoarlogsApp
+import io.github.jgfyyvzss.gliderpilotlog.core.MsgKey
 import io.github.jgfyyvzss.gliderpilotlog.core.backup.BackupTime
+import io.github.jgfyyvzss.gliderpilotlog.core.msg
 import io.github.jgfyyvzss.gliderpilotlog.data.BackupOutcome
 import io.github.jgfyyvzss.gliderpilotlog.data.Prepared
 import io.github.jgfyyvzss.gliderpilotlog.data.Settings
+import io.github.jgfyyvzss.gliderpilotlog.ui.UiText
 import io.github.jgfyyvzss.gliderpilotlog.ui.appContainer
+import io.github.jgfyyvzss.gliderpilotlog.ui.text
+import io.github.jgfyyvzss.gliderpilotlog.ui.uiText
 import io.github.jgfyyvzss.gliderpilotlog.ui.vmFactory
 import java.time.Instant
 import java.time.ZoneId
@@ -59,7 +67,7 @@ class BackupViewModel(private val app: SoarlogsApp) : ViewModel() {
     val settings = app.settings.settings
     var folderName by mutableStateOf<String?>(null)
         private set
-    var message by mutableStateOf<String?>(null)
+    var message by mutableStateOf<UiText?>(null)
     var busy by mutableStateOf(false)
         private set
     /** A checked file waiting for the pilot to confirm, or the reasons it was refused. */
@@ -72,8 +80,8 @@ class BackupViewModel(private val app: SoarlogsApp) : ViewModel() {
 
     fun chooseFolder(tree: Uri) = viewModelScope.launch {
         runCatching { app.backupFolder.choose(tree) }
-            .onSuccess { message = "Backup folder set" }
-            .onFailure { message = "That folder cannot be used for backups" }
+            .onSuccess { message = uiText(R.string.backup_folder_set) }
+            .onFailure { message = uiText(R.string.backup_folder_unusable) }
     }
 
     fun setSchedule(afterChanges: Int, afterDays: Int) = viewModelScope.launch { app.settings.setBackupSchedule(afterChanges, afterDays) }
@@ -82,9 +90,9 @@ class BackupViewModel(private val app: SoarlogsApp) : ViewModel() {
         busy = true
         viewModelScope.launch {
             message = when (val r = app.backupFolder.backUpNow()) {
-                is BackupOutcome.Written -> "Backed up to ${r.fileName}"
-                BackupOutcome.NoFolder -> "Choose a backup folder first"
-                is BackupOutcome.Failed -> "Backup failed: ${r.message}"
+                is BackupOutcome.Written -> uiText(R.string.backup_written, r.fileName)
+                BackupOutcome.NoFolder -> uiText(R.string.backup_no_folder)
+                is BackupOutcome.Failed -> uiText(R.string.backup_failed, r.message)
             }
             busy = false
         }
@@ -99,7 +107,7 @@ class BackupViewModel(private val app: SoarlogsApp) : ViewModel() {
             val text = withContext(Dispatchers.IO) {
                 runCatching { app.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() } }.getOrNull()
             }
-            pending = if (text == null) Prepared.Refused(listOf("The file could not be read.")) else prepare(text)
+            pending = if (text == null) Prepared.Refused(listOf(msg(MsgKey.BACKUP_FILE_UNREADABLE))) else prepare(text)
             busy = false
         }
     }
@@ -111,11 +119,15 @@ class BackupViewModel(private val app: SoarlogsApp) : ViewModel() {
         viewModelScope.launch {
             runCatching {
                 when (p) {
-                    is Prepared.Restore -> { app.backup.restore(p); app.settings.setFirstRunDone(); restored = true; "Logbook restored" }
-                    is Prepared.Merge -> { app.backup.merge(p); "Backup merged" }
+                    is Prepared.Restore -> {
+                        app.backup.restore(p); app.settings.setFirstRunDone(); restored = true
+                        uiText(R.string.backup_restored)
+                    }
+                    is Prepared.Merge -> { app.backup.merge(p); uiText(R.string.backup_merged) }
                     is Prepared.Refused -> null
                 }
-            }.onSuccess { message = it }.onFailure { message = "Nothing was changed: ${it.message}" }
+            }.onSuccess { message = it }
+                .onFailure { message = uiText(R.string.common_nothing_changed, it.message ?: it.javaClass.simpleName) }
             busy = false
         }
     }
@@ -138,44 +150,49 @@ fun BackupSection(vm: BackupViewModel = backupViewModel()) {
     val jsonTypes = arrayOf("application/json", "application/octet-stream", "text/plain")
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Backup", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.backup_title), style = MaterialTheme.typography.titleMedium)
         ListItem(
-            headlineContent = { Text("Backup folder") },
+            headlineContent = { Text(stringResource(R.string.backup_folder)) },
             supportingContent = {
                 Text(
                     when {
-                        settings.backupFolderUri == null -> "Not set. Tap to choose a folder, which can be a cloud-synced one."
-                        vm.folderName == null -> "The chosen folder can no longer be reached. Tap to choose again."
+                        settings.backupFolderUri == null -> stringResource(R.string.backup_folder_not_set)
+                        vm.folderName == null -> stringResource(R.string.backup_folder_lost)
                         else -> vm.folderName!!
                     },
                 )
             },
             modifier = Modifier.clickable { pickFolder.launch(null) },
         )
-        Text("Last backup: ${lastBackupText(settings.lastBackupAt)}", style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(R.string.backup_last, lastBackupText(settings.lastBackupAt)), style = MaterialTheme.typography.bodyMedium)
 
-        Text("Back up automatically after", style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(R.string.backup_after), style = MaterialTheme.typography.bodyMedium)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            NumberField("Changes", settings.backupAfterChanges, Modifier.weight(1f)) { vm.setSchedule(it, settings.backupAfterDays) }
-            NumberField("Days", settings.backupAfterDays, Modifier.weight(1f)) { vm.setSchedule(settings.backupAfterChanges, it) }
+            NumberField(stringResource(R.string.backup_changes), settings.backupAfterChanges, Modifier.weight(1f)) {
+                vm.setSchedule(it, settings.backupAfterDays)
+            }
+            NumberField(stringResource(R.string.backup_days), settings.backupAfterDays, Modifier.weight(1f)) {
+                vm.setSchedule(settings.backupAfterChanges, it)
+            }
         }
         Text(
-            if (settings.backupAfterChanges == 0 && settings.backupAfterDays == 0) "Automatic backups are off."
-            else "Whichever comes first, once something has changed. 0 turns a trigger off. The last 10 backups are kept.",
+            stringResource(
+                if (settings.backupAfterChanges == 0 && settings.backupAfterDays == 0) R.string.backup_auto_off else R.string.backup_auto_hint,
+            ),
             style = MaterialTheme.typography.bodySmall,
         )
 
-        Button(onClick = vm::backUpNow, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) { Text("Back up now") }
+        Button(onClick = vm::backUpNow, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.backup_now)) }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = { pickRestore.launch(jsonTypes) }, enabled = !vm.busy, modifier = Modifier.weight(1f)) { Text("Restore") }
-            OutlinedButton(onClick = { pickMerge.launch(jsonTypes) }, enabled = !vm.busy, modifier = Modifier.weight(1f)) { Text("Merge") }
+            OutlinedButton(onClick = { pickRestore.launch(jsonTypes) }, enabled = !vm.busy, modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.backup_restore))
+            }
+            OutlinedButton(onClick = { pickMerge.launch(jsonTypes) }, enabled = !vm.busy, modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.backup_merge))
+            }
         }
-        Text(
-            "Restore loads a backup into an empty logbook, settings and profile included. Merge combines a backup with " +
-                "this phone's logbook, keeping the newer copy of each record, and leaves settings as they are.",
-            style = MaterialTheme.typography.bodySmall,
-        )
-        vm.message?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+        Text(stringResource(R.string.backup_restore_merge_hint), style = MaterialTheme.typography.bodySmall)
+        vm.message?.let { Text(it.text(), style = MaterialTheme.typography.bodyMedium) }
     }
 
     PreparedDialog(vm)
@@ -203,40 +220,47 @@ fun PreparedDialog(vm: BackupViewModel) {
         null -> Unit
         is Prepared.Refused -> AlertDialog(
             onDismissRequest = vm::dismiss,
-            title = { Text("Nothing was changed") },
+            title = { Text(stringResource(R.string.backup_nothing_changed)) },
             text = {
                 LazyColumn(Modifier.heightIn(max = 360.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    items(p.problems.take(200)) { Text(it, style = MaterialTheme.typography.bodySmall) }
-                    if (p.problems.size > 200) item { Text("and ${p.problems.size - 200} more") }
+                    items(p.problems.take(200)) { Text(it.text(), style = MaterialTheme.typography.bodySmall) }
+                    if (p.problems.size > 200) item { Text(stringResource(R.string.backup_more_problems, p.problems.size - 200)) }
                 }
             },
-            confirmButton = { TextButton(onClick = vm::dismiss) { Text("OK") } },
+            confirmButton = { TextButton(onClick = vm::dismiss) { Text(stringResource(R.string.common_ok)) } },
         )
         is Prepared.Restore -> AlertDialog(
             onDismissRequest = vm::dismiss,
-            title = { Text("Restore this backup?") },
+            title = { Text(stringResource(R.string.backup_restore_title)) },
             text = {
+                val c = p.contents
                 Text(
-                    "Backup from ${isoTimeText(p.contents.exportedAt)}: ${p.contents.flights} flights, ${p.contents.gliders} gliders, " +
-                        "${p.contents.airfields} airfields and ${p.contents.clubs} clubs. Your settings and pilot profile will be " +
-                        "replaced by the backup's.",
+                    stringResource(
+                        R.string.backup_restore_text, isoTimeText(c.exportedAt),
+                        pluralStringResource(R.plurals.count_flights, c.flights, c.flights),
+                        pluralStringResource(R.plurals.count_gliders, c.gliders, c.gliders),
+                        pluralStringResource(R.plurals.count_airfields, c.airfields, c.airfields),
+                        pluralStringResource(R.plurals.count_clubs, c.clubs, c.clubs),
+                    ),
                 )
             },
-            confirmButton = { TextButton(onClick = vm::confirm) { Text("Restore") } },
-            dismissButton = { TextButton(onClick = vm::dismiss) { Text("Cancel") } },
+            confirmButton = { TextButton(onClick = vm::confirm) { Text(stringResource(R.string.backup_restore)) } },
+            dismissButton = { TextButton(onClick = vm::dismiss) { Text(stringResource(R.string.common_cancel)) } },
         )
         is Prepared.Merge -> AlertDialog(
             onDismissRequest = vm::dismiss,
-            title = { Text("Merge this backup?") },
+            title = { Text(stringResource(R.string.backup_merge_title)) },
             text = {
                 Text(
-                    "Backup from ${isoTimeText(p.contents.exportedAt)} with ${p.contents.flights} flights. " +
-                        "${p.summary.added} records will be added and ${p.summary.updated} updated with a newer copy; " +
-                        "${p.summary.unchanged} are already up to date. Settings stay as they are.",
+                    stringResource(
+                        R.string.backup_merge_text, isoTimeText(p.contents.exportedAt),
+                        pluralStringResource(R.plurals.count_flights, p.contents.flights, p.contents.flights),
+                        p.summary.added, p.summary.updated, p.summary.unchanged,
+                    ),
                 )
             },
-            confirmButton = { TextButton(onClick = vm::confirm) { Text("Merge") } },
-            dismissButton = { TextButton(onClick = vm::dismiss) { Text("Cancel") } },
+            confirmButton = { TextButton(onClick = vm::confirm) { Text(stringResource(R.string.backup_merge)) } },
+            dismissButton = { TextButton(onClick = vm::dismiss) { Text(stringResource(R.string.common_cancel)) } },
         )
     }
 }
@@ -256,24 +280,28 @@ fun FirstRunScreen(onDone: () -> Unit) {
             Modifier.fillMaxSize().padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
         ) {
-            Text("Welcome to soarlogs", style = MaterialTheme.typography.headlineSmall)
-            Text("Start a new logbook, or restore one from a backup file.")
+            Text(stringResource(R.string.first_run_welcome), style = MaterialTheme.typography.headlineSmall)
+            Text(stringResource(R.string.first_run_text))
             Button(onClick = {
                 scope.launch { container.settings.setFirstRunDone(); onDone() }
-            }, modifier = Modifier.fillMaxWidth()) { Text("Start fresh") }
+            }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.first_run_fresh)) }
             FilledTonalButton(
                 onClick = { pickRestore.launch(arrayOf("application/json", "application/octet-stream", "text/plain")) },
                 enabled = !vm.busy,
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("Restore from backup") }
-            vm.message?.let { Text(it) }
+            ) { Text(stringResource(R.string.first_run_restore)) }
+            vm.message?.let { Text(it.text()) }
         }
     }
     PreparedDialog(vm)
 }
 
+/** The date and time of the last backup in the device's format, or "never". */
+@Composable
 fun lastBackupText(at: Long?): String =
     at?.let { Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)) }
-        ?: "never"
+        ?: stringResource(R.string.common_never)
 
-private fun isoTimeText(iso: String): String = BackupTime.fromIso(iso)?.let(::lastBackupText) ?: "an unknown date"
+@Composable
+private fun isoTimeText(iso: String): String =
+    BackupTime.fromIso(iso)?.let { lastBackupText(it) } ?: stringResource(R.string.backup_unknown_date)

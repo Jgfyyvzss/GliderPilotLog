@@ -1,5 +1,6 @@
 package io.github.jgfyyvzss.gliderpilotlog.core
 
+import io.github.jgfyyvzss.gliderpilotlog.english
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -21,7 +22,7 @@ class FlightRulesTest {
     private val noClubs = FlightContext(airfieldClubCount = 0, logNoHeldBy = null)
 
     private fun errors(draft: FlightDraft, context: FlightContext = noClubs) =
-        (FlightRules.validate(draft, context) as FlightValidation.Invalid).errors
+        (FlightRules.validate(draft, context) as FlightValidation.Invalid).errors.mapValues { it.value.english() }
 
     private fun valid(draft: FlightDraft, context: FlightContext = noClubs) =
         FlightRules.validate(draft, context) as FlightValidation.Valid
@@ -50,8 +51,8 @@ class FlightRulesTest {
         listOf("", "0", "-3", "1.5", "abc").forEach {
             assertTrue(it, FlightField.LOG_NO in errors(complete.copy(logNoText = it)))
         }
-        val held = errors(complete, noClubs.copy(logNoHeldBy = "the flight on 17/10/26 in FQM"))
-        assertEquals("Log number 340 is already used by the flight on 17/10/26 in FQM", held[FlightField.LOG_NO])
+        val held = errors(complete, noClubs.copy(logNoHeldBy = msg(MsgKey.FLIGHT_ON, LocalDate.of(2026, 10, 17), "FQM")))
+        assertEquals("Log number 340 is already used by the flight on 2026-10-17 in FQM", held[FlightField.LOG_NO])
     }
 
     @Test fun requiredFields() {

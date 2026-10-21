@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- WeGlide's own aircraft names are shown as WeGlide supplies them and are never translated. -->
+<resources>
+    <string name="weglide_list">WeGlide aircraft list</string>
+    <string name="weglide_list_bundled">%1$d aircraft, the copy bundled with the app</string>
+    <string name="weglide_list_updated">%1$d aircraft, updated %2$s</string>
+    <string name="weglide_loading">Loading</string>
+    <string name="weglide_update">Update</string>
+    <string name="weglide_updating">Updating</string>
+    <string name="weglide_updated">Updated: %1$d aircraft</string>
+    <string name="weglide_not_updated">Not updated: %1$s</string>
+    <string name="weglide_type">WeGlide type</string>
+    <string name="weglide_type_not_set">Not set. WeGlide upload needs it, so WeGlide does not have to guess the variant.</string>
+    <string name="weglide_type_unknown">WeGlide aircraft %1$s, not in the current list</string>
+    <string name="weglide_type_stays">The type stays %1$s.</string>
+    <string name="weglide_type_changes">Type will change from %1$s to %2$s. The old text is not kept, but the type stays editable by hand.</string>
+    <string name="weglide_blank">(blank)</string>
+    <string name="weglide_aircraft">WeGlide aircraft</string>
+    <string name="weglide_search">Search</string>
+    <string name="weglide_no_match">No match. Try fewer letters, for example ASK.</string>
+</resources>

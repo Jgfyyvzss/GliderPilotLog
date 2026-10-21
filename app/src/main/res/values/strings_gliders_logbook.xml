@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Gliders -->
+    <string name="gliders_none_yet">No gliders yet. Tap + to add one.</string>
+    <string name="gliders_no_weglide">No WeGlide type</string>
+    <string name="gliders_archived_hint">Archived gliders are hidden from the flight form.</string>
+    <string name="glider_registration">Registration</string>
+    <string name="glider_type">Type, as the logbook shows it</string>
+    <string name="glider_type_short">Type</string>
+    <string name="glider_total">Logbook total as last entered: %1$s, %2$s</string>
+    <string name="glider_total_with_flights">Logbook total as last entered: %1$s, %2$d flights, %3$s</string>
+    <string name="glider_no_total">No logbook total recorded.</string>
+    <string name="glider_total_hint">The last total you wrote in the glider\'s own logbook, kept as the calculator\'s starting point. Others may fly the glider, so check it against the real logbook.</string>
+    <string name="glider_calculator">Calculator</string>
+    <string name="glider_edit_total">Edit total</string>
+    <string name="glider_total_title">Logbook total for %1$s</string>
+    <string name="glider_total_need_hours">Enter the hours, or use Clear</string>
+
+    <!-- Aircraft logbook calculator -->
+    <string name="logbook_title">Aircraft logbook: %1$s</string>
+    <string name="logbook_intro">Adds a day\'s flying to the total in the glider\'s own logbook. Your own totals are not changed.</string>
+    <string name="logbook_flights_on">Flights on %1$s</string>
+    <string name="logbook_flying_to_add">Flying to add</string>
+    <string name="logbook_day_total">Day total</string>
+    <string name="logbook_extra">Extra flying not in this app</string>
+    <string name="logbook_before">Logbook total before</string>
+    <string name="logbook_before_dated">Last entered for %1$s. Overwrite it if the aircraft logbook differs.</string>
+    <string name="logbook_before_none">No total stored yet. Enter the last total from the aircraft logbook.</string>
+    <string name="logbook_applies_to">The new total applies to</string>
+    <string name="logbook_new_total_check">New total: check the figures above</string>
+    <string name="logbook_new_total">New total: %1$s</string>
+    <string name="logbook_new_total_flights">New total: %1$s, %2$d flights</string>
+    <string name="logbook_double_add">The stored total is dated %1$s, on or after %2$s, so this day may already be included. Adding a day twice corrupts the total.</string>
+    <string name="logbook_save">Save new total</string>
+    <string name="logbook_hours_hint">Digits, H:MM or decimal hours</string>
+    <string name="logbook_bad_hours">Enter hours as digits, H:MM or decimal hours</string>
+    <string name="logbook_bad_figures">Enter hours as digits, H:MM or decimal hours, and flights as whole numbers</string>
+    <string name="logbook_need_before">Enter the logbook total before this flying</string>
+</resources>

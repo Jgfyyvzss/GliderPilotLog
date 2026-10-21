@@ -17,6 +17,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import io.github.jgfyyvzss.gliderpilotlog.R
+import io.github.jgfyyvzss.gliderpilotlog.ui.label
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -42,14 +45,14 @@ fun TotalsScreen() {
         FilterBar()
         val t = table ?: return@Column
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            TotalsRow("Role", "Hours", "Flights", header = true)
+            TotalsRow(stringResource(R.string.totals_role), stringResource(R.string.common_hours), stringResource(R.string.common_flights), header = true)
             HorizontalDivider()
             Role.entries.forEach { role ->
-                val label = if (role == Role.PIC && t.picIncludesInstruction) "PIC *" else role.label
+                val label = role.label() + if (role == Role.PIC && t.picIncludesInstruction) " *" else ""
                 TotalsRow(label, t.rows.getValue(role), settings.hoursDisplay)
             }
             HorizontalDivider()
-            TotalsRow("Combined", t.combined, settings.hoursDisplay, bold = true)
+            TotalsRow(stringResource(R.string.totals_combined), t.combined, settings.hoursDisplay, bold = true)
             Text(" ")
             Notes(t)
         }
@@ -59,13 +62,13 @@ fun TotalsScreen() {
 @Composable
 private fun Notes(t: TotalsTable) {
     val style = MaterialTheme.typography.bodySmall
-    Text("Your own time as a pilot, not aircraft time.", style = style)
+    Text(stringResource(R.string.totals_own_time), style = style)
     Text(
-        if (t.includesOpeningBalances) "Includes your opening balances."
-        else "Filter active: only matching flights count, and opening balances are left out.",
+        stringResource(if (t.includesOpeningBalances) R.string.totals_with_balances else R.string.totals_filtered),
+
         style = style,
     )
-    if (t.picIncludesInstruction) Text("* PIC also includes Instructor and Coach flights.", style = style)
+    if (t.picIncludesInstruction) Text(stringResource(R.string.totals_pic_includes), style = style)
 }
 
 @Composable

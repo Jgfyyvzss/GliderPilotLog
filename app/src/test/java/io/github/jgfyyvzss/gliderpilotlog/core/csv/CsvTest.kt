@@ -1,6 +1,7 @@
 package io.github.jgfyyvzss.gliderpilotlog.core.csv
 
 import io.github.jgfyyvzss.gliderpilotlog.core.Keys
+import io.github.jgfyyvzss.gliderpilotlog.english
 import io.github.jgfyyvzss.gliderpilotlog.core.Role
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -18,7 +19,7 @@ class CsvTest {
     )
 
     private fun flights(vararg lines: String) = FlightCsv.parse(lines.joinToString("\r\n"), known)
-    private fun messages(imp: FlightImport) = imp.errors.map { it.message }
+    private fun messages(imp: FlightImport) = imp.errors.map { it.message.english() }
 
     @Test fun readsQuotedFieldsLineBreaksAndBom() {
         val text = Csv.BOM + "a,b,c\r\n1,\"two, too\",\"say \"\"hi\"\"\"\n\"multi\nline\",,end"
@@ -90,7 +91,7 @@ class CsvTest {
         assertEquals(emptyList<String>(), messages(imp))
         assertEquals(mapOf("gzy" to "GZY"), imp.unmatchedGliders)
         assertEquals(mapOf("benalla" to "Benalla", "mt beauty" to "Mt Beauty"), imp.unmatchedAirfields)
-        assertEquals(listOf("Column place is not used and was ignored"), imp.warnings)
+        assertEquals(listOf("Column place is not used and was ignored"), imp.warnings.map { it.english() })
         assertTrue(imp.needsNumbering)
     }
 
@@ -129,8 +130,8 @@ class CsvTest {
     @Test fun gliderAndAirfieldFilesSkipExistingAndReportErrors() {
         val g = GliderCsv.parse("registration,type\r\nFQM,Hornet\r\nGZY,Junior\r\ngzy,Junior\r\nB4,\r\n", setOf("fqm"))
         assertEquals(listOf("GZY"), g.records.map { it.registration })
-        assertEquals(listOf("Row 2: FQM is already in the glider list", "Row 4: gzy appears earlier in the file"), g.skipped)
-        assertEquals(listOf("Row 5, type: found blank, expected the glider type"), g.errors.map { it.message })
+        assertEquals(listOf("Row 2: FQM is already in the glider list", "Row 4: gzy appears earlier in the file"), g.skipped.map { it.english() })
+        assertEquals(listOf("Row 5, type: found blank, expected the glider type"), g.errors.map { it.message.english() })
 
         val a = AirfieldCsv.parse(
             "name,latitude,longitude,elevation_m,match_radius_m,clubs\r\nYMBT,,,,,\r\nBenalla,-36.55,146.0,173,1500,BGC; VMFG ;bgc\r\nX,95,1,,,\r\nY,-36,,,,\r\n",
@@ -143,7 +144,7 @@ class CsvTest {
                 "Row 4, latitude: found 95, expected decimal degrees between -90 and 90",
                 "Row 5, longitude: found blank, expected both latitude and longitude, or neither",
             ),
-            a.errors.map { it.message },
+            a.errors.map { it.message.english() },
         )
     }
 }

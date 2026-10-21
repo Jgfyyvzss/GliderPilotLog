@@ -3,16 +3,22 @@ package io.github.jgfyyvzss.gliderpilotlog.data
 import android.content.Context
 import android.net.Uri
 import android.provider.DocumentsContract
+import io.github.jgfyyvzss.gliderpilotlog.core.Msg
+import io.github.jgfyyvzss.gliderpilotlog.core.MsgKey
+import io.github.jgfyyvzss.gliderpilotlog.core.msg
 import io.github.jgfyyvzss.gliderpilotlog.core.backup.BackupSchedule
 import java.time.LocalDateTime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
+/** A failure that already carries the message to show. */
+private class MsgFailure(val shown: Msg) : Exception()
+
 sealed interface BackupOutcome {
     data class Written(val fileName: String) : BackupOutcome
     data object NoFolder : BackupOutcome
-    data class Failed(val message: String) : BackupOutcome
+    data class Failed(val message: Msg) : BackupOutcome
 }
 
 /**
@@ -58,9 +64,9 @@ class BackupFolder(
                 val parent = DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))
                 val name = BackupSchedule.fileName(LocalDateTime.now())
                 val doc = DocumentsContract.createDocument(resolver, parent, "application/json", name)
-                    ?: error("The backup folder would not accept a new file")
+                    ?: throw MsgFailure(msg(MsgKey.BACKUP_FOLDER_REFUSED))
                 resolver.openOutputStream(doc, "wt")?.use { it.write(text.toByteArray(Charsets.UTF_8)) }
-                    ?: error("The backup file could not be written")
+                    ?: throw MsgFailure(msg(MsgKey.BACKUP_WRITE_FAILED))
                 prune(tree)
                 name
             }.fold(
@@ -68,7 +74,7 @@ class BackupFolder(
                     settings.setLastBackupAt(started)
                     BackupOutcome.Written(name)
                 },
-                onFailure = { BackupOutcome.Failed(it.message ?: "The backup could not be written") },
+                onFailure = { BackupOutcome.Failed((it as? MsgFailure)?.shown ?: msg(MsgKey.BACKUP_FAILED, it.message ?: it.javaClass.simpleName)) },
             )
         }
     }

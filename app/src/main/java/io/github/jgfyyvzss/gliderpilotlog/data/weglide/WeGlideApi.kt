@@ -1,5 +1,8 @@
 package io.github.jgfyyvzss.gliderpilotlog.data.weglide
 
+import io.github.jgfyyvzss.gliderpilotlog.core.Msg
+import io.github.jgfyyvzss.gliderpilotlog.core.MsgKey
+import io.github.jgfyyvzss.gliderpilotlog.core.msg
 import java.io.IOException
 import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
@@ -11,7 +14,7 @@ import okhttp3.Request
 /** The result of one WeGlide request. Failures carry a message ready to show. */
 sealed interface ApiResult<out T> {
     data class Ok<T>(val value: T) : ApiResult<T>
-    data class Failed(val message: String) : ApiResult<Nothing>
+    data class Failed(val message: Msg) : ApiResult<Nothing>
 }
 
 /** Every WeGlide call goes through this interface, so tests use a fake or a local mock server, never WeGlide. */
@@ -36,16 +39,14 @@ class OkHttpWeGlideApi(
             client.newCall(request).execute().use { response ->
                 val body = response.body.string()
                 if (response.code == 200) ApiResult.Ok(body)
-                else ApiResult.Failed("WeGlide answered ${response.code}: ${body.take(300)}")
+                else ApiResult.Failed(msg(MsgKey.WEGLIDE_STATUS, response.code, body.take(300)))
             }
         } catch (e: UnknownHostException) {
             // Also what Android reports when the app's data use is switched off in its app settings.
-            ApiResult.Failed(
-                "Could not reach WeGlide. Check the phone is online, and that soarlogs is allowed to use data " +
-                    "(Android Settings, Apps, soarlogs, Data usage).",
-            )
+            ApiResult.Failed(msg(MsgKey.WEGLIDE_NO_HOST))
+
         } catch (e: IOException) {
-            ApiResult.Failed("Could not reach WeGlide: ${e.message ?: e.javaClass.simpleName}")
+            ApiResult.Failed(msg(MsgKey.WEGLIDE_UNREACHABLE, e.message ?: e.javaClass.simpleName))
         }
     }
 

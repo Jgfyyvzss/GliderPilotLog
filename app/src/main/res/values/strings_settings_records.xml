@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Airfields -->
+    <string name="airfields_none_yet">No airfields yet. Tap + to add one.</string>
+    <string name="airfield_latitude">Latitude</string>
+    <string name="airfield_longitude">Longitude</string>
+    <string name="airfield_coordinates_hint">Decimal degrees, for example -36.7314. Needed for IGC matching.</string>
+    <string name="airfield_elevation">Elevation (m)</string>
+    <string name="airfield_radius">Match radius (m)</string>
+    <string name="airfield_remove_club">Remove %1$s</string>
+    <string name="airfield_add_club">Add an existing club</string>
+    <string name="airfield_defaults">Flight form defaults</string>
+    <string name="airfield_default_club">Default club</string>
+    <string name="airfield_default_launch_type">Default launch type</string>
+    <string name="airfield_bad_latitude">Latitude must be decimal degrees</string>
+    <string name="airfield_bad_longitude">Longitude must be decimal degrees</string>
+    <string name="airfield_bad_elevation">Elevation must be whole metres</string>
+    <string name="airfield_bad_radius">Match radius must be whole metres</string>
+
+    <!-- Clubs and launch types -->
+    <string name="clubs_none_yet">No clubs yet. Clubs can also be added from an airfield.</string>
+    <string name="clubs_new">New club</string>
+    <string name="clubs_rename">Rename club</string>
+    <string name="launch_types_new">New launch type</string>
+
+    <!-- Settings -->
+    <string name="settings_profile">Pilot profile</string>
+    <string name="settings_profile_name_hint">The default pilot in command for PIC, Instructor and Coach flights.</string>
+    <string name="settings_id_label">Label</string>
+    <string name="settings_id_number">Number</string>
+    <string name="settings_id_add">Add a number</string>
+    <string name="settings_id_licence">Licence number</string>
+    <string name="settings_id_membership">Membership number</string>
+    <string name="settings_id_arn">ARN</string>
+    <string name="settings_profile_save">Save profile</string>
+    <string name="settings_profile_saved">Profile saved</string>
+    <string name="settings_flight_form">Flight form</string>
+    <string name="settings_record_place">Record landing place</string>
+    <string name="settings_record_place_hint">Adds a landing place to the flight form, for outlandings.</string>
+    <string name="settings_record_times">Record launch and landing times</string>
+    <string name="settings_record_times_hint">Adds launch and landing times to the flight form.</string>
+    <string name="settings_hours_display">Hours display</string>
+    <string name="settings_hours_hm">H:MM</string>
+    <string name="settings_hours_decimal">Decimal</string>
+    <string name="settings_instruction_pic">Instructor and Coach count as PIC</string>
+    <string name="settings_instruction_pic_hint">The PIC row in Totals also includes Instructor and Coach flights.</string>
+    <string name="settings_balances_hint">Totals carried over from your paper logbook</string>
+    <string name="settings_spreadsheets_hint">Export, import, and undo the last import</string>
+    <string name="settings_weglide">WeGlide</string>
+    <string name="settings_lists">Lists</string>
+
+    <!-- Opening balances -->
+    <string name="balances_intro">Enter the totals from the last page of your paper logbook. They are added to Totals when no filter is active.</string>
+    <string name="balances_date_hint">Date of the last paper entry</string>
+    <string name="balances_bad_hours">%1$s: enter hours as digits or H:MM, for example 12345 for 123:45</string>
+    <string name="balances_bad_flights">%1$s: enter flights as a whole number</string>
+    <string name="balances_saved">Opening balances saved</string>
+</resources>

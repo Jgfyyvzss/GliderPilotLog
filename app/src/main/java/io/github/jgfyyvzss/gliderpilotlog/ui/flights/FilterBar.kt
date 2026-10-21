@@ -41,6 +41,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import io.github.jgfyyvzss.gliderpilotlog.R
+import io.github.jgfyyvzss.gliderpilotlog.ui.label
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -72,17 +75,17 @@ fun FilterBar(modifier: Modifier = Modifier) {
     var open by rememberSaveable { mutableStateOf(false) }
 
     val chips = buildList<Pair<String, FlightFilter>> {
-        filter.gliderId?.let { id -> add("Glider ${gliders.firstOrNull { it.id == id }?.registration ?: "?"}" to filter.copy(gliderId = null)) }
-        filter.airfieldId?.let { id -> add((airfields.firstOrNull { it.id == id }?.name ?: "Airfield") to filter.copy(airfieldId = null)) }
-        filter.clubId?.let { id -> add((clubs.firstOrNull { it.id == id }?.name ?: "Club") to filter.copy(clubId = null)) }
-        filter.dateFrom?.let { add("From ${it.shortText()}" to filter.copy(dateFrom = null)) }
-        filter.dateTo?.let { add("To ${it.shortText()}" to filter.copy(dateTo = null)) }
-        filter.role?.let { add(it.label to filter.copy(role = null)) }
+        filter.gliderId?.let { id -> add(stringResource(R.string.filter_chip_glider, gliders.firstOrNull { it.id == id }?.registration ?: "?") to filter.copy(gliderId = null)) }
+        filter.airfieldId?.let { id -> add((airfields.firstOrNull { it.id == id }?.name ?: stringResource(R.string.flight_airfield)) to filter.copy(airfieldId = null)) }
+        filter.clubId?.let { id -> add((clubs.firstOrNull { it.id == id }?.name ?: stringResource(R.string.flight_club)) to filter.copy(clubId = null)) }
+        filter.dateFrom?.let { add(stringResource(R.string.filter_chip_from, it.shortText()) to filter.copy(dateFrom = null)) }
+        filter.dateTo?.let { add(stringResource(R.string.filter_chip_to, it.shortText()) to filter.copy(dateTo = null)) }
+        filter.role?.let { add(it.label() to filter.copy(role = null)) }
         if (filter.logNoFrom != null || filter.logNoTo != null) {
-            add("Log ${filter.logNoFrom ?: ""}–${filter.logNoTo ?: ""}" to filter.copy(logNoFrom = null, logNoTo = null))
+            add(stringResource(R.string.filter_chip_log, filter.logNoFrom?.toString() ?: "", filter.logNoTo?.toString() ?: "") to filter.copy(logNoFrom = null, logNoTo = null))
         }
         if (filter.launchFrom != null || filter.launchTo != null) {
-            add("Launch ${filter.launchFrom ?: ""}–${filter.launchTo ?: ""}" to filter.copy(launchFrom = null, launchTo = null))
+            add(stringResource(R.string.filter_chip_launch, filter.launchFrom?.toString() ?: "", filter.launchTo?.toString() ?: "") to filter.copy(launchFrom = null, launchTo = null))
         }
     }
 
@@ -93,7 +96,7 @@ fun FilterBar(modifier: Modifier = Modifier) {
     ) {
         AssistChip(
             onClick = { open = true },
-            label = { Text("Filter") },
+            label = { Text(stringResource(R.string.filter_button)) },
             leadingIcon = { Icon(Icons.Default.FilterList, contentDescription = null) },
         )
         chips.forEach { (label, without) ->
@@ -101,7 +104,7 @@ fun FilterBar(modifier: Modifier = Modifier) {
                 selected = true,
                 onClick = { app.filter.set(without) },
                 label = { Text(label) },
-                trailingIcon = { Icon(Icons.Default.Close, contentDescription = "Remove $label filter") },
+                trailingIcon = { Icon(Icons.Default.Close, contentDescription = stringResource(R.string.filter_chip_remove, label)) },
             )
         }
     }
@@ -136,8 +139,10 @@ private fun FilterSheet(
     var launchFrom by remember { mutableStateOf(initial.launchFrom?.toString() ?: "") }
     var launchTo by remember { mutableStateOf(initial.launchTo?.toString() ?: "") }
     var error by remember { mutableStateOf<String?>(null) }
+    val badTime = stringResource(R.string.filter_bad_time)
+    val datesReversed = stringResource(R.string.filter_dates_reversed)
     var pickDate by remember { mutableStateOf<String?>(null) } // "from" or "to"
-    val any = PickerOption(ANY, "Any")
+    val any = PickerOption(ANY, stringResource(R.string.common_any))
     val numeric = KeyboardOptions(keyboardType = KeyboardType.Number)
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
@@ -145,50 +150,50 @@ private fun FilterSheet(
             Modifier.fillMaxWidth().imePadding().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text("Filter flights", style = MaterialTheme.typography.titleMedium)
-            PickerField("Glider", draft.gliderId ?: ANY, listOf(any) + gliderOptions, { draft = draft.copy(gliderId = it.ifEmpty { null }) })
-            PickerField("Airfield", draft.airfieldId ?: ANY, listOf(any) + airfieldOptions, { draft = draft.copy(airfieldId = it.ifEmpty { null }) })
-            PickerField("Club", draft.clubId ?: ANY, listOf(any) + clubOptions, { draft = draft.copy(clubId = it.ifEmpty { null }) })
+            Text(stringResource(R.string.filter_title), style = MaterialTheme.typography.titleMedium)
+            PickerField(stringResource(R.string.flight_glider), draft.gliderId ?: ANY, listOf(any) + gliderOptions, { draft = draft.copy(gliderId = it.ifEmpty { null }) })
+            PickerField(stringResource(R.string.flight_airfield), draft.airfieldId ?: ANY, listOf(any) + airfieldOptions, { draft = draft.copy(airfieldId = it.ifEmpty { null }) })
+            PickerField(stringResource(R.string.flight_club), draft.clubId ?: ANY, listOf(any) + clubOptions, { draft = draft.copy(clubId = it.ifEmpty { null }) })
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                DateField("From", draft.dateFrom, Modifier.weight(1f)) { pickDate = "from" }
-                DateField("To", draft.dateTo, Modifier.weight(1f)) { pickDate = "to" }
+                DateField(stringResource(R.string.filter_from), draft.dateFrom, Modifier.weight(1f)) { pickDate = "from" }
+                DateField(stringResource(R.string.filter_to), draft.dateTo, Modifier.weight(1f)) { pickDate = "to" }
             }
 
-            Text("Role", style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.totals_role), style = MaterialTheme.typography.titleSmall)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(draft.role == null, { draft = draft.copy(role = null) }, label = { Text("Any") })
+                FilterChip(draft.role == null, { draft = draft.copy(role = null) }, label = { Text(stringResource(R.string.common_any)) })
                 Role.entries.forEach { r ->
-                    FilterChip(draft.role == r, { draft = draft.copy(role = r) }, label = { Text(r.label) })
+                    FilterChip(draft.role == r, { draft = draft.copy(role = r) }, label = { Text(r.label()) })
                 }
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(logFrom, { logFrom = it.filter(Char::isDigit); error = null }, label = { Text("Log no. from") },
+                OutlinedTextField(logFrom, { logFrom = it.filter(Char::isDigit); error = null }, label = { Text(stringResource(R.string.filter_log_from)) },
                     singleLine = true, keyboardOptions = numeric, modifier = Modifier.weight(1f))
-                OutlinedTextField(logTo, { logTo = it.filter(Char::isDigit); error = null }, label = { Text("Log no. to") },
+                OutlinedTextField(logTo, { logTo = it.filter(Char::isDigit); error = null }, label = { Text(stringResource(R.string.filter_log_to)) },
                     singleLine = true, keyboardOptions = numeric, modifier = Modifier.weight(1f))
             }
 
             if (showLaunchTimes) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(launchFrom, { launchFrom = it; error = null }, label = { Text("Launch from") },
+                    OutlinedTextField(launchFrom, { launchFrom = it; error = null }, label = { Text(stringResource(R.string.filter_launch_from)) },
                         placeholder = { Text("10:00") }, singleLine = true, keyboardOptions = numeric, visualTransformation = ColonTransformation, modifier = Modifier.weight(1f))
-                    OutlinedTextField(launchTo, { launchTo = it; error = null }, label = { Text("Launch to") },
+                    OutlinedTextField(launchTo, { launchTo = it; error = null }, label = { Text(stringResource(R.string.filter_launch_to)) },
                         placeholder = { Text("12:00") }, singleLine = true, keyboardOptions = numeric, visualTransformation = ColonTransformation, modifier = Modifier.weight(1f))
                 }
             }
 
             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { onApply(FlightFilter()) }, modifier = Modifier.weight(1f)) { Text("Clear all") }
+                OutlinedButton(onClick = { onApply(FlightFilter()) }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.filter_clear_all)) }
                 Button(onClick = {
                     val lt = parseTime(launchTo)
                     val lf = parseTime(launchFrom)
                     when {
-                        lf == BAD || lt == BAD -> error = "Enter launch times as 24-hour digits, for example 1305"
+                        lf == BAD || lt == BAD -> error = badTime
                         draft.dateFrom != null && draft.dateTo != null && draft.dateFrom!! > draft.dateTo!! ->
-                            error = "The From date is after the To date"
+                            error = datesReversed
                         else -> onApply(
                             draft.copy(
                                 logNoFrom = logFrom.toIntOrNull(), logNoTo = logTo.toIntOrNull(),
@@ -196,7 +201,7 @@ private fun FilterSheet(
                             ),
                         )
                     }
-                }, modifier = Modifier.weight(1f)) { Text("Apply") }
+                }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.filter_apply)) }
             }
         }
     }
@@ -213,13 +218,13 @@ private fun FilterSheet(
                     val d = state.selectedDateMillis?.let { Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate() }
                     draft = if (which == "from") draft.copy(dateFrom = d) else draft.copy(dateTo = d)
                     pickDate = null
-                }) { Text("OK") }
+                }) { Text(stringResource(R.string.common_ok)) }
             },
             dismissButton = {
                 TextButton(onClick = {
                     draft = if (which == "from") draft.copy(dateFrom = null) else draft.copy(dateTo = null)
                     pickDate = null
-                }) { Text("Any") }
+                }) { Text(stringResource(R.string.common_any)) }
             },
         ) { DatePicker(state) }
     }
@@ -233,7 +238,7 @@ private fun parseTime(text: String): Any? = if (text.isBlank()) null else ClockT
 @Composable
 private fun DateField(label: String, date: LocalDate?, modifier: Modifier, onClick: () -> Unit) {
     Box(modifier) {
-        OutlinedTextField(date?.shortText() ?: "", {}, readOnly = true, label = { Text(label) }, placeholder = { Text("Any") },
+        OutlinedTextField(date?.shortText() ?: "", {}, readOnly = true, label = { Text(label) }, placeholder = { Text(stringResource(R.string.common_any)) },
             modifier = Modifier.fillMaxWidth())
         Box(Modifier.matchParentSize().clickable(onClick = onClick))
     }

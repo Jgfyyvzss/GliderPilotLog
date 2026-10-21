@@ -3,6 +3,9 @@ package io.github.jgfyyvzss.gliderpilotlog.core.csv
 import io.github.jgfyyvzss.gliderpilotlog.core.ClockTime
 import io.github.jgfyyvzss.gliderpilotlog.core.Durations
 import io.github.jgfyyvzss.gliderpilotlog.core.Keys
+import io.github.jgfyyvzss.gliderpilotlog.core.Msg
+import io.github.jgfyyvzss.gliderpilotlog.core.MsgKey
+import io.github.jgfyyvzss.gliderpilotlog.core.msg
 import io.github.jgfyyvzss.gliderpilotlog.core.Role
 import java.time.LocalDate
 
@@ -41,7 +44,7 @@ data class ParsedFlight(
 data class FlightImport(
     val flights: List<ParsedFlight>,
     val errors: List<CsvError>,
-    val warnings: List<String>,
+    val warnings: List<Msg>,
     /** Glider and airfield names with no match, by key, with the spelling first seen. */
     val unmatchedGliders: Map<String, String>,
     val unmatchedAirfields: Map<String, String>,
@@ -80,12 +83,12 @@ object FlightCsv {
     /** Checks the whole file. Nothing may be imported while [FlightImport.errors] is not empty. */
     fun parse(text: String, known: KnownNames): FlightImport {
         val table = CsvTable.read(text, exportColumns.toSet())
-            ?: return FlightImport(emptyList(), listOf(CsvError(1, null, null, "a header row")), emptyList(), emptyMap(), emptyMap(), 0, false, 0)
+            ?: return FlightImport(emptyList(), listOf(CsvError(1, null, null, msg(MsgKey.CSV_EXPECT_HEADER))), emptyList(), emptyMap(), emptyMap(), 0, false, 0)
         val errors = mutableListOf<CsvError>()
-        required.filter { !table.has(it) }.forEach { errors += CsvError(1, it, null, "a $it column") }
+        required.filter { !table.has(it) }.forEach { errors += CsvError(1, it, null, msg(MsgKey.CSV_EXPECT_COLUMN, it)) }
         if (errors.isNotEmpty()) return FlightImport(emptyList(), errors, emptyList(), emptyMap(), emptyMap(), 0, false, 0)
 
-        val warnings = table.unknownColumns.map { "Column $it is not used and was ignored" }
+        val warnings = table.unknownColumns.map { msg(MsgKey.CSV_UNUSED_COLUMN, it) }
         val hasLogNo = table.has("log_no")
         val flights = mutableListOf<ParsedFlight>()
         val unmatchedGliders = linkedMapOf<String, String>()
@@ -97,50 +100,50 @@ object FlightCsv {
 
         for (r in table.rows) {
             val before = errors.size
-            fun err(column: String, found: String, expected: String) { errors += CsvError(r.number, column, found, expected) }
+            fun err(column: String, found: String, expected: Msg) { errors += CsvError(r.number, column, found, expected) }
 
             val logNo = if (!hasLogNo) null else r["log_no"].let { cell ->
                 val n = cell.toIntOrNull()
                 when {
-                    n == null || n <= 0 -> { err("log_no", cell, "a whole number above 0"); null }
-                    n in known.liveLogNumbers -> { err("log_no", cell, "a log number not already in the logbook"); null }
-                    n in seenLogNos -> { err("log_no", cell, "a log number not used earlier in the file (row ${seenLogNos[n]})"); null }
+                    n == null || n <= 0 -> { err("log_no", cell, msg(MsgKey.CSV_EXPECT_POSITIVE)); null }
+                    n in known.liveLogNumbers -> { err("log_no", cell, msg(MsgKey.CSV_EXPECT_LOG_NO_FREE)); null }
+                    n in seenLogNos -> { err("log_no", cell, msg(MsgKey.CSV_EXPECT_LOG_NO_UNIQUE, seenLogNos[n])); null }
                     else -> { seenLogNos[n] = r.number; n }
                 }
             }
-            val date = r["date"].let { cell -> runCatching { LocalDate.parse(cell) }.getOrNull() ?: run { err("date", cell, "YYYY-MM-DD"); null } }
+            val date = r["date"].let { cell -> runCatching { LocalDate.parse(cell) }.getOrNull() ?: run { err("date", cell, msg(MsgKey.CSV_EXPECT_DATE)); null } }
             val duration = r["duration"].let { cell ->
                 val m = if (cell.contains(':')) Durations.parseHm(cell) else cell.toIntOrNull()
                 when {
-                    m == null -> { err("duration", cell, "H:MM or whole minutes"); null }
-                    !Durations.isValidFlightDuration(m) -> { err("duration", cell, "between 1 minute and 24:00"); null }
+                    m == null -> { err("duration", cell, msg(MsgKey.CSV_EXPECT_DURATION)); null }
+                    !Durations.isValidFlightDuration(m) -> { err("duration", cell, msg(MsgKey.CSV_EXPECT_DURATION_RANGE)); null }
                     else -> m
                 }
             }
-            val glider = r["glider"].also { if (it.isEmpty()) err("glider", it, "a glider registration") }
-            val airfield = r["airfield"].also { if (it.isEmpty()) err("airfield", it, "an airfield name") }
+            val glider = r["glider"].also { if (it.isEmpty()) err("glider", it, msg(MsgKey.CSV_EXPECT_REGISTRATION)) }
+            val airfield = r["airfield"].also { if (it.isEmpty()) err("airfield", it, msg(MsgKey.CSV_EXPECT_AIRFIELD)) }
             val role = r["role"].let { cell ->
                 Role.entries.firstOrNull { it.name.equals(cell, ignoreCase = true) }
-                    ?: run { err("role", cell, "PIC, STUDENT, INSTRUCTOR, COACH or MUTUAL"); null }
+                    ?: run { err("role", cell, msg(MsgKey.CSV_EXPECT_ROLE)); null }
             }
             val launchTypeCell = r["launch_type"]
             val launchTypeId = if (launchTypeCell.isEmpty()) null else known.launchTypes[Keys.nameKey(launchTypeCell)]
-                ?: run { err("launch_type", launchTypeCell, "one of $launchTypeList"); null }
+                ?: run { err("launch_type", launchTypeCell, msg(MsgKey.CSV_EXPECT_LAUNCH_TYPE, launchTypeList)); null }
             val pic = r["pic"].ifEmpty { null }
-            if (pic == null && role != null && role.picIsSomeoneElse) err("pic", "", "the name of the pilot in command on a ${role.name} row")
+            if (pic == null && role != null && role.picIsSomeoneElse) err("pic", "", msg(MsgKey.CSV_EXPECT_PIC, role.name))
             val launch = r["launch_time"].let { cell ->
-                if (cell.isEmpty()) null else ClockTime.parse(cell) ?: run { err("launch_time", cell, "HH:MM"); null }
+                if (cell.isEmpty()) null else ClockTime.parse(cell) ?: run { err("launch_time", cell, msg(MsgKey.CSV_EXPECT_TIME)); null }
             }
             val landing = r["landing_time"].let { cell ->
-                if (cell.isEmpty()) null else ClockTime.parse(cell) ?: run { err("landing_time", cell, "HH:MM"); null }
+                if (cell.isEmpty()) null else ClockTime.parse(cell) ?: run { err("landing_time", cell, msg(MsgKey.CSV_EXPECT_TIME)); null }
             }
             if (launch != null && landing != null && ClockTime.minutesBetween(launch, landing) == null) {
-                err("landing_time", r["landing_time"], "a time after the launch time ${r["launch_time"]}")
+                err("landing_time", r["landing_time"], msg(MsgKey.CSV_EXPECT_AFTER_LAUNCH, r["launch_time"]))
             }
             val landingAirfield = r["landing_airfield"].ifEmpty { null }
             val landingPlace = r["landing_place"].ifEmpty { null }
             if (landingAirfield != null && landingPlace != null) {
-                err("landing_place", landingPlace, "landing_airfield or landing_place, not both")
+                err("landing_place", landingPlace, msg(MsgKey.CSV_EXPECT_ONE_LANDING))
             }
 
             if (errors.size > before) continue
@@ -155,7 +158,7 @@ object FlightCsv {
                 launch, landing, landingAirfield, landingPlace, r["notes"].ifEmpty { null },
             )
         }
-        if (table.rows.isEmpty()) errors += CsvError(2, null, null, "at least one flight row")
+        if (table.rows.isEmpty()) errors += CsvError(2, null, null, msg(MsgKey.CSV_EXPECT_FLIGHT_ROW))
         return FlightImport(flights, errors, warnings, unmatchedGliders, unmatchedAirfields, needLaunchType, !hasLogNo, needProfile)
     }
 }

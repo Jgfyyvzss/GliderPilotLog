@@ -7,6 +7,7 @@ import io.github.jgfyyvzss.gliderpilotlog.core.FlightField
 import io.github.jgfyyvzss.gliderpilotlog.core.FlightValidation
 import io.github.jgfyyvzss.gliderpilotlog.core.Keys
 import io.github.jgfyyvzss.gliderpilotlog.core.Role
+import io.github.jgfyyvzss.gliderpilotlog.ui.text
 import java.time.LocalDate
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -20,11 +21,12 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class LogbookRepositoryTest {
+    private val context = InstrumentationRegistry.getInstrumentation().targetContext
     private lateinit var db: LogbookDatabase
     private lateinit var repo: LogbookRepository
 
     @Before fun open() {
-        db = LogbookDatabase.inMemory(InstrumentationRegistry.getInstrumentation().targetContext)
+        db = LogbookDatabase.inMemory(context)
         repo = LogbookRepository(db)
     }
 
@@ -35,7 +37,7 @@ class LogbookRepositoryTest {
     @Test fun gliderRegistrationMatchesIgnoringCaseSpacesAndHyphens() = runTest {
         repo.saveGlider(null, "VH-FQM", "Hornet", archived = false).id()
         val dup = repo.saveGlider(null, "vh fqm", "Hornet", archived = false)
-        assertEquals("VH-FQM is already in the glider list", (dup as SaveResult.Rejected).message)
+        assertEquals("VH-FQM is already in the glider list", (dup as SaveResult.Rejected).message.text(context))
         assertTrue(repo.saveGlider(null, "?", "", archived = false) is SaveResult.Saved)
     }
 
@@ -94,7 +96,7 @@ class LogbookRepositoryTest {
         assertEquals("MANUAL", stored.source)
 
         val dup = repo.saveFlight(null, draft.copy(clubId = c1)).first as FlightValidation.Invalid
-        assertTrue(dup.errors[FlightField.LOG_NO]!!.startsWith("Log number 1 is already used by the flight on "))
+        assertTrue(dup.errors[FlightField.LOG_NO]!!.text(context).startsWith("Log number 1 is already used by the flight on "))
 
         // Saving the same flight again with its own number is fine.
         assertTrue(repo.saveFlight(id, draft.copy(clubId = c1, notes = "Wave")).first is FlightValidation.Valid)

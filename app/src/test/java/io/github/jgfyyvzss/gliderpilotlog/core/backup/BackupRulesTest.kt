@@ -3,6 +3,7 @@ package io.github.jgfyyvzss.gliderpilotlog.core.backup
 import io.github.jgfyyvzss.gliderpilotlog.core.backup.BackupTestData.T1
 import io.github.jgfyyvzss.gliderpilotlog.core.backup.BackupTestData.T2
 import io.github.jgfyyvzss.gliderpilotlog.core.backup.BackupTestData.flight
+import io.github.jgfyyvzss.gliderpilotlog.english
 import java.time.LocalDateTime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -25,7 +26,7 @@ class BackupRulesTest {
             ),
             airfields = base.airfields.map { it.copy(clubIds = listOf("c1", "c9"), defaultLaunchTypeId = "nope") },
         )
-        val p = BackupValidation.validate(bad)
+        val p = BackupValidation.validate(bad).map { it.english() }
         listOf(
             "Flight 1 refers to a missing glider", "Flight 1: unknown role DUAL", "Flight 1: duration 0 minutes is out of range",
             "Flight 2 has an unreadable time: yesterday", "Flight 2 has both a landing airfield and a landing place",
@@ -39,7 +40,7 @@ class BackupRulesTest {
         val clash = base.copy(flights = base.flights + flight("f9", 341, T1))
         assertEquals(
             listOf("Log number 341 is used by two different flights: the flight on 2026-10-17 in FQM and the flight on 2026-10-17 in FQM"),
-            BackupValidation.liveCollisions(clash),
+            BackupValidation.liveCollisions(clash).map { it.english() },
         )
     }
 
@@ -74,7 +75,7 @@ class BackupRulesTest {
     @Test fun mergeThatCreatesALogNumberCollisionIsCaught() {
         val incoming = base.copy(flights = listOf(flight("other", 341, T2)))
         val merged = BackupMerge.merge(base, incoming).merged
-        assertTrue(BackupValidation.validate(merged).any { it.startsWith("Log number 341 is used by two different flights") })
+        assertTrue(BackupValidation.validate(merged).any { it.english().startsWith("Log number 341 is used by two different flights") })
     }
 
     @Test fun openingBalancesMatchByRole() {

@@ -54,6 +54,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import io.github.jgfyyvzss.gliderpilotlog.R
+import io.github.jgfyyvzss.gliderpilotlog.core.Msg
+import io.github.jgfyyvzss.gliderpilotlog.ui.text
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
@@ -75,7 +80,7 @@ fun GliderListScreen(onOpen: (String) -> Unit, onNew: () -> Unit) {
     val gliders by appContainer().repository.observeGliders().collectAsStateWithLifecycle(emptyList())
     Box(Modifier.fillMaxSize()) {
         if (gliders.isEmpty()) {
-            Text("No gliders yet. Tap + to add one.", Modifier.padding(16.dp))
+            Text(stringResource(R.string.gliders_none_yet), Modifier.padding(16.dp))
         }
         LazyColumn(Modifier.fillMaxSize()) {
             items(gliders, key = { it.id }) { g ->
@@ -84,9 +89,9 @@ fun GliderListScreen(onOpen: (String) -> Unit, onNew: () -> Unit) {
                     supportingContent = { if (g.type.isNotEmpty()) Text(g.type) },
                     trailingContent = {
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            if (g.incomplete) Badge("Incomplete")
-                            if (g.weglideAircraftId == null && !g.archived) Badge("No WeGlide type")
-                            if (g.archived) Badge("Archived")
+                            if (g.incomplete) Badge(stringResource(R.string.common_incomplete))
+                            if (g.weglideAircraftId == null && !g.archived) Badge(stringResource(R.string.gliders_no_weglide))
+                            if (g.archived) Badge(stringResource(R.string.common_archived))
                         }
                     },
                     modifier = Modifier.clickable { onOpen(g.id) },
@@ -95,7 +100,7 @@ fun GliderListScreen(onOpen: (String) -> Unit, onNew: () -> Unit) {
             }
         }
         FloatingActionButton(onClick = onNew, modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
-            Icon(Icons.Default.Add, contentDescription = "Add glider")
+            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.title_new_glider))
         }
     }
 }
@@ -104,7 +109,7 @@ class GliderEditViewModel(private val repo: LogbookRepository, private val id: S
     var registration by mutableStateOf("")
     var type by mutableStateOf("")
     var archived by mutableStateOf(false)
-    var error by mutableStateOf<String?>(null)
+    var error by mutableStateOf<Msg?>(null)
     var loaded by mutableStateOf(id == null)
         private set
     var done by mutableStateOf(false)
@@ -137,7 +142,7 @@ fun GliderEditScreen(id: String?, onDone: () -> Unit) {
         OutlinedTextField(
             value = vm.registration,
             onValueChange = { vm.registration = it; vm.error = null },
-            label = { Text("Registration") },
+            label = { Text(stringResource(R.string.glider_registration)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters),
             modifier = Modifier.fillMaxWidth(),
@@ -145,19 +150,19 @@ fun GliderEditScreen(id: String?, onDone: () -> Unit) {
         OutlinedTextField(
             value = vm.type,
             onValueChange = { vm.type = it },
-            label = { Text("Type, as the logbook shows it") },
+            label = { Text(stringResource(R.string.glider_type)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
         if (id != null) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Archived", Modifier.weight(1f))
+                Text(stringResource(R.string.common_archived), Modifier.weight(1f))
                 Switch(checked = vm.archived, onCheckedChange = { vm.archived = it })
             }
-            Text("Archived gliders are hidden from the flight form.", style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.gliders_archived_hint), style = MaterialTheme.typography.bodySmall)
         }
-        vm.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        Button(onClick = { vm.save() }, modifier = Modifier.fillMaxWidth()) { Text("Save") }
+        vm.error?.let { Text(it.text(), color = MaterialTheme.colorScheme.error) }
+        Button(onClick = { vm.save() }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.common_save)) }
         if (id != null) {
             WeGlideTypeSection(id) { vm.type = it }
             LogbookTotalSection(id)
@@ -176,22 +181,23 @@ private fun LogbookTotalSection(gliderId: String) {
     val g = glider ?: return
 
     HorizontalDivider()
-    Text("Aircraft logbook", style = MaterialTheme.typography.titleMedium)
+    Text(stringResource(R.string.flights_aircraft_logbook), style = MaterialTheme.typography.titleMedium)
     Text(
         g.logbookTotalMinutes?.let { m ->
-            "Logbook total as last entered: ${HoursFormat.format(m, settings.hoursDisplay)}" +
-                (g.logbookTotalFlights?.let { ", $it flights" } ?: "") +
-                (g.logbookTotalDate?.let { ", ${isoDateShort(it)}" } ?: "")
-        } ?: "No logbook total recorded.",
+            val hours = HoursFormat.format(m, settings.hoursDisplay)
+            val date = g.logbookTotalDate?.let { isoDateShort(it) } ?: ""
+            g.logbookTotalFlights?.let { stringResource(R.string.glider_total_with_flights, hours, it, date) }
+                ?: stringResource(R.string.glider_total, hours, date)
+        } ?: stringResource(R.string.glider_no_total),
     )
     Text(
-        "The last total you wrote in the glider's own logbook, kept as the calculator's starting point. Others may fly " +
-            "the glider, so check it against the real logbook.",
+        stringResource(R.string.glider_total_hint),
+
         style = MaterialTheme.typography.bodySmall,
     )
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilledTonalButton(onClick = { calculator = true }, modifier = Modifier.weight(1f)) { Text("Calculator") }
-        OutlinedButton(onClick = { editing = true }, modifier = Modifier.weight(1f)) { Text("Edit total") }
+        FilledTonalButton(onClick = { calculator = true }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.glider_calculator)) }
+        OutlinedButton(onClick = { editing = true }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.glider_edit_total)) }
     }
 
     if (calculator) LogbookCalculatorSheet(gliderId, day = null) { calculator = false }
@@ -208,27 +214,30 @@ private fun EditTotalDialog(g: GliderEntity, onDismiss: () -> Unit) {
     var flights by rememberSaveable { mutableStateOf(g.logbookTotalFlights?.toString() ?: "") }
     var date by remember { mutableStateOf(g.logbookTotalDate?.let(LocalDate::parse) ?: LocalDate.now()) }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
+    val needHours = stringResource(R.string.glider_total_need_hours)
+    val badHours = stringResource(R.string.logbook_bad_hours)
     var pickDate by rememberSaveable { mutableStateOf(false) }
 
     fun save(minutes: Int?, count: Int?) = scope.launch {
         when (val r = app.repository.saveLogbookTotal(g.id, minutes, count, if (minutes == null) null else date)) {
             is SaveResult.Saved -> onDismiss()
-            is SaveResult.Rejected -> error = r.message
+            is SaveResult.Rejected -> error = r.message.text(context)
         }
     }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Logbook total for ${g.registration}") },
+        title = { Text(stringResource(R.string.glider_total_title, g.registration)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(hours, { hours = it; error = null }, label = { Text("Hours") }, singleLine = true,
+                OutlinedTextField(hours, { hours = it; error = null }, label = { Text(stringResource(R.string.common_hours)) }, singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    supportingText = { Text("Digits, H:MM or decimal hours") }, visualTransformation = ColonTransformation)
-                OutlinedTextField(flights, { flights = it.filter(Char::isDigit); error = null }, label = { Text("Flights (optional)") },
+                    supportingText = { Text(stringResource(R.string.logbook_hours_hint)) }, visualTransformation = ColonTransformation)
+                OutlinedTextField(flights, { flights = it.filter(Char::isDigit); error = null }, label = { Text(stringResource(R.string.common_flights_optional)) },
                     singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                 Box(Modifier.fillMaxWidth()) {
-                    OutlinedTextField(date.shortText(), {}, readOnly = true, label = { Text("As of") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(date.shortText(), {}, readOnly = true, label = { Text(stringResource(R.string.common_as_of)) }, modifier = Modifier.fillMaxWidth())
                     Box(Modifier.matchParentSize().clickable { pickDate = true })
                 }
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
@@ -238,16 +247,16 @@ private fun EditTotalDialog(g: GliderEntity, onDismiss: () -> Unit) {
             TextButton(onClick = {
                 val m = LogbookCalculator.parseHours(hours)
                 when {
-                    hours.isBlank() -> error = "Enter the hours, or use Clear"
-                    m == null -> error = "Enter hours as digits, H:MM or decimal hours"
+                    hours.isBlank() -> error = needHours
+                    m == null -> error = badHours
                     else -> save(m, flights.toIntOrNull())
                 }
-            }) { Text("Save") }
+            }) { Text(stringResource(R.string.common_save)) }
         },
         dismissButton = {
             Row {
-                TextButton(onClick = { save(null, null) }) { Text("Clear") }
-                TextButton(onClick = onDismiss) { Text("Cancel") }
+                TextButton(onClick = { save(null, null) }) { Text(stringResource(R.string.common_clear)) }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
             }
         },
     )
@@ -260,9 +269,9 @@ private fun EditTotalDialog(g: GliderEntity, onDismiss: () -> Unit) {
                 TextButton(onClick = {
                     state.selectedDateMillis?.let { date = Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate() }
                     pickDate = false
-                }) { Text("OK") }
+                }) { Text(stringResource(R.string.common_ok)) }
             },
-            dismissButton = { TextButton(onClick = { pickDate = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { pickDate = false }) { Text(stringResource(R.string.common_cancel)) } },
         ) { DatePicker(state) }
     }
 }

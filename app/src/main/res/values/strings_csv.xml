@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="csv_intro">CSV files are for spreadsheets and other systems. Use Backup in Settings to keep your logbook safe.</string>
+    <string name="csv_export">Export to a folder</string>
+    <string name="csv_export_hint">Writes flights, gliders and airfields as three CSV files.</string>
+    <string name="csv_exported">Exported flights, gliders and airfields (%1$s)</string>
+    <string name="csv_import">Import</string>
+    <string name="csv_import_flights">Import flights</string>
+    <string name="csv_import_gliders">Import gliders</string>
+    <string name="csv_import_airfields">Import airfields</string>
+    <string name="csv_import_hint">The whole file is checked first and nothing is imported if any row has an error. Gliders and airfields that already exist are skipped, never updated.</string>
+    <string name="csv_undo">Undo last import</string>
+    <string name="csv_not_imported">The file was not imported</string>
+    <string name="csv_confirm_gliders">Import %1$d gliders?</string>
+    <string name="csv_confirm_airfields">Import %1$d airfields?</string>
+    <string name="csv_from_file">From %1$s.</string>
+    <string name="csv_imported_flights">Imported %1$d flights. New records: %2$d gliders, %3$d airfields, %4$d clubs.</string>
+    <string name="csv_added_gliders">Added %1$d gliders</string>
+    <string name="csv_added_airfields">Added %1$d airfields and %2$d new clubs</string>
+    <string name="csv_nothing_to_undo">There is no import to undo</string>
+    <string name="csv_undone">Removed the import of %1$s</string>
+    <string name="csv_undo_title">Undo the last import?</string>
+    <string name="csv_undo_text">Remove %1$d flights, %2$d gliders and %3$d airfields added by the import of %4$s on %5$s? Gliders and airfields still used by other flights stay. Flights from this import are removed even if you have edited them since.</string>
+    <string name="csv_remove">Remove</string>
+
+    <string name="csv_resolve_title">Import %1$d flights from %2$s</string>
+    <string name="csv_unmatched_gliders">Gliders not in your list</string>
+    <string name="csv_unmatched_airfields">Airfields not in your list</string>
+    <string name="csv_create_stub">Create %1$s (to complete later)</string>
+    <string name="csv_default_launch_type">Launch type for %1$d rows without one</string>
+    <string name="csv_numbering">The file has no log_no column. Flights will be numbered %1$d to %2$d in file order.</string>
+    <string name="csv_default_pic">Pilot in command for %1$d PIC, Instructor and Coach rows without one</string>
+</resources>

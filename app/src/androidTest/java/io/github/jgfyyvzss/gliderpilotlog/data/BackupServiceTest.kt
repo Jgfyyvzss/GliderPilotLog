@@ -6,6 +6,7 @@ import io.github.jgfyyvzss.gliderpilotlog.core.FlightDraft
 import io.github.jgfyyvzss.gliderpilotlog.core.Keys
 import io.github.jgfyyvzss.gliderpilotlog.core.Role
 import io.github.jgfyyvzss.gliderpilotlog.core.backup.BackupCodec
+import io.github.jgfyyvzss.gliderpilotlog.ui.text
 import java.time.LocalDate
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -95,12 +96,12 @@ class BackupServiceTest {
         seed(source)
         repo(target).saveGlider(null, "GZY", "Junior", archived = false)
         val p = service(target).prepareRestore(service(source).exportJson())
-        assertTrue(p is Prepared.Refused && p.problems.single().startsWith("Restore needs an empty logbook"))
+        assertTrue(p is Prepared.Refused && p.problems.single().text(context).startsWith("Restore needs an empty logbook"))
     }
 
     @Test fun refusesAFileFromANewerFormat() = runTest {
         val p = service(target).prepareRestore("""{"format":"glider-logbook-backup","format_version":99}""")
-        assertTrue(p is Prepared.Refused && p.problems.single().contains("newer version"))
+        assertTrue(p is Prepared.Refused && p.problems.single().text(context).contains("newer version"))
     }
 
     @Test fun mergeAddsNewerRecordsAndReportsCollisions() = runTest {
@@ -133,7 +134,7 @@ class BackupServiceTest {
         val (_, local5) = t.saveFlight(null, FlightDraft(logNoText = "5", date = LocalDate.of(2026, 10, 21), durationText = "20",
             gliderId = g, airfieldId = a, clubId = c, launchTypeId = wt, role = Role.PIC, picName = "Pat"))
         val clash = service(target).prepareMerge(service(source).exportJson())
-        assertTrue("$clash", clash is Prepared.Refused && clash.problems.any { it.startsWith("Log number 5 is used by two different flights") })
+        assertTrue("$clash", clash is Prepared.Refused && clash.problems.any { it.text(context).startsWith("Log number 5 is used by two different flights") })
         assertEquals(20, t.flight(local5!!)!!.durationMinutes)
     }
 }

@@ -1,10 +1,13 @@
 package io.github.jgfyyvzss.gliderpilotlog.core.csv
 
+import io.github.jgfyyvzss.gliderpilotlog.core.Msg
+import io.github.jgfyyvzss.gliderpilotlog.core.MsgKey
+import io.github.jgfyyvzss.gliderpilotlog.core.msg
 import java.util.Locale
 
 /** A minimal RFC 4180 reader and writer: comma delimiter, quoted fields with doubled quotes, CRLF or LF. */
 object Csv {
-    const val BOM = "﻿"
+    const val BOM = "\uFEFF"
 
     /** Parses the whole text into records. A leading byte order mark is dropped. */
     fun parse(text: String): List<List<String>> {
@@ -51,15 +54,14 @@ object Csv {
     fun headerKey(name: String): String = name.trim().lowercase(Locale.ROOT)
 }
 
-/** One problem in an imported file, named by row and column. The header is row 1. */
-data class CsvError(val row: Int, val column: String?, val found: String?, val expected: String) {
-    val message: String
-        get() = buildString {
-            append("Row ").append(row)
-            if (column != null) append(", ").append(column)
-            append(": ")
-            if (found != null) append("found ").append(if (found.isBlank()) "blank" else found).append(", ")
-            append("expected ").append(expected)
+/** One problem in an imported file, named by row and column. The header is row 1. Column names stay as in the file. */
+data class CsvError(val row: Int, val column: String?, val found: String?, val expected: Msg) {
+    /** For example "Row 14, date: found 18/10/26, expected YYYY-MM-DD". */
+    val message: Msg
+        get() = when {
+            column == null -> msg(MsgKey.CSV_ERROR_ROW, row, expected)
+            found == null -> msg(MsgKey.CSV_ERROR_COLUMN, row, column, expected)
+            else -> msg(MsgKey.CSV_ERROR_FOUND, row, column, if (found.isBlank()) msg(MsgKey.CSV_BLANK) else found, expected)
         }
 }
 

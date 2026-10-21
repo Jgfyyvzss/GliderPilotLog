@@ -1,13 +1,14 @@
 package io.github.jgfyyvzss.gliderpilotlog.core.backup
 
 import io.github.jgfyyvzss.gliderpilotlog.core.backup.BackupTestData.T1
+import io.github.jgfyyvzss.gliderpilotlog.english
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class BackupCodecTest {
     private fun ok(text: String) = (BackupCodec.decode(text) as DecodeResult.Ok).file
-    private fun refused(text: String) = (BackupCodec.decode(text) as DecodeResult.Refused).message
+    private fun refused(text: String) = (BackupCodec.decode(text) as DecodeResult.Refused).message.english()
 
     @Test fun encodeDecodeEncodeIsIdentical() {
         val first = BackupCodec.encode(BackupTestData.file())

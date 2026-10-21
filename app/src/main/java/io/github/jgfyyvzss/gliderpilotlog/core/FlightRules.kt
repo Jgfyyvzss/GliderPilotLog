@@ -33,8 +33,8 @@ enum class FlightField {
 data class FlightContext(
     /** Number of clubs linked to the chosen airfield. */
     val airfieldClubCount: Int,
-    /** A short description of another live flight holding the same log number, or null if it is free. */
-    val logNoHeldBy: String?,
+    /** Another live flight holding the same log number, as a [MsgKey.FLIGHT_ON] message, or null if it is free. */
+    val logNoHeldBy: Msg?,
 )
 
 /** A draft that passed validation, in stored form. */
@@ -56,8 +56,8 @@ data class ValidFlight(
 )
 
 sealed interface FlightValidation {
-    data class Valid(val flight: ValidFlight, val warnings: List<String>) : FlightValidation
-    data class Invalid(val errors: Map<FlightField, String>, val warnings: List<String>) : FlightValidation
+    data class Valid(val flight: ValidFlight, val warnings: List<Msg>) : FlightValidation
+    data class Invalid(val errors: Map<FlightField, Msg>, val warnings: List<Msg>) : FlightValidation
 }
 
 object FlightRules {
@@ -74,35 +74,34 @@ object FlightRules {
     }
 
     fun validate(draft: FlightDraft, context: FlightContext): FlightValidation {
-        val errors = linkedMapOf<FlightField, String>()
-        val warnings = mutableListOf<String>()
+        val errors = linkedMapOf<FlightField, Msg>()
+        val warnings = mutableListOf<Msg>()
 
         val logNo = parseLogNo(draft.logNoText)
         when {
-            logNo == null -> errors[FlightField.LOG_NO] = "Enter a whole number above 0"
-            context.logNoHeldBy != null -> errors[FlightField.LOG_NO] = "Log number $logNo is already used by ${context.logNoHeldBy}"
+            logNo == null -> errors[FlightField.LOG_NO] = msg(MsgKey.LOG_NO_POSITIVE)
+            context.logNoHeldBy != null -> errors[FlightField.LOG_NO] = msg(MsgKey.LOG_NO_USED, logNo, context.logNoHeldBy)
         }
 
-        if (draft.date == null) errors[FlightField.DATE] = "Choose the flight date"
+        if (draft.date == null) errors[FlightField.DATE] = msg(MsgKey.DATE_REQUIRED)
 
         val duration = Durations.parseFormEntry(draft.durationText)
         when {
-            duration == null -> errors[FlightField.DURATION] = "Enter the duration as digits, for example 324 for 3:24"
-            !Durations.isValidFlightDuration(duration) -> errors[FlightField.DURATION] =
-                "Duration must be between 0:01 and 24:00"
+            duration == null -> errors[FlightField.DURATION] = msg(MsgKey.DURATION_FORMAT)
+            !Durations.isValidFlightDuration(duration) -> errors[FlightField.DURATION] = msg(MsgKey.DURATION_RANGE)
         }
 
-        if (draft.gliderId == null) errors[FlightField.GLIDER] = "Choose a glider"
-        if (draft.airfieldId == null) errors[FlightField.AIRFIELD] = "Choose an airfield"
+        if (draft.gliderId == null) errors[FlightField.GLIDER] = msg(MsgKey.GLIDER_REQUIRED)
+        if (draft.airfieldId == null) errors[FlightField.AIRFIELD] = msg(MsgKey.AIRFIELD_REQUIRED)
         if (draft.airfieldId != null && context.airfieldClubCount > 0 && draft.clubId == null) {
-            errors[FlightField.CLUB] = "Choose a club"
+            errors[FlightField.CLUB] = msg(MsgKey.CLUB_REQUIRED)
         }
-        if (draft.launchTypeId == null) errors[FlightField.LAUNCH_TYPE] = "Choose a launch type"
+        if (draft.launchTypeId == null) errors[FlightField.LAUNCH_TYPE] = msg(MsgKey.LAUNCH_TYPE_REQUIRED)
 
         val pic = draft.picName.trim()
         if (pic.isEmpty()) {
             errors[FlightField.PIC_NAME] =
-                if (draft.role.picIsSomeoneElse) "Enter the name of the pilot in command" else "Enter the pilot in command"
+                msg(if (draft.role.picIsSomeoneElse) MsgKey.PIC_OTHER_REQUIRED else MsgKey.PIC_REQUIRED)
         }
 
         val launch = parseOptionalTime(draft.launchTimeText, FlightField.LAUNCH_TIME, errors)
@@ -110,9 +109,9 @@ object FlightRules {
         if (launch != null && landing != null) {
             val between = ClockTime.minutesBetween(launch, landing)
             if (between == null) {
-                errors[FlightField.LANDING_TIME] = "Landing must be after launch"
+                errors[FlightField.LANDING_TIME] = msg(MsgKey.LANDING_AFTER_LAUNCH)
             } else if (duration != null && kotlin.math.abs(between - duration) > TIMES_TOLERANCE_MINUTES) {
-                warnings += "The duration ${Durations.formatHm(duration)} differs from launch to landing (${Durations.formatHm(between)})"
+                warnings += msg(MsgKey.TIMES_DISAGREE, Durations.formatHm(duration), Durations.formatHm(between))
             }
         }
 
@@ -121,10 +120,10 @@ object FlightRules {
         when (draft.landingChoice) {
             LandingChoice.SAME_AS_DEPARTURE -> Unit
             LandingChoice.AIRFIELD ->
-                if (draft.landingAirfieldId == null) errors[FlightField.LANDING_AIRFIELD] = "Choose the landing airfield"
+                if (draft.landingAirfieldId == null) errors[FlightField.LANDING_AIRFIELD] = msg(MsgKey.LANDING_AIRFIELD_REQUIRED)
                 else landingAirfieldId = draft.landingAirfieldId
             LandingChoice.OTHER ->
-                if (draft.landingPlace.isBlank()) errors[FlightField.LANDING_PLACE] = "Describe where the flight ended"
+                if (draft.landingPlace.isBlank()) errors[FlightField.LANDING_PLACE] = msg(MsgKey.LANDING_PLACE_REQUIRED)
                 else landingPlace = draft.landingPlace.trim()
         }
 
@@ -151,10 +150,10 @@ object FlightRules {
         )
     }
 
-    private fun parseOptionalTime(text: String, field: FlightField, errors: MutableMap<FlightField, String>): ClockTime? {
+    private fun parseOptionalTime(text: String, field: FlightField, errors: MutableMap<FlightField, Msg>): ClockTime? {
         if (text.isBlank()) return null
         return ClockTime.parseFormEntry(text) ?: run {
-            errors[field] = "Enter a 24-hour time, for example 1305"
+            errors[field] = msg(MsgKey.TIME_FORMAT)
             null
         }
     }
