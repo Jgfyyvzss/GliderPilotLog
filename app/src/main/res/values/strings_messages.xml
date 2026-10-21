@@ -136,4 +136,8 @@
     <string name="msg_weglide_unreachable">Could not reach WeGlide: %1$s</string>
     <string name="msg_weglide_no_list">WeGlide sent no usable aircraft list</string>
     <string name="msg_aircraft_save_failed">The aircraft list could not be saved</string>
+    <string name="msg_igc_no_date">This is not an IGC file: it has no flight date</string>
+    <string name="msg_igc_no_fixes">The IGC file has no valid GPS fixes</string>
+    <string name="msg_igc_no_flight">No flight found in this IGC file</string>
+    <string name="msg_igc_unreadable">The file could not be read</string>
 </resources>

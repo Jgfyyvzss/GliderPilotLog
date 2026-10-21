@@ -134,7 +134,7 @@ An IGC file pre-fills the flight form and is then discarded: it is read from the
 3. If several are in range, preselect the nearest and list the others with distances.
 4. If none match, prompt "No airfield found near this launch point. Create one?" with the form pre-filled with the fix's coordinates and elevation. Cancelling leaves the field blank, and the form can't be saved until an existing airfield is chosen.
 
-**Glider matching:** the registration in the header is matched against glider records, ignoring case, spaces and hyphens. The type text is free text and is not used.
+**Glider matching:** the registration in the header is matched against glider records, ignoring case, spaces and hyphens, and then without its nationality prefix (Appendix D). The type text is free text and is not used.
 
 The threshold and default radius should be tuned against a handful of the pilot's own IGC files.
 
@@ -358,7 +358,7 @@ All files are UTF-8 with a comma delimiter, a single header row, and RFC 4180 qu
 
 ## Appendix D: IGC parsing parameters
 
-The record layouts below come from my knowledge of the IGC format, because I could not read the specification text. Check them against Appendix A of the IGC technical specification before relying on them. The numeric defaults are proposals, kept as named constants in one place so they can be tuned against real files.
+The record layouts below were checked on 2026-10-21 against Appendix A of the FAI IGC technical specification (January 2026, AL10): A2.5.4 gives HFDTE as the UTC date of the first valid fix, the H record list gives `HFDTEDATE:DDMMYY,NN` (NN is the flight number of the day) and `HFGIDGLIDERID:`, and A4.1 gives the B record layout, with A for a 3D fix and V for a 2D fix or no GNSS data. The numeric defaults are proposals, kept as named constants in one place so they can be tuned against real files.
 
 **Parsing**
 
@@ -372,6 +372,18 @@ The record layouts below come from my knowledge of the IGC format, because I cou
 - **End:** ground speed below 50 km/h held for 30 seconds. The segment ends at the first fix of that run.
 - **Guards:** the segment must last at least 30 seconds and climb at least 50 m above its starting altitude at some point. The threshold is low because the pilot's logbook contains one-minute cable-break flights.
 - **Known weakness:** in a strong headwind a glider's ground speed can drop below 50 km/h in flight. If real files show false endings, add a condition that the low speed coincides with being close to the ground.
+- **Measured against the sample files (2026-10-21):** compared with another IGC reader, the speed rule puts launch 3 to 6 seconds earlier and landing 17 to 36 seconds later, so durations run 20 to 42 seconds longer. All six files are within the one-minute tolerance, but two round to one minute more. The traces show the cause. The other reader's landing comes about 12 seconds before touchdown, with the glider still about 40 m up. The speed rule's landing comes at the end of the ground roll, about 20 seconds after touchdown. Systems define launch and landing differently, so the speed rule stays for now.
+
+**Other ways to find launch and landing (not built)**
+
+These are options to weigh if the speed rule proves unsuitable. Any of them can be combined with the speed rule, which would still find the segments.
+
+- **Touchdown by height:** after the speed rule finds the end of the ground roll, step back to the first fix where GNSS altitude has settled within a few metres of the final ground altitude. This gives touchdown rather than the end of the roll. Lift-off can be found the same way, as the first fix that climbs a few metres above the ground altitude at the start.
+- **Speed with height above the ground:** require the low speed to coincide with being near the launch or landing ground altitude. This also deals with false endings in a strong headwind.
+- **Airspeed:** use the true airspeed (TAS) extension that some recorders, including LXNAV, add to B records, declared in the I record. Airspeed is unaffected by wind, but not every recorder writes it.
+- **Engine noise and propulsion:** the ENL and MOP extensions mark engine running. They do not mark launch or landing, but would be needed to tell a self-launch's climb from soaring.
+- **Recorder flight markers:** some recorders log their own takeoff and landing events, in proprietary L records. These are not part of the IGC standard and vary by maker.
+- **Different thresholds:** a higher speed or longer hold moves both ends. It risks missing the short cable-break flights the current thresholds were set for.
 
 **Results**
 
@@ -383,7 +395,7 @@ The record layouts below come from my knowledge of the IGC format, because I cou
 **Matching**
 
 - **Airfield:** measure from the launch point, which is the first fix of the segment, to each airfield with coordinates. The default match radius is 1000 m, overridden by `match_radius_m` where set. Choose the nearest airfield within its radius and list others in range with their distances. With no match, offer to create one, pre-filled with the launch coordinates and the fix altitude as the elevation.
-- **Glider:** compare the glider ID header (`HFGIDGLIDERID`) with the glider registration key. If there is no match, the pilot chooses. The glider type header is ignored.
+- **Glider:** compare the glider ID header (`HFGIDGLIDERID`) with the glider registration key. If nothing matches, compare it again without its nationality prefix, the text before the first hyphen, so `VH-FQM` finds a glider entered as `FQM`. If there is still no match, the pilot chooses. The glider type header is ignored. The prefix rule was added 2026-10-21, because the pilot's gliders are entered without `VH-`.
 
 **Landing place (when the Place setting is on):** compare the landing fix, the last fix of the segment, with the launch airfield. Inside its radius, leave the landing place blank. Inside another airfield's radius, preselect that airfield. Otherwise pre-fill the free-text landing place with the coordinates, for example -36.7842, 147.1700, for the pilot to rename. No create-airfield prompt is shown for landings.
 

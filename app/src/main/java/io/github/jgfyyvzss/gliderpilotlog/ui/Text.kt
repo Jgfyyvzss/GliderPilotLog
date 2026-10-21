@@ -140,6 +140,10 @@ fun MsgKey.res(): Int = when (this) {
     MsgKey.WEGLIDE_UNREACHABLE -> R.string.msg_weglide_unreachable
     MsgKey.WEGLIDE_NO_LIST -> R.string.msg_weglide_no_list
     MsgKey.AIRCRAFT_SAVE_FAILED -> R.string.msg_aircraft_save_failed
+    MsgKey.IGC_NO_DATE -> R.string.msg_igc_no_date
+    MsgKey.IGC_NO_FIXES -> R.string.msg_igc_no_fixes
+    MsgKey.IGC_NO_FLIGHT -> R.string.msg_igc_no_flight
+    MsgKey.IGC_UNREADABLE -> R.string.msg_igc_unreadable
 }
 
 /** A message in the pilot's language. Arguments that are messages, roles or dates are shown in that language too. */

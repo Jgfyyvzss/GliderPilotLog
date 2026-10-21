@@ -44,6 +44,8 @@ import io.github.jgfyyvzss.gliderpilotlog.ui.flights.FlightListScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.gliders.GliderEditScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.gliders.GliderListScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.home.HomeScreen
+import io.github.jgfyyvzss.gliderpilotlog.ui.igc.IgcImportScreen
+import io.github.jgfyyvzss.gliderpilotlog.ui.igc.rememberIgcPicker
 import io.github.jgfyyvzss.gliderpilotlog.ui.settings.ClubsScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.settings.FirstRunScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.settings.LaunchTypesScreen
@@ -64,7 +66,9 @@ import kotlinx.serialization.Serializable
 @Serializable object SettingsRoute
 @Serializable object ClubsRoute
 @Serializable object LaunchTypesRoute
-@Serializable data class FlightEditRoute(val id: String? = null)
+@Serializable object IgcImportRoute
+/** [igcSegment] is the index of the IGC segment that pre-fills a new flight, or -1. */
+@Serializable data class FlightEditRoute(val id: String? = null, val igcSegment: Int = -1)
 @Serializable data class AirfieldEditRoute(val id: String? = null)
 @Serializable data class GliderEditRoute(val id: String? = null)
 
@@ -99,12 +103,20 @@ private fun MainScreens() {
     val entry by nav.currentBackStackEntryAsState()
     val destination = entry?.destination
     val current = topLevel.firstOrNull { t -> destination?.hasRoute(t.route::class) == true }
+    // A file opened from the picker or shared by another app starts a fresh import screen.
+    val app = appContainer()
+    LaunchedEffect(Unit) {
+        app.igcImport.openRequests.collect {
+            nav.navigate(IgcImportRoute) { popUpTo<IgcImportRoute> { inclusive = true } }
+        }
+    }
     val title = current?.label ?: when {
         destination?.hasRoute(SettingsRoute::class) == true -> R.string.title_settings
         destination?.hasRoute(ClubsRoute::class) == true -> R.string.title_clubs
         destination?.hasRoute(LaunchTypesRoute::class) == true -> R.string.title_launch_types
         destination?.hasRoute(OpeningBalancesRoute::class) == true -> R.string.title_opening_balances
         destination?.hasRoute(SpreadsheetsRoute::class) == true -> R.string.title_spreadsheets
+        destination?.hasRoute(IgcImportRoute::class) == true -> R.string.home_from_igc
         destination?.hasRoute(FlightEditRoute::class) == true ->
             if (entry?.toRoute<FlightEditRoute>()?.id == null) R.string.title_new_flight else R.string.title_flight
         destination?.hasRoute(AirfieldEditRoute::class) == true ->
@@ -114,6 +126,7 @@ private fun MainScreens() {
         else -> null
     }
 
+    val pickIgc = rememberIgcPicker()
     Scaffold(
         topBar = {
             TopAppBar(
@@ -154,6 +167,7 @@ private fun MainScreens() {
             composable<HomeRoute> {
                 HomeScreen(
                     onNewFlight = { nav.navigate(FlightEditRoute()) },
+                    onFromIgc = pickIgc,
                     onTotals = { nav.navigateTopLevel(TotalsRoute) },
                     onBackup = { nav.navigate(SettingsRoute) },
                 )
@@ -162,7 +176,13 @@ private fun MainScreens() {
             composable<FlightsRoute> {
                 FlightListScreen(onOpen = { nav.navigate(FlightEditRoute(it)) }, onNew = { nav.navigate(FlightEditRoute()) })
             }
-            composable<FlightEditRoute> { FlightEditScreen(id = it.toRoute<FlightEditRoute>().id, onDone = { nav.popBackStack() }) }
+            composable<FlightEditRoute> {
+                val route = it.toRoute<FlightEditRoute>()
+                FlightEditScreen(id = route.id, igcSegment = route.igcSegment.takeIf { s -> s >= 0 }, onDone = { nav.popBackStack() })
+            }
+            composable<IgcImportRoute> {
+                IgcImportScreen(onImport = { i -> nav.navigate(FlightEditRoute(igcSegment = i)) }, onFinish = { nav.popBackStack() })
+            }
             composable<AirfieldsRoute> {
                 AirfieldListScreen(onOpen = { nav.navigate(AirfieldEditRoute(it)) }, onNew = { nav.navigate(AirfieldEditRoute()) })
             }

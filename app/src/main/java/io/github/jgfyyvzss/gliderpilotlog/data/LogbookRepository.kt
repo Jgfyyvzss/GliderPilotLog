@@ -207,8 +207,11 @@ class LogbookRepository(
         return FlightRules.validate(draft, FlightContext(clubCount, holder?.describe()))
     }
 
-    /** Validates and saves. Warnings do not block saving; the form shows them before the pilot confirms. */
-    suspend fun saveFlight(id: String?, draft: FlightDraft): Pair<FlightValidation, String?> =
+    /**
+     * Validates and saves. Warnings do not block saving; the form shows them before the pilot confirms. The source
+     * applies to a new flight; an edited one keeps its own.
+     */
+    suspend fun saveFlight(id: String?, draft: FlightDraft, source: FlightSource = FlightSource.MANUAL): Pair<FlightValidation, String?> =
         db.withTransaction {
             val result = validateFlight(id, draft)
             if (result !is FlightValidation.Valid) return@withTransaction result to null
@@ -230,7 +233,7 @@ class LogbookRepository(
                 landingAirfieldId = f.landingAirfieldId,
                 landingPlace = f.landingPlace,
                 notes = f.notes,
-                source = existing?.source ?: FlightSource.MANUAL.name,
+                source = existing?.source ?: source.name,
                 importBatchId = existing?.importBatchId,
                 updatedAt = now(),
             )

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="home_new_flight">New flight</string>
+    <string name="home_from_igc">From IGC</string>
     <string name="home_last_backup">Last backed up: %1$s</string>
     <string name="home_last_backup_stale">Last backed up: %1$s. Tap to back up.</string>
     <plurals name="home_flights">

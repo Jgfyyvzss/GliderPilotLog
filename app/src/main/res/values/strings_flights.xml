@@ -30,6 +30,20 @@
     <string name="flight_delete_text">Its log number becomes free if it is the highest.</string>
     <string name="flight_new_airfield_hint">Add coordinates and clubs later from the Airfields screen.</string>
 
+    <!-- IGC import -->
+    <string name="flight_igc_preview">From the IGC file: launch %1$s, landing %2$s</string>
+    <string name="flight_igc_nearby">Also in range of the launch point:</string>
+    <string name="flight_igc_nearby_item">%1$s, %2$d m</string>
+    <string name="flight_igc_no_airfield">No airfield found near this launch point. Create one?</string>
+    <string name="flight_igc_launch_point">Launch point %1$s, %2$s, elevation %3$d m</string>
+    <string name="flight_igc_create">Create</string>
+    <string name="igc_reading">Reading the IGC file…</string>
+    <string name="igc_choose_other">Choose another file</string>
+    <string name="igc_segments">This file has %1$d flights. Import each one separately.</string>
+    <string name="igc_segment">%1$s, %2$s</string>
+    <string name="igc_import">Import</string>
+    <string name="igc_imported">Imported</string>
+    <string name="igc_done">Done</string>
     <!-- Filter -->
     <string name="filter_button">Filter</string>
     <string name="filter_title">Filter flights</string>

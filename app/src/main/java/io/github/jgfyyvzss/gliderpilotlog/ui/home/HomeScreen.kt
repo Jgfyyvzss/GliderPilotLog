@@ -10,10 +10,12 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,9 +37,9 @@ import io.github.jgfyyvzss.gliderpilotlog.data.Settings
 import io.github.jgfyyvzss.gliderpilotlog.ui.appContainer
 import io.github.jgfyyvzss.gliderpilotlog.ui.settings.lastBackupText
 
-/** New flight, a compact unfiltered totals card, and the last backup. From IGC arrives in step 6. */
+/** New flight and From IGC, a compact unfiltered totals card, and the last backup. */
 @Composable
-fun HomeScreen(onNewFlight: () -> Unit, onTotals: () -> Unit, onBackup: () -> Unit) {
+fun HomeScreen(onNewFlight: () -> Unit, onFromIgc: () -> Unit, onTotals: () -> Unit, onBackup: () -> Unit) {
     val app = appContainer()
     val tableFlow = remember { app.totals.observe(FlightFilter()) }
     val table by tableFlow.collectAsStateWithLifecycle(null)
@@ -53,6 +55,10 @@ fun HomeScreen(onNewFlight: () -> Unit, onTotals: () -> Unit, onBackup: () -> Un
         Button(onClick = onNewFlight, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
             Icon(Icons.Default.Add, contentDescription = null)
             Text("  " + stringResource(R.string.home_new_flight))
+        }
+        OutlinedButton(onClick = onFromIgc, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
+            Icon(Icons.Default.FileOpen, contentDescription = null)
+            Text("  " + stringResource(R.string.home_from_igc))
         }
         table?.let { t ->
             Card(Modifier.fillMaxWidth().clickable(onClick = onTotals)) {

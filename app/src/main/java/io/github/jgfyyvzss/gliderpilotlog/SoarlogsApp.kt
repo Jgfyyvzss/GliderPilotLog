@@ -7,6 +7,7 @@ import io.github.jgfyyvzss.gliderpilotlog.data.BackupScheduler
 import io.github.jgfyyvzss.gliderpilotlog.data.BackupService
 import io.github.jgfyyvzss.gliderpilotlog.data.CsvService
 import io.github.jgfyyvzss.gliderpilotlog.data.FilterStore
+import io.github.jgfyyvzss.gliderpilotlog.data.IgcImportStore
 import io.github.jgfyyvzss.gliderpilotlog.data.LogbookDatabase
 import io.github.jgfyyvzss.gliderpilotlog.data.LogbookRepository
 import io.github.jgfyyvzss.gliderpilotlog.data.SettingsRepository
@@ -34,6 +35,7 @@ class SoarlogsApp : Application() {
         )
     }
     val csv by lazy { CsvService(database, aircraftName = { id -> aircraft.find(id)?.name }) }
+    val igcImport by lazy { IgcImportStore(this, appScope) }
 
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var schedulerStarted = false

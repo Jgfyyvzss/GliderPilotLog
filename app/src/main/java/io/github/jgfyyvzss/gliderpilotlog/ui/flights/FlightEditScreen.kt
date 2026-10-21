@@ -15,6 +15,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -46,9 +47,11 @@ import io.github.jgfyyvzss.gliderpilotlog.core.FlightField
 import io.github.jgfyyvzss.gliderpilotlog.core.LandingChoice
 import io.github.jgfyyvzss.gliderpilotlog.core.Msg
 import io.github.jgfyyvzss.gliderpilotlog.core.Role
+import io.github.jgfyyvzss.gliderpilotlog.core.igc.IgcFix
 import io.github.jgfyyvzss.gliderpilotlog.ui.ColonTransformation
 import io.github.jgfyyvzss.gliderpilotlog.ui.PickerField
 import io.github.jgfyyvzss.gliderpilotlog.ui.PickerOption
+import io.github.jgfyyvzss.gliderpilotlog.ui.appContainer
 import io.github.jgfyyvzss.gliderpilotlog.ui.gliders.pickerLabel
 import io.github.jgfyyvzss.gliderpilotlog.ui.label
 import io.github.jgfyyvzss.gliderpilotlog.ui.launchTypeName
@@ -58,12 +61,22 @@ import io.github.jgfyyvzss.gliderpilotlog.ui.vmFactory
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
+import java.util.Locale
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun FlightEditScreen(id: String?, onDone: () -> Unit) {
-    val vm: FlightEditViewModel = viewModel(factory = vmFactory { FlightEditViewModel(it.repository, it.settings, id) })
-    LaunchedEffect(vm.done) { if (vm.done) onDone() }
+fun FlightEditScreen(id: String?, igcSegment: Int? = null, onDone: () -> Unit) {
+    val app = appContainer()
+    val vm: FlightEditViewModel = viewModel(
+        factory = vmFactory { FlightEditViewModel(it.repository, it.settings, id, igcSegment?.let { i -> it.igcImport.segment(i) }) },
+    )
+    LaunchedEffect(vm.done) {
+        if (vm.done) {
+            igcSegment?.let(app.igcImport::markImported)
+            onDone()
+        }
+    }
     if (!vm.loaded) return
 
     val settings by vm.settings.collectAsStateWithLifecycle()
@@ -105,6 +118,9 @@ fun FlightEditScreen(id: String?, onDone: () -> Unit) {
             }
         }
         (e[FlightField.LOG_NO] ?: e[FlightField.DATE])?.let { ErrorText(it) }
+        vm.igcPreview?.let { (launch, landing) ->
+            Text(stringResource(R.string.flight_igc_preview, launch, landing), style = MaterialTheme.typography.bodyMedium)
+        }
 
         PickerField(
             stringResource(R.string.flight_glider), d.gliderId, gliderOptions, vm::setGlider, error = e[FlightField.GLIDER]?.text(),
@@ -114,6 +130,20 @@ fun FlightEditScreen(id: String?, onDone: () -> Unit) {
             stringResource(R.string.flight_airfield), d.airfieldId, airfieldOptions, vm::setAirfield, error = e[FlightField.AIRFIELD]?.text(),
             addNewLabel = stringResource(R.string.title_new_airfield), onAddNew = { newAirfield = true },
         )
+        // Other airfields within range of the IGC launch point, with their distances.
+        val others = vm.nearbyAirfields.filter { it.id != d.airfieldId }
+        if (others.isNotEmpty()) {
+            Text(stringResource(R.string.flight_igc_nearby), style = MaterialTheme.typography.bodySmall)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                others.forEach { n ->
+                    val name = airfields.firstOrNull { it.id == n.id }?.name ?: return@forEach
+                    AssistChip(
+                        onClick = { vm.setAirfield(n.id) },
+                        label = { Text(stringResource(R.string.flight_igc_nearby_item, name, n.distanceM.roundToInt())) },
+                    )
+                }
+            }
+        }
         if (vm.airfieldClubs.size > 1) {
             PickerField(
                 stringResource(R.string.flight_club), d.clubId, vm.airfieldClubs.map { PickerOption(it.id, it.name) }, vm::setClub,
@@ -246,6 +276,12 @@ fun FlightEditScreen(id: String?, onDone: () -> Unit) {
         vm.addAirfield(name) { error -> if (error == null) newAirfield = false else report(error) }
     }
 
+    if (vm.offerAirfieldAtLaunch) vm.igcLaunchFix?.let { fix ->
+        AirfieldAtLaunchDialog(fix, onDismiss = vm::dismissAirfieldOffer) { name, report ->
+            vm.addAirfieldAtLaunch(name) { error -> if (error != null) report(error) }
+        }
+    }
+
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
@@ -304,6 +340,37 @@ private fun NewAirfieldDialog(onDismiss: () -> Unit, onSave: (String, (Msg) -> U
         },
         confirmButton = {
             TextButton(onClick = { onSave(name) { error = it } }, enabled = name.isNotBlank()) { Text(stringResource(R.string.common_add)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
+    )
+}
+
+/**
+ * Offered when no airfield is near an IGC launch point: creates one there, with the fix's altitude as its elevation.
+ * Cancelling leaves the airfield blank for the pilot to choose.
+ */
+@Composable
+private fun AirfieldAtLaunchDialog(fix: IgcFix, onDismiss: () -> Unit, onSave: (String, (Msg) -> Unit) -> Unit) {
+    var name by rememberSaveable { mutableStateOf("") }
+    var error by remember { mutableStateOf<Msg?>(null) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.flight_igc_no_airfield)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    stringResource(
+                        R.string.flight_igc_launch_point,
+                        String.format(Locale.ROOT, "%.4f", fix.latitude), String.format(Locale.ROOT, "%.4f", fix.longitude), fix.altitudeM,
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                OutlinedTextField(name, { name = it; error = null }, label = { Text(stringResource(R.string.common_name)) }, singleLine = true)
+                error?.let { ErrorText(it) }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(name) { error = it } }, enabled = name.isNotBlank()) { Text(stringResource(R.string.flight_igc_create)) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
     )

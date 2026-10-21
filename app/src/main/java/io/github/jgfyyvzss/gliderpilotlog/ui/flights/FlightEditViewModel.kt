@@ -14,13 +14,20 @@ import io.github.jgfyyvzss.gliderpilotlog.core.LandingChoice
 import io.github.jgfyyvzss.gliderpilotlog.core.Msg
 import io.github.jgfyyvzss.gliderpilotlog.core.PicName
 import io.github.jgfyyvzss.gliderpilotlog.core.Role
+import io.github.jgfyyvzss.gliderpilotlog.core.igc.IgcMatching
+import io.github.jgfyyvzss.gliderpilotlog.core.igc.IgcSegment
+import io.github.jgfyyvzss.gliderpilotlog.core.igc.LandingMatch
+import io.github.jgfyyvzss.gliderpilotlog.core.igc.MatchPlace
+import io.github.jgfyyvzss.gliderpilotlog.core.igc.NearbyPlace
 import io.github.jgfyyvzss.gliderpilotlog.data.ClubEntity
 import io.github.jgfyyvzss.gliderpilotlog.data.FlightEntity
+import io.github.jgfyyvzss.gliderpilotlog.data.FlightSource
 import io.github.jgfyyvzss.gliderpilotlog.data.LogbookRepository
 import io.github.jgfyyvzss.gliderpilotlog.data.SaveResult
 import io.github.jgfyyvzss.gliderpilotlog.data.Settings
 import io.github.jgfyyvzss.gliderpilotlog.data.SettingsRepository
 import java.time.LocalDate
+import java.time.ZoneId
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
@@ -28,8 +35,10 @@ import kotlinx.coroutines.launch
 
 class FlightEditViewModel(
     private val repo: LogbookRepository,
-    settingsRepo: SettingsRepository,
+    private val settingsRepo: SettingsRepository,
     private val id: String?,
+    /** A segment from an IGC file and the file's glider ID header, for a new flight pre-filled from it. */
+    private val igc: Pair<IgcSegment, String?>? = null,
 ) : ViewModel() {
     var draft by mutableStateOf(FlightDraft())
         private set
@@ -43,6 +52,15 @@ class FlightEditViewModel(
     var loaded by mutableStateOf(false)
         private set
     var done by mutableStateOf(false)
+        private set
+    /** Launch and landing as local HH:MM, shown read-only for checking an IGC import. */
+    var igcPreview by mutableStateOf<Pair<String, String>?>(null)
+        private set
+    /** Airfields within range of the IGC launch point, nearest first. */
+    var nearbyAirfields by mutableStateOf<List<NearbyPlace>>(emptyList())
+        private set
+    /** No airfield is near the IGC launch point, so the form offers to create one there. */
+    var offerAirfieldAtLaunch by mutableStateOf(false)
         private set
     /** Set once the pilot has seen the warnings, so the next save goes ahead. */
     private var warningsShownFor: FlightDraft? = null
@@ -70,10 +88,67 @@ class FlightEditViewModel(
             } else {
                 repo.flight(id)?.toDraft() ?: FlightDraft()
             }
+            igc?.let { (segment, header) -> prefillFromIgc(segment, header) }
             draft.airfieldId?.let { airfieldClubs = repo.clubsFor(it) }
             loaded = true
         }
     }
+
+    /**
+     * Fills date, duration, glider and airfield from the segment, plus times and the landing place when their
+     * Settings are on. Launch type and role are left to the pilot.
+     */
+    private suspend fun prefillFromIgc(segment: IgcSegment, gliderIdHeader: String?) {
+        val zone = ZoneId.systemDefault()
+        val shown = segment.launchTime(zone).toString() to segment.landingTime(zone).toString()
+        igcPreview = shown
+        val s = settingsRepo.settings.first()
+        val glider = IgcMatching.glider(gliderIdHeader, repo.observeGliders().first().filter { !it.archived }) { it.registrationKey }
+        draft = draft.copy(
+            date = segment.date(zone),
+            durationText = Durations.formatHm(segment.durationMinutes),
+            gliderId = glider?.id,
+            launchTimeText = if (s.recordTimes) shown.first else "",
+            landingTimeText = if (s.recordTimes) shown.second else "",
+        )
+        val places = matchPlaces()
+        nearbyAirfields = IgcMatching.airfieldsNear(segment.launch, places)
+        val nearest = nearbyAirfields.firstOrNull()?.id
+        if (nearest != null) applyAirfield(nearest) else offerAirfieldAtLaunch = true
+        if (s.recordLandingPlace) fillLanding(segment, places)
+    }
+
+    private suspend fun matchPlaces(): List<MatchPlace> = repo.observeAirfields().first()
+        .filter { !it.archived && it.latitude != null && it.longitude != null }
+        .map { MatchPlace(it.id, it.latitude!!, it.longitude!!, it.matchRadiusM) }
+
+    private fun fillLanding(segment: IgcSegment, places: List<MatchPlace>) {
+        draft = when (val l = IgcMatching.landing(segment, draft.airfieldId, places)) {
+            LandingMatch.SameAsDeparture -> draft.copy(landingChoice = LandingChoice.SAME_AS_DEPARTURE)
+            is LandingMatch.Airfield -> draft.copy(landingChoice = LandingChoice.AIRFIELD, landingAirfieldId = l.id)
+            is LandingMatch.Other -> draft.copy(landingChoice = LandingChoice.OTHER, landingPlace = l.place)
+        }
+    }
+
+    /** Creates an airfield at the IGC launch point, with its altitude as the elevation, and selects it. */
+    fun addAirfieldAtLaunch(name: String, onResult: (Msg?) -> Unit) = viewModelScope.launch {
+        val segment = igc?.first ?: return@launch
+        val fix = segment.launch
+        when (val r = repo.saveAirfield(null, name, fix.latitude, fix.longitude, fix.altitudeM, null, emptyList(), archived = false)) {
+            is SaveResult.Saved -> {
+                offerAirfieldAtLaunch = false
+                applyAirfield(r.id)
+                if (settings.value.recordLandingPlace) fillLanding(segment, matchPlaces())
+                onResult(null)
+            }
+            is SaveResult.Rejected -> onResult(r.message)
+        }
+    }
+
+    /** The IGC launch point, for the create-airfield prompt. */
+    val igcLaunchFix get() = igc?.first?.launch
+
+    fun dismissAirfieldOffer() { offerAirfieldAtLaunch = false }
 
     private fun FlightEntity.toDraft() = FlightDraft(
         logNoText = logNo.toString(),
@@ -125,19 +200,22 @@ class FlightEditViewModel(
      */
     fun setAirfield(id: String) {
         edit(FlightField.AIRFIELD) { it.copy(airfieldId = id) }
-        viewModelScope.launch {
-            val airfield = repo.airfield(id)
-            val clubs = repo.clubsFor(id)
-            airfieldClubs = clubs
-            val keep = draft.clubId?.takeIf { c -> clubs.any { it.id == c } }
-            val default = airfield?.defaultClubId?.takeIf { c -> clubs.any { it.id == c } }
-            draft = draft.copy(
-                clubId = if (clubs.size == 1) clubs.single().id else keep ?: default,
-                launchTypeId = if (launchTypeChosen) draft.launchTypeId else airfield?.defaultLaunchTypeId,
-            )
-            errors = errors - FlightField.CLUB
-            if (draft.launchTypeId != null) errors = errors - FlightField.LAUNCH_TYPE
-        }
+        viewModelScope.launch { applyAirfield(id) }
+    }
+
+    private suspend fun applyAirfield(id: String) {
+        draft = draft.copy(airfieldId = id)
+        val airfield = repo.airfield(id)
+        val clubs = repo.clubsFor(id)
+        airfieldClubs = clubs
+        val keep = draft.clubId?.takeIf { c -> clubs.any { it.id == c } }
+        val default = airfield?.defaultClubId?.takeIf { c -> clubs.any { it.id == c } }
+        draft = draft.copy(
+            clubId = if (clubs.size == 1) clubs.single().id else keep ?: default,
+            launchTypeId = if (launchTypeChosen) draft.launchTypeId else airfield?.defaultLaunchTypeId,
+        )
+        errors = errors - FlightField.CLUB - FlightField.AIRFIELD
+        if (draft.launchTypeId != null) errors = errors - FlightField.LAUNCH_TYPE
     }
 
     /** Creates a glider from the flight form and selects it. Reports a rejection message, or null on success. */
@@ -186,7 +264,7 @@ class FlightEditViewModel(
             warningsShownFor = draft
             return@launch
         }
-        val (result, _) = repo.saveFlight(id, draft)
+        val (result, _) = repo.saveFlight(id, draft, if (igc != null) FlightSource.IGC else FlightSource.MANUAL)
         when (result) {
             is FlightValidation.Valid -> done = true
             is FlightValidation.Invalid -> { errors = result.errors; warnings = result.warnings }
