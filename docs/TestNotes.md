@@ -28,3 +28,5 @@ Lists buttons, Clubs and Launch types, should also be styled outlined button.
 Buttons that directly run an action without further user input (Save, Backup, Update WeGlide) should have the same style (as Save). Buttons that lead to further user action should have the other style (as Restore/Merge)
 
 When importing/exporting airfields it could be helpful to have the archived flag column available in CSV. This allows all imported airfields to be set to archived and only those in current use made available for the dropdown. If the pilot travels to a new area they un-archive the relevant fields and archive the old area fields. Keeps the dropdown short and relevant.
+
+Filters for Glider, Airfield, Club and Role should be multi-selectable.
