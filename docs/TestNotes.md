@@ -17,7 +17,7 @@ Aircraft log calculator can be simplified. More like a simple paper calculation:
 *This still feels wrong. Let's try a spreadsheet style layout.*  
 
 ||Flights|Hours|
-|--------------|------|------|
+|:-------------|-----:|-----:|
 |Day           |      |      |
 |Other Pilots  |      |      |
 |Previous entry|      |      |
