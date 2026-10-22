@@ -23,6 +23,8 @@ Aircraft log calculator can be simplified. More like a simple paper calculation:
 |Previous entry|      |      |
 |**Total**     |      |      |
 
+*Flights header should have "optional" in smaller text below it*
+
 The Home page has a lot of space. Consider adding totals for each aircraft type, perhaps sorted by size and truncated to a number of rows that fits the page.  
 *On my device only 3 lines fitted in the By type box, the 4th was cut off halfway down the text*  
 *Fix at the 3 highest hour aircraft*  
