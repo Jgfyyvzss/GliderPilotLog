@@ -15,11 +15,11 @@ Let's try reordering*
 
 Aircraft log calculator can be simplified. More like a simple paper calculation:  
 *This still feels wrong. Let's try a spreadsheet style layout.*  
-               Flights|Hours  
-Day           |       |  
-Other Pilots  |       |  
-Previous entry|       |  
-**Total**     |       |  
+||Flights|Hours|
+|Day|||
+|Other Pilots|||
+|Previous entry|||
+|**Total**|||
 
 The Home page has a lot of space. Consider adding totals for each aircraft type, perhaps sorted by size and truncated to a number of rows that fits the page.  
 *On my device only 3 lines fitted in the By type box, the 4th was cut off halfway down the text*  
