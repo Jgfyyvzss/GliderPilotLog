@@ -11,7 +11,7 @@ Let's try reordering*
 *Number, Date, Duration, Role*  
 *Aircraft, Airfield, Launch*  
 *Note - if it exists*  
-*Question - is it possible to layout as eg left align No., Date, Role. right align Duration on same line? This would keep the key duration figure in a consistent position*
+*Question - is it possible to layout as eg left align No., Date, Role. right align Duration on same line? This would keep the key duration figure in a consistent position. If this is practical it is preferred.*
 
 Aircraft log calculator can be simplified. More like a simple paper calculation:  
 *This still feels wrong. Let's try a spreadsheet style layout.*  
