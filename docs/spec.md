@@ -260,7 +260,12 @@ It is strictly sequential, so there is no skip and no jump. A repeated `FILE_OK`
 
 ## WeGlide upload
 
-Upload is offered from the IGC import flow using the file the pilot just picked, with no copy kept. This is planned for a later phase.
+Upload to WeGlide is a button on the Home screen that opens its own upload screen, separate from the logbook (pilot's decision, 2026-10-22). IGC files come from many places (USB, Wi-Fi, a logger download, other apps), some pilots never upload, and some may upload without keeping the logbook, so the upload is independent of saving a flight. No copy of the file is kept.
+
+- **The file:** chosen with the file picker, or downloaded from the logger through From logger, which then returns to the upload screen. It is held in memory only and dropped after a successful upload or when the pilot leaves the screen. The screen shows the file's date, launch time, duration and glider ID for checking.
+- **The aircraft:** the logbook glider matching the file's glider ID header supplies its WeGlide aircraft ID. If that glider has no ID, picking one on the upload screen also stores it on the glider, with the usual type-change confirmation. With no matching glider, the pilot picks from WeGlide's aircraft list for this upload only, so the logbook is not needed.
+- **Credentials:** asked for on the upload screen when missing, and changeable there. Settings shows whether they are saved and can remove them. They are encrypted with an AES key held in the Android Keystore and stored in the app's no-backup folder. Jetpack's security-crypto library is deprecated in favour of using the Keystore directly.
+- **Result:** WeGlide's flight number, scoring date, pilot, aircraft, registration and competition ID, or the failure message with Try again.
 
 - **Precedent:** WeGlide lists XCSoar among the apps that upload directly, and XCSoar has supported WeGlide IGC upload since version 7.23. XCSoar's WeGlide settings ask for a WeGlide ID and a date of birth, which probably explains its low-friction upload.
 - **Credentials:** the WeGlide ID (sent as `user_id`) and date of birth (sent as `date_of_birth`, yyyy-mm-dd) are kept in encrypted storage and excluded from all exports. If missing or rejected, the app asks the pilot to re-enter them.

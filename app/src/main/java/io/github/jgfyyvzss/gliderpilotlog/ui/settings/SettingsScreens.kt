@@ -61,6 +61,7 @@ import io.github.jgfyyvzss.gliderpilotlog.ui.airfields.NameDialog
 import io.github.jgfyyvzss.gliderpilotlog.ui.appContainer
 import io.github.jgfyyvzss.gliderpilotlog.ui.vmFactory
 import io.github.jgfyyvzss.gliderpilotlog.ui.weglide.AircraftListSection
+import io.github.jgfyyvzss.gliderpilotlog.ui.weglide.WeGlideAccountSection
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -191,6 +192,7 @@ fun SettingsScreen(onClubs: () -> Unit, onLaunchTypes: () -> Unit, onOpeningBala
         HorizontalDivider()
         Text(stringResource(R.string.settings_weglide), style = MaterialTheme.typography.titleMedium)
         AircraftListSection()
+        WeGlideAccountSection()
 
         HorizontalDivider()
         Text(stringResource(R.string.settings_lists), style = MaterialTheme.typography.titleMedium)

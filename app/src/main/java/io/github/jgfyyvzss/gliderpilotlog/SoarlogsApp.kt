@@ -15,6 +15,8 @@ import io.github.jgfyyvzss.gliderpilotlog.data.TotalsService
 import io.github.jgfyyvzss.gliderpilotlog.core.lxnav.FilePartialDownload
 import io.github.jgfyyvzss.gliderpilotlog.data.lxnav.BluetoothLoggers
 import io.github.jgfyyvzss.gliderpilotlog.data.weglide.AircraftCatalog
+import io.github.jgfyyvzss.gliderpilotlog.data.weglide.CredentialStore
+import io.github.jgfyyvzss.gliderpilotlog.data.weglide.PendingUpload
 import io.github.jgfyyvzss.gliderpilotlog.data.weglide.OkHttpWeGlideApi
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
@@ -33,12 +35,16 @@ class SoarlogsApp : Application() {
         AircraftCatalog(
             savedFile = File(filesDir, "weglide-aircraft.json"),
             bundled = { assets.open("weglide-aircraft.json").use { it.readBytes().decodeToString() } },
-            api = OkHttpWeGlideApi(OkHttpWeGlideApi.userAgent(appVersion())),
+            api = weglideApi,
         )
     }
     val csv by lazy { CsvService(database, aircraftName = { id -> aircraft.find(id)?.name }) }
     val igcImport by lazy { IgcImportStore(this, appScope) }
     val loggers by lazy { BluetoothLoggers(this) }
+    val weglideApi by lazy { OkHttpWeGlideApi(OkHttpWeGlideApi.userAgent(appVersion())) }
+    /** The WeGlide ID and date of birth, encrypted, outside every backup. */
+    val weglideCredentials by lazy { CredentialStore(File(noBackupFilesDir, "weglide-credentials.bin")) }
+    val pendingUpload = PendingUpload()
     /** The one unfinished logger download, kept out of Android's Auto Backup. */
     val loggerPartial by lazy { FilePartialDownload(File(noBackupFilesDir, "lxnav.part")) }
 

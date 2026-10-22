@@ -18,4 +18,38 @@
     <string name="weglide_aircraft">WeGlide aircraft</string>
     <string name="weglide_search">Search</string>
     <string name="weglide_no_match">No match. Try fewer letters, for example ASK.</string>
-</resources>
+    <!-- Upload to WeGlide -->
+    <string name="home_upload">Upload to WeGlide</string>
+    <string name="upload_intro">Send any IGC file to WeGlide, whether or not it is in your logbook. The file is not kept on this phone afterwards.</string>
+    <string name="upload_file">IGC file</string>
+    <string name="upload_no_file">No file chosen yet.</string>
+    <string name="upload_choose_file">Choose file</string>
+    <!-- Local date, launch time, duration, then the glider ID from the file -->
+    <string name="upload_summary">%1$s, launch %2$s, %3$s, glider %4$s</string>
+    <string name="upload_several_flights">The file has %1$d flights. WeGlide receives the whole file.</string>
+    <string name="upload_no_flight_found">No flight found in the file. WeGlide can still be sent it.</string>
+    <string name="upload_glider_no_type">%1$s has no WeGlide type yet. Choosing one also sets it on the glider.</string>
+    <string name="upload_choose_aircraft_hint">Choose the aircraft type, so WeGlide does not have to guess the variant.</string>
+    <string name="upload_account">WeGlide account</string>
+    <string name="upload_account_saved">WeGlide ID and date of birth saved</string>
+    <string name="upload_change">Change</string>
+    <string name="upload_weglide_id">WeGlide ID</string>
+    <string name="upload_weglide_id_hint">The number in your WeGlide profile address</string>
+    <string name="upload_date_of_birth">Date of birth</string>
+    <string name="upload_account_privacy">Stored encrypted on this phone and sent only to WeGlide with an upload. Never included in backups or exports.</string>
+    <string name="upload_button">Upload to WeGlide</string>
+    <string name="upload_uploading">Uploading…</string>
+    <string name="upload_failed_hint">If your WeGlide ID or date of birth is wrong, change it above and try again.</string>
+    <string name="upload_done">Uploaded to WeGlide</string>
+    <string name="upload_done_no_details">WeGlide accepted the file but sent no flight details.</string>
+    <string name="upload_result_flight">Flight %1$s</string>
+    <string name="upload_result_date">Scoring date: %1$s</string>
+    <string name="upload_result_pilot">Pilot: %1$s</string>
+    <string name="upload_result_aircraft">Aircraft: %1$s</string>
+    <string name="upload_result_registration">Registration: %1$s</string>
+    <string name="upload_result_competition_id">Competition ID: %1$s</string>
+    <string name="upload_another">Upload another file</string>
+    <string name="settings_weglide_account">WeGlide account for uploads</string>
+    <string name="settings_weglide_account_saved">Saved, encrypted on this phone</string>
+    <string name="settings_weglide_account_none">Not set. Upload to WeGlide asks for it.</string>
+    <string name="settings_weglide_account_clear">Remove</string></resources>
