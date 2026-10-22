@@ -17,11 +17,11 @@ Aircraft log calculator can be simplified. More like a simple paper calculation:
 *This still feels wrong. Let's try a spreadsheet style layout.*  
 
 ||Flights (optional)|Hours|
-|:-------------|-----:|-----:|
-|Day           |      |      |
-|Other Pilots  |      |      |
-|Previous entry|      |      |
-|**Total**     |      |      |
+|:------------|-----:|-----:|
+|Day          |      |      |
+|Other Pilots |      |      |
+|Last entry   |      |      |
+|**Total**    |      |      |
 
 *Flights (optional) should wrap onto two lines*
 
