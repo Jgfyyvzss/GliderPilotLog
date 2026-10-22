@@ -2,3 +2,5 @@
 gradlew text eol=lf
 *.bat text eol=crlf
 *.jar binary
+# IGC files are compared byte for byte, so Git must never change their line endings.
+*.igc binary

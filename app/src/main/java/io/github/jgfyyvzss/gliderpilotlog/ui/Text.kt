@@ -144,6 +144,10 @@ fun MsgKey.res(): Int = when (this) {
     MsgKey.IGC_NO_FIXES -> R.string.msg_igc_no_fixes
     MsgKey.IGC_NO_FLIGHT -> R.string.msg_igc_no_flight
     MsgKey.IGC_UNREADABLE -> R.string.msg_igc_unreadable
+    MsgKey.LXNAV_CONNECT_FAILED -> R.string.msg_lxnav_connect_failed
+    MsgKey.LXNAV_NO_LOGBOOK -> R.string.msg_lxnav_no_logbook
+    MsgKey.LXNAV_GAVE_UP -> R.string.msg_lxnav_gave_up
+    MsgKey.LXNAV_SIZE_MISMATCH -> R.string.msg_lxnav_size_mismatch
 }
 
 /** A message in the pilot's language. Arguments that are messages, roles or dates are shown in that language too. */

@@ -228,7 +228,7 @@ It is strictly sequential, so there is no skip and no jump. A repeated `FILE_OK`
 - An uninterrupted download of the 1.3 MB file.
 - Any Nano, Nano3 or Nano4. XCSoar 7.44 reports support for protocol 1.05, and the specification in hand is 1.04.
 - Whether Nano4 IGC files are signed, so that any change would invalidate them. This is reported but not verified.
-- Android: whether a connection by the standard serial UUID works with this module. That connection performs an SDP lookup, and one manual `sdptool browse` dropped the link during testing, so connecting directly to channel 6 may be needed. Treat this as the first thing to test on a device.
+- Android: whether a connection by the standard serial UUID works with this module. That connection performs an SDP lookup, and one manual `sdptool browse` dropped the link during testing, so connecting directly to channel 6 may be needed. Treat this as the first thing to test on a device. Earlier testing with the Serial Bluetooth Terminal app on Android, which connects by the standard serial UUID, worked, so the app uses only that documented connection and no direct-channel fallback (2026-10-22).
 
 ### Design constraints
 
@@ -242,6 +242,15 @@ It is strictly sequential, so there is no skip and no jump. A repeated `FILE_OK`
 - Downloads of large files can take many minutes over BT. A progress indicator is needed to reassure users that the DL is still progressing.
 - An estimate of the selected file DL time would be a nice-to-have.
 - Files should be shown recent first. Probably only the most recent 3 files is sufficient for a daily flight log. Maybe a "More" button could be helpful for eg instructors who do many short flights in a day.
+
+### As built (2026-10-22, not yet tried on the S100)
+
+- **Downloads:** the screen stays on while a download runs. It shows a progress bar, the line count, the elapsed time and an estimate of the time left. The estimate comes from the logbook size at 2.6 KB/s until the download has run a few seconds, and from the measured rate after that. Before a download, each file shows its estimated download time.
+- **File list:** the three newest files are shown first, and More shows the rest.
+- **Resume:** one partial download is kept in app-private storage that Auto Backup leaves out. A retry of the same file resumes from it, even after the app restarts. Cancel or a completed download deletes it, and so does age over two days. A resumed download asks again for the last saved line, to learn the total and check the partial belongs to this file.
+- **The finished file:** once the size check passes, the file is held in memory for the IGC import and the partial is deleted, so no complete copy is ever written to storage.
+- **Retries and resume:** `LxnavParameters` holds the retry values, and the code follows `lxnav_dl.py`. A dropped link reconnects immediately instead of waiting for the third failure.
+- **Device list:** all paired devices are listed, LXNAV ones first.
 
 ### XCSoar as a reference
 

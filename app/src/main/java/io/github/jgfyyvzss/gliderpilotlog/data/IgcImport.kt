@@ -44,6 +44,13 @@ class IgcImportStore(private val context: Context, private val scope: CoroutineS
         scope.launch { _state.value = read(uri) }
     }
 
+    /** A file downloaded from a logger, already in memory. Its bytes are analysed as they are and not stored. */
+    fun openDownloaded(bytes: ByteArray) {
+        _state.value = IgcImportState.Reading
+        opened.trySend(Unit)
+        scope.launch { _state.value = withContext(Dispatchers.Default) { analyse(bytes.toString(Charsets.ISO_8859_1)) } }
+    }
+
     fun markImported(index: Int) = _state.update { s -> if (s is IgcImportState.Ready) s.copy(imported = s.imported + index) else s }
 
     fun segment(index: Int): Pair<IgcSegment, String?>? =
@@ -58,6 +65,10 @@ class IgcImportStore(private val context: Context, private val scope: CoroutineS
                 if (bytes.size > MAX_BYTES) null else bytes.toString(Charsets.ISO_8859_1)
             }
         }.getOrNull() ?: return@withContext IgcImportState.Failed(msg(MsgKey.IGC_UNREADABLE))
+        analyse(text)
+    }
+
+    private fun analyse(text: String): IgcImportState =
         when (val r = IgcParser.parse(text)) {
             is IgcRead.Refused -> IgcImportState.Failed(r.message)
             is IgcRead.Ok -> {
@@ -66,7 +77,6 @@ class IgcImportStore(private val context: Context, private val scope: CoroutineS
                 else IgcImportState.Ready(r.track.gliderId, segments)
             }
         }
-    }
 
     private fun java.io.InputStream.readNBytesCompat(limit: Int): ByteArray {
         val out = java.io.ByteArrayOutputStream()

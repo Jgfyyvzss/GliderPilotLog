@@ -48,4 +48,7 @@ enum class MsgKey {
 
     // IGC import
     IGC_NO_DATE, IGC_NO_FIXES, IGC_NO_FLIGHT, IGC_UNREADABLE,
+
+    // LXNAV logger download
+    LXNAV_CONNECT_FAILED, LXNAV_NO_LOGBOOK, LXNAV_GAVE_UP, LXNAV_SIZE_MISMATCH,
 }

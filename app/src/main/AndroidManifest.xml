@@ -4,6 +4,13 @@
     <!-- WeGlide only: the aircraft list update, and later the IGC upload. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- LXNAV flight download from a paired logger. The app never scans, so it needs no scan or location
+         permission. BLUETOOTH_CONNECT is asked for the first time the pilot uses From logger. -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
+
     <application
         android:name=".SoarlogsApp"
         android:allowBackup="true"

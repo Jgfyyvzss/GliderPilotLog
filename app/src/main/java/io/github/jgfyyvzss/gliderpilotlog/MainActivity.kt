@@ -15,6 +15,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         (application as SoarlogsApp).startBackupScheduler()
+        (application as SoarlogsApp).loggerPartial.deleteIfExpired()
         // A recreated activity has already handled the intent it was started with.
         if (savedInstanceState == null) openIgc(intent)
         setContent {

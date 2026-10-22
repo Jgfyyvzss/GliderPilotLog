@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- From logger: LXNAV flight download over Bluetooth -->
+    <string name="home_from_logger">From logger</string>
+    <string name="logger_no_bluetooth">This phone has no Bluetooth.</string>
+    <string name="logger_permission">soarlogs needs permission to connect to your paired logger. It does not scan for devices or use your location.</string>
+    <string name="logger_allow">Allow Bluetooth</string>
+    <string name="logger_app_settings">Open app settings</string>
+    <string name="logger_bluetooth_off">Bluetooth is off.</string>
+    <string name="logger_bluetooth_settings">Bluetooth settings</string>
+    <string name="logger_none_paired">No paired devices. Pair the logger in Bluetooth settings first.</string>
+    <string name="logger_choose">Choose the logger</string>
+    <string name="logger_pair_hint">Not listed? Pair it in Bluetooth settings, then come back.</string>
+    <string name="logger_devices">Paired devices</string>
+    <string name="logger_connecting">Connecting to %1$s…</string>
+    <string name="logger_try_again">Try again</string>
+    <string name="logger_no_files">The logger has no flights.</string>
+    <!-- Date, then local start time -->
+    <string name="logger_file_when">%1$s, %2$s</string>
+    <!-- File name, size, then estimated download time as minutes:seconds -->
+    <string name="logger_file_detail">%1$s · %2$s · about %3$s to download</string>
+    <string name="logger_more">More (%1$d)</string>
+    <string name="logger_tap_to_download">Tap a flight to download it.</string>
+    <string name="logger_downloading">Downloading %1$s (%2$s)</string>
+    <string name="logger_lines">Line %1$d of %2$d</string>
+    <string name="logger_resumed">Continued from line %1$d</string>
+    <!-- Elapsed and remaining time as minutes:seconds -->
+    <string name="logger_time">%1$s elapsed, about %2$s left</string>
+    <string name="logger_keep_close">Keep the phone near the logger. The screen stays on until the download finishes.</string>
+    <string name="logger_cancel">Cancel download</string>
+</resources>

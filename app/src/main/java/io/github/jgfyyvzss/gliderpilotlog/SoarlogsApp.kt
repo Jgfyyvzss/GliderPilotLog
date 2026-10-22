@@ -12,6 +12,8 @@ import io.github.jgfyyvzss.gliderpilotlog.data.LogbookDatabase
 import io.github.jgfyyvzss.gliderpilotlog.data.LogbookRepository
 import io.github.jgfyyvzss.gliderpilotlog.data.SettingsRepository
 import io.github.jgfyyvzss.gliderpilotlog.data.TotalsService
+import io.github.jgfyyvzss.gliderpilotlog.core.lxnav.FilePartialDownload
+import io.github.jgfyyvzss.gliderpilotlog.data.lxnav.BluetoothLoggers
 import io.github.jgfyyvzss.gliderpilotlog.data.weglide.AircraftCatalog
 import io.github.jgfyyvzss.gliderpilotlog.data.weglide.OkHttpWeGlideApi
 import java.io.File
@@ -36,6 +38,9 @@ class SoarlogsApp : Application() {
     }
     val csv by lazy { CsvService(database, aircraftName = { id -> aircraft.find(id)?.name }) }
     val igcImport by lazy { IgcImportStore(this, appScope) }
+    val loggers by lazy { BluetoothLoggers(this) }
+    /** The one unfinished logger download, kept out of Android's Auto Backup. */
+    val loggerPartial by lazy { FilePartialDownload(File(noBackupFilesDir, "lxnav.part")) }
 
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var schedulerStarted = false

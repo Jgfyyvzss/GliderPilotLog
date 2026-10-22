@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -37,9 +38,9 @@ import io.github.jgfyyvzss.gliderpilotlog.data.Settings
 import io.github.jgfyyvzss.gliderpilotlog.ui.appContainer
 import io.github.jgfyyvzss.gliderpilotlog.ui.settings.lastBackupText
 
-/** New flight and From IGC, a compact unfiltered totals card, and the last backup. */
+/** New flight, From IGC and From logger, a compact unfiltered totals card, and the last backup. */
 @Composable
-fun HomeScreen(onNewFlight: () -> Unit, onFromIgc: () -> Unit, onTotals: () -> Unit, onBackup: () -> Unit) {
+fun HomeScreen(onNewFlight: () -> Unit, onFromIgc: () -> Unit, onFromLogger: () -> Unit, onTotals: () -> Unit, onBackup: () -> Unit) {
     val app = appContainer()
     val tableFlow = remember { app.totals.observe(FlightFilter()) }
     val table by tableFlow.collectAsStateWithLifecycle(null)
@@ -59,6 +60,10 @@ fun HomeScreen(onNewFlight: () -> Unit, onFromIgc: () -> Unit, onTotals: () -> U
         OutlinedButton(onClick = onFromIgc, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
             Icon(Icons.Default.FileOpen, contentDescription = null)
             Text("  " + stringResource(R.string.home_from_igc))
+        }
+        OutlinedButton(onClick = onFromLogger, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
+            Icon(Icons.Default.Bluetooth, contentDescription = null)
+            Text("  " + stringResource(R.string.home_from_logger))
         }
         table?.let { t ->
             Card(Modifier.fillMaxWidth().clickable(onClick = onTotals)) {

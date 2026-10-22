@@ -140,4 +140,8 @@
     <string name="msg_igc_no_fixes">The IGC file has no valid GPS fixes</string>
     <string name="msg_igc_no_flight">No flight found in this IGC file</string>
     <string name="msg_igc_unreadable">The file could not be read</string>
+    <string name="msg_lxnav_connect_failed">Could not connect to the logger. Check it is switched on and nearby.</string>
+    <string name="msg_lxnav_no_logbook">The logger did not send its list of flights</string>
+    <string name="msg_lxnav_gave_up">The download stopped at line %1$d. Try again to continue from there.</string>
+    <string name="msg_lxnav_size_mismatch">The downloaded file has %1$d bytes but the logger lists %2$d, so it was discarded</string>
 </resources>
