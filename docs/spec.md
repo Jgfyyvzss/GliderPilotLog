@@ -169,6 +169,47 @@ The LXNAV Data Port Specification, version 1.04 dated 2022-07-19 (66 pages), is 
 - **Bluetooth module:** `PLXVC,BT_INFO,R` returns -1 (none), 0 (BTM 182) or 1 (BM77). The BM77 can freeze on large transfers, so a block size of 1 is advised for it. The specification names the modules but does not say whether they use Classic Bluetooth or BLE.
 - **Timing:** the device counts the lines of a file before it starts sending, which can take a long time for large files, so the client must keep waiting. Keep-alive messages are described as not yet implemented.
 - **Never used:** the specification also describes deleting files and uploading files to the device. This app must do neither.
+- **Update after testing** IGC download over Bluetooth from LXNAV S100 / Nano: findings for the prototype
+
+Status: Tested on an S100 (fw 9.27, serial 33418, advertises as LXNAV-S33418) from a Linux PC using Python over RFCOMM. lxnav_dl.py is a working reference implementation. The protocol is the LXNAV DataPort spec v1.04 (PLXVC sentences), with the deviations below.
+
+Transport
+
+Bluetooth Classic SPP, RFCOMM channel 6 on this unit. Read it from the SDP record rather than assuming a number. Do not run SDP queries during a session, because the module can drop the link.
+The device connects on demand. Opening the socket is enough, and the OS showing “disconnected” while idle is normal.
+Only one client can be connected at a time.
+
+Framing
+
+$<body>*<XOR hex>\r\n. The checksum is the XOR of every character between $ and *. There are no spaces, and sentences are limited to 256 chars.
+The device sends a 1 Hz NMEA stream (GPRMC, GPGGA, LXWP*) that is interleaved with replies. Ignore anything that isn’t a valid PLXV* sentence, and validate every checksum.
+
+Download method (recommended): FLIGHT line ranges
+
+$PLXVC,LOGBOOKSIZE,R*4B gives the file count. Then $PLXVC,LOGBOOK,R,1,<n+1>*.. lists the files. Each reply row has file name, date DD.MM.YYYY, start time (UTC; the end time is always 00:00:00) and size in bytes.
+$PLXVC,FLIGHT,R,<name>,<start>,<end>*.. returns lines start..end-1, one per reply: PLXVC,FLIGHT,A,,<line>,<total>,<content>. There is an extra empty field versus the spec, and the content can contain commas, so everything after the total must be rejoined.
+Use 7 lines per request, as the spec recommends for the BM77 Bluetooth module. Replies arrive in one burst, 60–170 ms after the request.
+Lines arrive without line endings. Add CRLF to every line, including the last. The result matched the logbook size byte-for-byte on 5 files in testing.
+Re-request any block that is incomplete or late. Requests are idempotent, so retrying is safe.
+
+Reliability observed
+
+Roughly 1 in a few thousand blocks stalls, either with no data at all or with one line missing. Recovery was a retry or a reconnect, with FILE_CANCEL sent after reconnecting. Persist progress so an interrupted download can resume.
+Throughput is about 0.2 s per 7-line block, which is roughly 2.5 KB/s. A 1.3 MB file takes about 9 minutes, and a full 10-file set of 5.5 MB takes about 40 minutes.
+
+Not recommended: FILE_INFO / FILE_OK block download
+
+It is strictly sequential, with no skip or jump. FILE_DATA_LOST was ignored at block size 1, and a repeated FILE_OK is ignored. Cancel and start again restarts from line 0.
+It also needs about 13,000 messages for the largest file. The per-line CRC32 algorithm is unknown (no standard parameters matched), so it can’t be validated.
+
+Not verified yet
+
+Byte-for-byte equality with a copy from Nano Config or the SD card.
+The whole-file CRC, FILE_CRC32.
+FLIGHT on the largest file (1.3 MB) in a single uninterrupted run.
+FILE_CNT and FILE_LIST, which got no reply. The logbook is sufficient anyway.
+
+Open decision: whether the production app runs on Android, where RFCOMM comes from the platform Bluetooth API rather than a raw socket. The protocol layer should stay platform-independent.
 
 **XCSoar**
 
