@@ -96,7 +96,7 @@ private fun Devices(status: BluetoothStatus, onRefresh: () -> Unit, onOpen: (Pai
                 }
             }
             Text(stringResource(R.string.logger_permission))
-            Button(
+            OutlinedButton(
                 onClick = { if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) request.launch(Manifest.permission.BLUETOOTH_CONNECT) },
                 modifier = Modifier.fillMaxWidth(),
             ) { Text(stringResource(R.string.logger_allow)) }
@@ -107,7 +107,7 @@ private fun Devices(status: BluetoothStatus, onRefresh: () -> Unit, onOpen: (Pai
         }
         BluetoothStatus.Off -> {
             Text(stringResource(R.string.logger_bluetooth_off))
-            Button(onClick = bluetoothSettings, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.logger_bluetooth_settings)) }
+            OutlinedButton(onClick = bluetoothSettings, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.logger_bluetooth_settings)) }
         }
         is BluetoothStatus.Ready -> {
             if (status.devices.isEmpty()) {

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_new_flight">Neuer Flug</string>
+    <string name="home_by_type">Nach Flugzeugtyp</string>
+    <string name="home_flown_today">Heute geflogen</string>
+    <string name="home_from_igc">Aus IGC</string>
+    <string name="home_last_backup">Letzte Sicherung: %1$s</string>
+    <string name="home_last_backup_stale">Letzte Sicherung: %1$s. Zum Sichern tippen.</string>
+    <plurals name="home_flights">
+        <item quantity="one">%1$d Flug</item>
+        <item quantity="other">%1$d Flüge</item>
+    </plurals>
+
+    <string name="totals_role">Rolle</string>
+    <string name="totals_combined">Gesamt</string>
+    <string name="totals_own_time">Deine eigene Zeit als Pilot, nicht die Flugzeugzeit.</string>
+    <string name="totals_with_balances">Enthält deine Anfangsbestände.</string>
+    <string name="totals_filtered">Filter aktiv: Es zählen nur passende Flüge, Anfangsbestände bleiben unberücksichtigt.</string>
+    <string name="totals_pic_includes">* PIC umfasst auch Flüge als Fluglehrer und Coach.</string>
+</resources>

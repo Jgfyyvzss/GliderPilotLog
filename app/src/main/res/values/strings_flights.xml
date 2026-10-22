@@ -58,6 +58,8 @@
     <string name="filter_bad_time">Enter launch times as 24-hour digits, for example 1305</string>
     <string name="filter_dates_reversed">The From date is after the To date</string>
     <string name="filter_chip_glider">Glider %1$s</string>
+    <string name="filter_chip_airfield">Airfield %1$s</string>
+    <string name="filter_chip_club">Club %1$s</string>
     <string name="filter_chip_from">From %1$s</string>
     <string name="filter_chip_to">To %1$s</string>
     <string name="filter_chip_log">Log %1$s–%2$s</string>

@@ -38,6 +38,12 @@ android {
     buildFeatures {
         compose = true
     }
+
+    // Lists the app's languages (from the values-* folders) so Android 13+ offers it in the per-app language
+    // setting. The default language is named in res/resources.properties.
+    androidResources {
+        generateLocaleConfig = true
+    }
 }
 
 room {

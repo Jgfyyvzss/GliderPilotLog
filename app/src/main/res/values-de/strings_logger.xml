@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- From logger: LXNAV flight download over Bluetooth -->
+    <string name="home_from_logger">Vom Logger</string>
+    <string name="logger_no_bluetooth">Dieses Telefon hat kein Bluetooth.</string>
+    <string name="logger_permission">soarlogs braucht die Erlaubnis, sich mit deinem gekoppelten Logger zu verbinden. Es sucht nicht nach Geräten und verwendet deinen Standort nicht.</string>
+    <string name="logger_allow">Bluetooth erlauben</string>
+    <string name="logger_app_settings">App-Einstellungen öffnen</string>
+    <string name="logger_bluetooth_off">Bluetooth ist aus.</string>
+    <string name="logger_bluetooth_settings">Bluetooth-Einstellungen</string>
+    <string name="logger_none_paired">Keine gekoppelten Geräte. Koppele den Logger zuerst in den Bluetooth-Einstellungen.</string>
+    <string name="logger_choose">Logger wählen</string>
+    <string name="logger_pair_hint">Nicht aufgeführt? Koppele ihn in den Bluetooth-Einstellungen und komm dann zurück.</string>
+    <string name="logger_devices">Gekoppelte Geräte</string>
+    <string name="logger_connecting">Verbinde mit %1$s…</string>
+    <string name="logger_try_again">Erneut versuchen</string>
+    <string name="logger_no_files">Der Logger enthält keine Flüge.</string>
+    <!-- Date, then local start time -->
+    <string name="logger_file_when">%1$s, %2$s</string>
+    <!-- File name, size, then estimated download time as minutes:seconds -->
+    <string name="logger_file_detail">%1$s · %2$s · Download dauert etwa %3$s</string>
+    <string name="logger_more">Mehr (%1$d)</string>
+    <string name="logger_tap_to_download">Tippe auf einen Flug, um ihn herunterzuladen.</string>
+    <string name="logger_downloading">%1$s (%2$s) wird heruntergeladen</string>
+    <string name="logger_lines">Zeile %1$d von %2$d</string>
+    <string name="logger_resumed">Fortgesetzt ab Zeile %1$d</string>
+    <!-- Elapsed and remaining time as minutes:seconds -->
+    <string name="logger_time">%1$s vergangen, noch etwa %2$s</string>
+    <string name="logger_keep_close">Halte das Telefon in der Nähe des Loggers. Der Bildschirm bleibt an, bis der Download beendet ist.</string>
+    <string name="logger_cancel">Download abbrechen</string>
+</resources>

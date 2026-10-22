@@ -80,17 +80,17 @@ class TotalsQueryTest {
 
     @Test fun filtersAloneAndCombined() = runTest {
         assertEquals(mapOf(Role.PIC to RoleTotal(60, 1), Role.STUDENT to RoleTotal(45, 1), Role.COACH to RoleTotal(15, 1)),
-            totals(FlightFilter(gliderId = "g1")))
-        assertEquals(listOf(4, 2, 1), listedLogNos(FlightFilter(airfieldId = "a1")))
+            totals(FlightFilter(gliderIds = setOf("g1"))))
+        assertEquals(listOf(4, 2, 1), listedLogNos(FlightFilter(airfieldIds = setOf("a1"))))
         assertEquals(listOf(3, 2), listedLogNos(FlightFilter(dateFrom = LocalDate.of(2026, 1, 10), dateTo = LocalDate.of(2026, 2, 1)).copy(logNoFrom = 2)))
-        assertEquals(listOf(3, 1), listedLogNos(FlightFilter(role = Role.PIC)))
+        assertEquals(listOf(3, 1), listedLogNos(FlightFilter(roles = setOf(Role.PIC))))
         assertEquals(listOf(4, 3), listedLogNos(FlightFilter(logNoFrom = 3, logNoTo = 4)))
         // A launch time range leaves out flights without a launch time.
         assertEquals(listOf(4, 2), listedLogNos(FlightFilter(launchFrom = ClockTime.parse("11:00"), launchTo = ClockTime.parse("14:00"))))
         // Glider and airfield together, as in "my hours in this glider at this airfield".
         assertEquals(mapOf(Role.PIC to RoleTotal(60, 1), Role.STUDENT to RoleTotal(45, 1)),
-            totals(FlightFilter(gliderId = "g1", airfieldId = "a1")))
-        assertEquals(emptyMap<Role, RoleTotal>(), totals(FlightFilter(gliderId = "g2", role = Role.STUDENT)))
+            totals(FlightFilter(gliderIds = setOf("g1"), airfieldIds = setOf("a1"))))
+        assertEquals(emptyMap<Role, RoleTotal>(), totals(FlightFilter(gliderIds = setOf("g2"), roles = setOf(Role.STUDENT))))
     }
 
     @Test fun totalsServiceAddsOpeningBalancesOnlyWithoutAFilter() = runTest {
@@ -106,7 +106,7 @@ class TotalsQueryTest {
         assertEquals(RoleTotal(6180, 302), all.rows[Role.PIC])
         assertEquals(RoleTotal(6270, 305), all.combined)
 
-        val filtered = service.observe(FlightFilter(airfieldId = "a2")).first()
+        val filtered = service.observe(FlightFilter(airfieldIds = setOf("a2"))).first()
         assertEquals(RoleTotal(120, 1), filtered.rows[Role.PIC])
         assertEquals(RoleTotal(135, 2), filtered.combined)
     }

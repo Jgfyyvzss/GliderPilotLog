@@ -17,7 +17,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -52,7 +57,6 @@ import io.github.jgfyyvzss.gliderpilotlog.core.FlightFilter
 import io.github.jgfyyvzss.gliderpilotlog.core.Role
 import io.github.jgfyyvzss.gliderpilotlog.data.Settings
 import io.github.jgfyyvzss.gliderpilotlog.ui.ColonTransformation
-import io.github.jgfyyvzss.gliderpilotlog.ui.PickerField
 import io.github.jgfyyvzss.gliderpilotlog.ui.PickerOption
 import io.github.jgfyyvzss.gliderpilotlog.ui.appContainer
 import io.github.jgfyyvzss.gliderpilotlog.ui.gliders.pickerLabel
@@ -60,8 +64,6 @@ import io.github.jgfyyvzss.gliderpilotlog.ui.shortText
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
-
-private const val ANY = ""
 
 /** Active filters as removable chips, after a Filter chip that opens the filter sheet. Shared by Flights and Totals. */
 @Composable
@@ -75,12 +77,24 @@ fun FilterBar(modifier: Modifier = Modifier) {
     var open by rememberSaveable { mutableStateOf(false) }
 
     val chips = buildList<Pair<String, FlightFilter>> {
-        filter.gliderId?.let { id -> add(stringResource(R.string.filter_chip_glider, gliders.firstOrNull { it.id == id }?.registration ?: "?") to filter.copy(gliderId = null)) }
-        filter.airfieldId?.let { id -> add((airfields.firstOrNull { it.id == id }?.name ?: stringResource(R.string.flight_airfield)) to filter.copy(airfieldId = null)) }
-        filter.clubId?.let { id -> add((clubs.firstOrNull { it.id == id }?.name ?: stringResource(R.string.flight_club)) to filter.copy(clubId = null)) }
+        // One chip per field, naming every choice, for example "Glider FQM, GZY".
+        if (filter.gliderIds.isNotEmpty()) {
+            val names = gliders.filter { it.id in filter.gliderIds }.joinToString(", ") { it.registration }.ifEmpty { "?" }
+            add(stringResource(R.string.filter_chip_glider, names) to filter.copy(gliderIds = emptySet()))
+        }
+        if (filter.airfieldIds.isNotEmpty()) {
+            val names = airfields.filter { it.id in filter.airfieldIds }.joinToString(", ") { it.name }.ifEmpty { "?" }
+            add(stringResource(R.string.filter_chip_airfield, names) to filter.copy(airfieldIds = emptySet()))
+        }
+        if (filter.clubIds.isNotEmpty()) {
+            val names = clubs.filter { it.id in filter.clubIds }.joinToString(", ") { it.name }.ifEmpty { "?" }
+            add(stringResource(R.string.filter_chip_club, names) to filter.copy(clubIds = emptySet()))
+        }
         filter.dateFrom?.let { add(stringResource(R.string.filter_chip_from, it.shortText()) to filter.copy(dateFrom = null)) }
         filter.dateTo?.let { add(stringResource(R.string.filter_chip_to, it.shortText()) to filter.copy(dateTo = null)) }
-        filter.role?.let { add(it.label() to filter.copy(role = null)) }
+        if (filter.roles.isNotEmpty()) {
+            add(Role.entries.filter { it in filter.roles }.map { it.label() }.joinToString(", ") to filter.copy(roles = emptySet()))
+        }
         if (filter.logNoFrom != null || filter.logNoTo != null) {
             add(stringResource(R.string.filter_chip_log, filter.logNoFrom?.toString() ?: "", filter.logNoTo?.toString() ?: "") to filter.copy(logNoFrom = null, logNoTo = null))
         }
@@ -142,7 +156,6 @@ private fun FilterSheet(
     val badTime = stringResource(R.string.filter_bad_time)
     val datesReversed = stringResource(R.string.filter_dates_reversed)
     var pickDate by remember { mutableStateOf<String?>(null) } // "from" or "to"
-    val any = PickerOption(ANY, stringResource(R.string.common_any))
     val numeric = KeyboardOptions(keyboardType = KeyboardType.Number)
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
@@ -151,9 +164,9 @@ private fun FilterSheet(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(stringResource(R.string.filter_title), style = MaterialTheme.typography.titleMedium)
-            PickerField(stringResource(R.string.flight_glider), draft.gliderId ?: ANY, listOf(any) + gliderOptions, { draft = draft.copy(gliderId = it.ifEmpty { null }) })
-            PickerField(stringResource(R.string.flight_airfield), draft.airfieldId ?: ANY, listOf(any) + airfieldOptions, { draft = draft.copy(airfieldId = it.ifEmpty { null }) })
-            PickerField(stringResource(R.string.flight_club), draft.clubId ?: ANY, listOf(any) + clubOptions, { draft = draft.copy(clubId = it.ifEmpty { null }) })
+            MultiPickerField(stringResource(R.string.flight_glider), draft.gliderIds, gliderOptions) { draft = draft.copy(gliderIds = it) }
+            MultiPickerField(stringResource(R.string.flight_airfield), draft.airfieldIds, airfieldOptions) { draft = draft.copy(airfieldIds = it) }
+            MultiPickerField(stringResource(R.string.flight_club), draft.clubIds, clubOptions) { draft = draft.copy(clubIds = it) }
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 DateField(stringResource(R.string.filter_from), draft.dateFrom, Modifier.weight(1f)) { pickDate = "from" }
@@ -162,9 +175,10 @@ private fun FilterSheet(
 
             Text(stringResource(R.string.totals_role), style = MaterialTheme.typography.titleSmall)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(draft.role == null, { draft = draft.copy(role = null) }, label = { Text(stringResource(R.string.common_any)) })
+                // Any clears the choice; each role chip adds or removes that role.
+                FilterChip(draft.roles.isEmpty(), { draft = draft.copy(roles = emptySet()) }, label = { Text(stringResource(R.string.common_any)) })
                 Role.entries.forEach { r ->
-                    FilterChip(draft.role == r, { draft = draft.copy(role = r) }, label = { Text(r.label()) })
+                    FilterChip(r in draft.roles, { draft = draft.copy(roles = if (r in draft.roles) draft.roles - r else draft.roles + r) }, label = { Text(r.label()) })
                 }
             }
 
@@ -186,7 +200,7 @@ private fun FilterSheet(
 
             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { onApply(FlightFilter()) }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.filter_clear_all)) }
+                Button(onClick = { onApply(FlightFilter()) }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.filter_clear_all)) }
                 Button(onClick = {
                     val lt = parseTime(launchTo)
                     val lf = parseTime(launchFrom)
@@ -227,6 +241,44 @@ private fun FilterSheet(
                 }) { Text(stringResource(R.string.common_any)) }
             },
         ) { DatePicker(state) }
+    }
+}
+
+/** A read-only field listing the chosen options, or Any, that opens a list with a tick box for each. */
+@Composable
+private fun MultiPickerField(label: String, selected: Set<String>, options: List<PickerOption>, onChange: (Set<String>) -> Unit) {
+    var open by rememberSaveable { mutableStateOf(false) }
+    val shown = options.filter { it.id in selected }.joinToString(", ") { it.label }.ifEmpty { stringResource(R.string.common_any) }
+    Box {
+        OutlinedTextField(shown, {}, readOnly = true, label = { Text(label) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        Box(Modifier.matchParentSize().clickable { open = true })
+    }
+    if (open) {
+        var ticked by remember { mutableStateOf(selected) }
+        AlertDialog(
+            onDismissRequest = { open = false },
+            title = { Text(label) },
+            text = {
+                if (options.isEmpty()) {
+                    Text(stringResource(R.string.picker_empty))
+                } else {
+                    LazyColumn(Modifier.heightIn(max = 420.dp)) {
+                        items(options, key = { it.id }) { o ->
+                            Row(
+                                Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                                    .clickable { ticked = if (o.id in ticked) ticked - o.id else ticked + o.id },
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Checkbox(checked = o.id in ticked, onCheckedChange = null)
+                                Text(o.label, Modifier.padding(start = 8.dp))
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { onChange(ticked); open = false }) { Text(stringResource(R.string.common_ok)) } },
+            dismissButton = { TextButton(onClick = { onChange(emptySet()); open = false }) { Text(stringResource(R.string.common_any)) } },
+        )
     }
 }
 

@@ -10,7 +10,22 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.filled.Bluetooth
+import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import io.github.jgfyyvzss.gliderpilotlog.core.TypeTotal
+import io.github.jgfyyvzss.gliderpilotlog.core.TypeTotals
+import io.github.jgfyyvzss.gliderpilotlog.ui.gliders.pickerLabel
+import io.github.jgfyyvzss.gliderpilotlog.ui.logbook.LogbookCalculatorSheet
+import java.time.LocalDate
 import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -38,7 +53,10 @@ import io.github.jgfyyvzss.gliderpilotlog.data.Settings
 import io.github.jgfyyvzss.gliderpilotlog.ui.appContainer
 import io.github.jgfyyvzss.gliderpilotlog.ui.settings.lastBackupText
 
-/** New flight, From IGC and From logger, a compact unfiltered totals card, and the last backup. */
+/**
+ * New flight, From IGC, From logger and the aircraft logbook calculator, a compact unfiltered totals card, totals by
+ * aircraft type as far as the screen allows, and the last backup.
+ */
 @Composable
 fun HomeScreen(onNewFlight: () -> Unit, onFromIgc: () -> Unit, onFromLogger: () -> Unit, onTotals: () -> Unit, onBackup: () -> Unit) {
     val app = appContainer()
@@ -48,6 +66,14 @@ fun HomeScreen(onNewFlight: () -> Unit, onFromIgc: () -> Unit, onFromLogger: () 
     val flightsFlow = remember { app.repository.observeTotalsByRole(FlightFilter()) }
     val byRole by flightsFlow.collectAsStateWithLifecycle(emptyMap())
     val hasFlights = byRole.values.any { it.flights > 0 }
+    val gliderTotals by remember { app.repository.observeGliderTotals() }.collectAsStateWithLifecycle(emptyList())
+    val aircraft by app.aircraft.list.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { app.aircraft.load() }
+    val byType = remember(gliderTotals, aircraft) {
+        TypeTotals.group(gliderTotals) { id -> aircraft?.aircraft?.firstOrNull { it.id == id }?.name }
+    }
+    var choosingGlider by rememberSaveable { mutableStateOf(false) }
+    var calculatorFor by rememberSaveable { mutableStateOf<String?>(null) }
 
     Column(
         Modifier.fillMaxSize().padding(16.dp),
@@ -65,6 +91,10 @@ fun HomeScreen(onNewFlight: () -> Unit, onFromIgc: () -> Unit, onFromLogger: () 
             Icon(Icons.Default.Bluetooth, contentDescription = null)
             Text("  " + stringResource(R.string.home_from_logger))
         }
+        OutlinedButton(onClick = { choosingGlider = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
+            Icon(Icons.Default.Calculate, contentDescription = null)
+            Text("  " + stringResource(R.string.flights_aircraft_logbook))
+        }
         table?.let { t ->
             Card(Modifier.fillMaxWidth().clickable(onClick = onTotals)) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -73,6 +103,9 @@ fun HomeScreen(onNewFlight: () -> Unit, onFromIgc: () -> Unit, onFromLogger: () 
                     CardRow(stringResource(R.string.totals_combined), t.combined, settings)
                 }
             }
+        }
+        if (byType.isNotEmpty()) {
+            TypeTotalsCard(byType, settings)
         }
         // Nudges when there are flights and the last backup is stale or missing.
         val stale = hasFlights && BackupSchedule.isStale(settings.lastBackupAt, System.currentTimeMillis())
@@ -83,6 +116,73 @@ fun HomeScreen(onNewFlight: () -> Unit, onFromIgc: () -> Unit, onFromLogger: () 
             modifier = Modifier.fillMaxWidth().clickable(onClick = onBackup).padding(vertical = 8.dp),
         )
     }
+
+    if (choosingGlider) {
+        GliderChoice(onDismiss = { choosingGlider = false }) { id -> choosingGlider = false; calculatorFor = id }
+    }
+    calculatorFor?.let { id -> HomeCalculator(id) { calculatorFor = null } }
+}
+
+/** The pilot's own time on the [TYPE_ROWS] aircraft types with the most hours. */
+@Composable
+private fun TypeTotalsCard(rows: List<TypeTotal>, settings: Settings) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(stringResource(R.string.home_by_type), style = MaterialTheme.typography.titleMedium)
+            rows.take(TYPE_ROWS).forEach { t -> CardRow(t.label, RoleTotal(t.minutes, t.flights), settings) }
+        }
+    }
+}
+
+/** A fixed number, so the card fits every phone. */
+private const val TYPE_ROWS = 3
+
+/** Which glider's aircraft logbook to work on; gliders flown today come first. */
+@Composable
+private fun GliderChoice(onDismiss: () -> Unit, onPick: (String) -> Unit) {
+    val repo = appContainer().repository
+    val gliders by remember { repo.observeGliders() }.collectAsStateWithLifecycle(emptyList())
+    var today by remember { mutableStateOf<Set<String>>(emptySet()) }
+    LaunchedEffect(Unit) { today = repo.glidersOnDay(LocalDate.now()).map { it.id }.toSet() }
+    val shown = gliders.filter { !it.archived || it.id in today }.sortedBy { it.id !in today }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.flights_which_glider)) },
+        text = {
+            if (shown.isEmpty()) {
+                Text(stringResource(R.string.picker_empty))
+            } else {
+                LazyColumn(Modifier.heightIn(max = 420.dp)) {
+                    items(shown, key = { it.id }) { g ->
+                        ListItem(
+                            headlineContent = { Text(g.pickerLabel()) },
+                            supportingContent = if (g.id in today) ({ Text(stringResource(R.string.home_flown_today)) }) else null,
+                            modifier = Modifier.clickable { onPick(g.id) },
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
+    )
+}
+
+/**
+ * The calculator for today when the glider flew today, so today's flights are already in it; otherwise the manual
+ * calculator, for paperwork on a glider the pilot did not fly.
+ */
+@Composable
+private fun HomeCalculator(gliderId: String, onDismiss: () -> Unit) {
+    val repo = appContainer().repository
+    var day by remember { mutableStateOf<LocalDate?>(null) }
+    var checked by remember { mutableStateOf(false) }
+    LaunchedEffect(gliderId) {
+        val now = LocalDate.now()
+        day = now.takeIf { repo.glidersOnDay(now).any { it.id == gliderId } }
+        checked = true
+    }
+    if (checked) LogbookCalculatorSheet(gliderId, day, onDismiss)
 }
 
 @Composable

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_title">Sicherung</string>
+    <string name="backup_folder">Sicherungsordner</string>
+    <string name="backup_choose_folder">Ordner auswählen</string>
+    <string name="backup_folder_not_set">Nicht festgelegt. Tippe, um einen Ordner zu wählen, der auch ein Cloud-synchronisierter sein kann.</string>
+    <string name="backup_folder_lost">Der gewählte Ordner ist nicht mehr erreichbar. Tippe, um erneut zu wählen.</string>
+    <string name="backup_folder_set">Sicherungsordner festgelegt</string>
+    <string name="backup_folder_unusable">Dieser Ordner kann nicht für Sicherungen verwendet werden</string>
+    <string name="backup_last">Letzte Sicherung: %1$s</string>
+    <string name="backup_after">Automatisch sichern nach</string>
+    <string name="backup_changes">Änderungen</string>
+    <string name="backup_days">Tage</string>
+    <string name="backup_auto_off">Automatische Sicherungen sind aus.</string>
+    <string name="backup_auto_hint">Was zuerst eintritt, sobald sich etwas geändert hat. 0 schaltet einen Auslöser aus. Die letzten 10 Sicherungen werden aufbewahrt.</string>
+    <string name="backup_now">Jetzt sichern</string>
+    <string name="backup_restore">Wiederherstellen</string>
+    <string name="backup_merge">Zusammenführen</string>
+    <string name="backup_restore_merge_hint">Wiederherstellen lädt eine Sicherung in ein leeres Flugbuch, einschließlich Einstellungen und Profil. Zusammenführen kombiniert eine Sicherung mit dem Flugbuch auf diesem Telefon, behält von jedem Datensatz die neuere Kopie und lässt die Einstellungen unverändert.</string>
+    <string name="backup_written">Gesichert in %1$s</string>
+    <string name="backup_no_folder">Wähle zuerst einen Sicherungsordner</string>
+    <string name="backup_failed">Sicherung fehlgeschlagen: %1$s</string>
+    <string name="backup_restored">Flugbuch wiederhergestellt</string>
+    <string name="backup_merged">Sicherung zusammengeführt</string>
+    <string name="backup_nothing_changed">Es wurde nichts geändert</string>
+    <string name="backup_more_problems">und %1$d weitere</string>
+    <string name="backup_restore_title">Diese Sicherung wiederherstellen?</string>
+    <!-- %1$s is the backup's date; %2$s to %5$s are counts such as "12 flights". -->
+    <string name="backup_restore_text">Sicherung vom %1$s: %2$s, %3$s, %4$s und %5$s. Deine Einstellungen und dein Pilotenprofil werden durch die der Sicherung ersetzt.</string>
+    <string name="backup_merge_title">Diese Sicherung zusammenführen?</string>
+    <string name="backup_merge_text">Sicherung vom %1$s mit %2$s. %3$d Datensätze werden hinzugefügt und %4$d mit einer neueren Kopie aktualisiert; %5$d sind bereits auf dem neuesten Stand. Die Einstellungen bleiben unverändert.</string>
+    <string name="backup_unknown_date">unbekannten Datum</string>
+
+    <string name="first_run_welcome">Willkommen bei soarlogs</string>
+    <string name="first_run_text">Beginne ein neues Flugbuch oder stelle eines aus einer Sicherungsdatei wieder her.</string>
+    <string name="first_run_fresh">Neu beginnen</string>
+    <string name="first_run_restore">Aus Sicherung wiederherstellen</string>
+
+    <plurals name="count_flights">
+        <item quantity="one">%1$d Flug</item>
+        <item quantity="other">%1$d Flüge</item>
+    </plurals>
+    <plurals name="count_gliders">
+        <item quantity="one">%1$d Segelflugzeug</item>
+        <item quantity="other">%1$d Segelflugzeuge</item>
+    </plurals>
+    <plurals name="count_airfields">
+        <item quantity="one">%1$d Flugplatz</item>
+        <item quantity="other">%1$d Flugplätze</item>
+    </plurals>
+    <plurals name="count_clubs">
+        <item quantity="one">%1$d Verein</item>
+        <item quantity="other">%1$d Vereine</item>
+    </plurals>
+</resources>

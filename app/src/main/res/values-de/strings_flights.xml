@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Flights list -->
+    <string name="flights_none_match">Kein Flug entspricht dem Filter.</string>
+    <string name="flights_none_yet">Noch keine Flüge. Tippe auf +, um einen zu erfassen.</string>
+    <string name="flights_which_glider">Welches Segelflugzeug?</string>
+    <string name="flights_aircraft_logbook">Bordbuch</string>
+
+    <!-- Flight form -->
+    <string name="flight_log_no">Log-Nr.</string>
+    <string name="flight_glider">Segelflugzeug</string>
+    <string name="flight_airfield">Flugplatz</string>
+    <string name="flight_club">Verein</string>
+    <string name="flight_launch_type">Startart</string>
+    <string name="flight_pic">Verantwortlicher Pilot</string>
+    <string name="flight_launch">Start</string>
+    <string name="flight_landing">Landung</string>
+    <string name="flight_duration">Dauer</string>
+    <!-- Keep the digits and times as they are: they show how typing works. -->
+    <string name="flight_duration_hint">Ziffern: 51 ergibt 0:51, 324 ergibt 3:24</string>
+    <string name="flight_landing_place">Landeort</string>
+    <string name="flight_same_as_departure">Wie Startort</string>
+    <string name="flight_other_place">Anderer Ort</string>
+    <string name="flight_landing_airfield">Landeplatz</string>
+    <string name="flight_where_ended">Wo der Flug endete</string>
+    <string name="flight_notes">Notizen</string>
+    <string name="flight_save_anyway">Trotzdem speichern</string>
+    <string name="flight_delete">Flug löschen</string>
+    <string name="flight_delete_title">Flug %1$s löschen?</string>
+    <string name="flight_delete_text">Seine Log-Nr. wird frei, wenn sie die höchste ist.</string>
+    <string name="flight_new_airfield_hint">Koordinaten und Vereine kannst du später im Bildschirm Flugplätze ergänzen.</string>
+
+    <!-- IGC import -->
+    <string name="flight_igc_preview">Aus der IGC-Datei: Start %1$s, Landung %2$s</string>
+    <string name="flight_igc_nearby">Ebenfalls in Reichweite des Startpunkts:</string>
+    <string name="flight_igc_nearby_item">%1$s, %2$d m</string>
+    <string name="flight_igc_no_airfield">Kein Flugplatz in der Nähe dieses Startpunkts gefunden. Einen anlegen?</string>
+    <string name="flight_igc_launch_point">Startpunkt %1$s, %2$s, Höhe %3$d m</string>
+    <string name="flight_igc_create">Anlegen</string>
+    <string name="igc_reading">IGC-Datei wird gelesen…</string>
+    <string name="igc_choose_other">Andere Datei wählen</string>
+    <string name="igc_segments">Diese Datei enthält %1$d Flüge. Importiere jeden einzeln.</string>
+    <string name="igc_segment">%1$s, %2$s</string>
+    <string name="igc_import">Importieren</string>
+    <string name="igc_imported">Importiert</string>
+    <string name="igc_done">Fertig</string>
+    <!-- Filter -->
+    <string name="filter_button">Filter</string>
+    <string name="filter_title">Flüge filtern</string>
+    <string name="filter_from">Von</string>
+    <string name="filter_to">Bis</string>
+    <string name="filter_log_from">Log-Nr. von</string>
+    <string name="filter_log_to">Log-Nr. bis</string>
+    <string name="filter_launch_from">Start von</string>
+    <string name="filter_launch_to">Start bis</string>
+    <string name="filter_clear_all">Alle zurücksetzen</string>
+    <string name="filter_apply">Anwenden</string>
+    <string name="filter_bad_time">Gib Startzeiten als 24-Stunden-Ziffern ein, zum Beispiel 1305</string>
+    <string name="filter_dates_reversed">Das Von-Datum liegt nach dem Bis-Datum</string>
+    <string name="filter_chip_glider">Segelflugzeug %1$s</string>
+    <string name="filter_chip_airfield">Flugplatz %1$s</string>
+    <string name="filter_chip_club">Verein %1$s</string>
+    <string name="filter_chip_from">Von %1$s</string>
+    <string name="filter_chip_to">Bis %1$s</string>
+    <string name="filter_chip_log">Log %1$s–%2$s</string>
+    <string name="filter_chip_launch">Start %1$s–%2$s</string>
+    <string name="filter_chip_remove">Filter %1$s entfernen</string>
+</resources>

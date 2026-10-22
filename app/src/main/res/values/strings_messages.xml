@@ -65,6 +65,8 @@
     <string name="msg_csv_expect_latitude">decimal degrees between -90 and 90</string>
     <string name="msg_csv_expect_longitude">decimal degrees between -180 and 180</string>
     <string name="msg_csv_expect_both_coordinates">both latitude and longitude, or neither</string>
+    <!-- Keep "yes" and "no" in English: they are the values the column takes in every language. -->
+    <string name="msg_csv_expect_yes_no">yes, no or blank</string>
     <string name="msg_csv_unused_column">Column %1$s is not used and was ignored</string>
     <string name="msg_csv_skip_glider_exists">Row %1$d: %2$s is already in the glider list</string>
     <string name="msg_csv_skip_airfield_exists">Row %1$d: %2$s is already in the airfield list</string>

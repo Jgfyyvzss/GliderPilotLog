@@ -174,19 +174,16 @@ fun SettingsScreen(onClubs: () -> Unit, onLaunchTypes: () -> Unit, onOpeningBala
                 s.instructionCountsAsPic,
             ) { on -> scope.launch { container.settings.setInstructionCountsAsPic(on) } }
         }
-        ListItem(
-            headlineContent = { Text(stringResource(R.string.title_opening_balances)) },
-            supportingContent = { Text(stringResource(R.string.settings_balances_hint)) },
-            modifier = Modifier.clickable(onClick = onOpeningBalances),
-        )
+        Text(stringResource(R.string.settings_balances_hint), style = MaterialTheme.typography.bodySmall)
+        OutlinedButton(onClick = onOpeningBalances, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.title_opening_balances)) }
 
         HorizontalDivider()
         BackupSection()
-        ListItem(
-            headlineContent = { Text(stringResource(R.string.title_spreadsheets)) },
-            supportingContent = { Text(stringResource(R.string.settings_spreadsheets_hint)) },
-            modifier = Modifier.clickable(onClick = onSpreadsheets),
-        )
+
+        HorizontalDivider()
+        Text(stringResource(R.string.title_spreadsheets), style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.settings_spreadsheets_hint), style = MaterialTheme.typography.bodySmall)
+        OutlinedButton(onClick = onSpreadsheets, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.settings_spreadsheets_button)) }
 
         HorizontalDivider()
         Text(stringResource(R.string.settings_weglide), style = MaterialTheme.typography.titleMedium)
@@ -194,8 +191,10 @@ fun SettingsScreen(onClubs: () -> Unit, onLaunchTypes: () -> Unit, onOpeningBala
 
         HorizontalDivider()
         Text(stringResource(R.string.settings_lists), style = MaterialTheme.typography.titleMedium)
-        ListItem(headlineContent = { Text(stringResource(R.string.title_clubs)) }, modifier = Modifier.clickable(onClick = onClubs))
-        ListItem(headlineContent = { Text(stringResource(R.string.title_launch_types)) }, modifier = Modifier.clickable(onClick = onLaunchTypes))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick = onClubs, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.title_clubs)) }
+            OutlinedButton(onClick = onLaunchTypes, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.title_launch_types)) }
+        }
     }
 }
 

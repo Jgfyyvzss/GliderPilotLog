@@ -8,22 +8,31 @@ import io.github.jgfyyvzss.gliderpilotlog.core.msg
 /** A checked gliders.csv or airfields.csv: rows to add, rows skipped because the record exists, and errors. */
 data class RecordImport<T>(val records: List<T>, val skipped: List<Msg>, val errors: List<CsvError>, val warnings: List<Msg>)
 
-data class ParsedGlider(val row: Int, val registration: String, val type: String, val weglideAircraftId: Long?)
+data class ParsedGlider(val row: Int, val registration: String, val type: String, val weglideAircraftId: Long?, val archived: Boolean = false)
 
 data class ParsedAirfield(
     val row: Int, val name: String, val latitude: Double?, val longitude: Double?,
-    val elevationM: Int?, val matchRadiusM: Int?, val clubs: List<String>,
+    val elevationM: Int?, val matchRadiusM: Int?, val clubs: List<String>, val archived: Boolean = false,
 )
+
+/** The optional `archived` column: `yes`, `no` or blank (not archived), ignoring case. Null means unreadable. */
+internal fun archivedCell(cell: String): Boolean? = when (cell.trim().lowercase()) {
+    "", "no" -> false
+    "yes" -> true
+    else -> null
+}
+
+internal fun archivedText(archived: Boolean) = if (archived) "yes" else ""
 
 /** gliders.csv from Appendix C. The WeGlide name is written for readability and ignored on import. */
 object GliderCsv {
-    val columns = listOf("registration", "type", "weglide_aircraft_id", "weglide_aircraft_name")
+    val columns = listOf("registration", "type", "weglide_aircraft_id", "weglide_aircraft_name", "archived")
 
-    data class ExportRow(val registration: String, val type: String, val weglideAircraftId: Long?, val weglideAircraftName: String?)
+    data class ExportRow(val registration: String, val type: String, val weglideAircraftId: Long?, val weglideAircraftName: String?, val archived: Boolean = false)
 
     fun export(rows: List<ExportRow>): String = Csv.file(
         columns,
-        rows.map { listOf(it.registration, it.type, it.weglideAircraftId?.toString().orEmpty(), it.weglideAircraftName.orEmpty()) },
+        rows.map { listOf(it.registration, it.type, it.weglideAircraftId?.toString().orEmpty(), it.weglideAircraftName.orEmpty(), archivedText(it.archived)) },
     )
 
     /** Rows whose registration already exists, here or earlier in the file, are skipped and reported, never updated. */
@@ -44,12 +53,13 @@ object GliderCsv {
             if (reg.isEmpty()) errs += CsvError(r.number, "registration", reg, msg(MsgKey.CSV_EXPECT_REGISTRATION))
             if (type.isEmpty()) errs += CsvError(r.number, "type", type, msg(MsgKey.CSV_EXPECT_GLIDER_TYPE))
             if (weglideCell.isNotEmpty() && (weglide == null || weglide <= 0)) errs += CsvError(r.number, "weglide_aircraft_id", weglideCell, msg(MsgKey.CSV_EXPECT_POSITIVE))
+            val archived = archivedCell(r["archived"]) ?: run { errs += CsvError(r.number, "archived", r["archived"], msg(MsgKey.CSV_EXPECT_YES_NO)); false }
             if (errs.size > before) continue
             val key = Keys.registrationKey(reg)
             when (key) {
                 in existingKeys -> skipped += msg(MsgKey.CSV_SKIP_GLIDER_EXISTS, r.number, reg)
                 in seen -> skipped += msg(MsgKey.CSV_SKIP_REPEAT, r.number, reg)
-                else -> { seen += key; out += ParsedGlider(r.number, reg, type, weglide) }
+                else -> { seen += key; out += ParsedGlider(r.number, reg, type, weglide, archived) }
             }
         }
         return RecordImport(out, skipped, errs, table.unknownColumns.map { msg(MsgKey.CSV_UNUSED_COLUMN, it) })
@@ -58,10 +68,11 @@ object GliderCsv {
 
 /** airfields.csv from Appendix C. Club names are separated by semicolons. */
 object AirfieldCsv {
-    val columns = listOf("name", "latitude", "longitude", "elevation_m", "match_radius_m", "clubs")
+    val columns = listOf("name", "latitude", "longitude", "elevation_m", "match_radius_m", "clubs", "archived")
 
     data class ExportRow(
         val name: String, val latitude: Double?, val longitude: Double?, val elevationM: Int?, val matchRadiusM: Int?, val clubs: List<String>,
+        val archived: Boolean = false,
     )
 
     fun export(rows: List<ExportRow>): String = Csv.file(
@@ -69,7 +80,7 @@ object AirfieldCsv {
         rows.map {
             listOf(
                 it.name, it.latitude?.toString().orEmpty(), it.longitude?.toString().orEmpty(),
-                it.elevationM?.toString().orEmpty(), it.matchRadiusM?.toString().orEmpty(), it.clubs.joinToString(";"),
+                it.elevationM?.toString().orEmpty(), it.matchRadiusM?.toString().orEmpty(), it.clubs.joinToString(";"), archivedText(it.archived),
             )
         },
     )
@@ -100,6 +111,7 @@ object AirfieldCsv {
             if ((r["latitude"].isEmpty()) != (r["longitude"].isEmpty())) errs += CsvError(r.number, "longitude", r["longitude"], msg(MsgKey.CSV_EXPECT_BOTH_COORDINATES))
             val elevation = int("elevation_m", positive = false)
             val radius = int("match_radius_m", positive = true)
+            val archived = archivedCell(r["archived"]) ?: run { errs += CsvError(r.number, "archived", r["archived"], msg(MsgKey.CSV_EXPECT_YES_NO)); false }
             if (errs.size > before) continue
             val key = Keys.nameKey(name)
             when (key) {
@@ -108,7 +120,7 @@ object AirfieldCsv {
                 else -> {
                     seen += key
                     val clubs = r["clubs"].split(';').map { it.trim() }.filter { it.isNotEmpty() }.distinctBy(Keys::nameKey)
-                    out += ParsedAirfield(r.number, name, lat, lon, elevation, radius, clubs)
+                    out += ParsedAirfield(r.number, name, lat, lon, elevation, radius, clubs, archived)
                 }
             }
         }

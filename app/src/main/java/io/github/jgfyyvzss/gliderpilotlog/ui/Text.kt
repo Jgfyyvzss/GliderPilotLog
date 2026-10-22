@@ -75,6 +75,7 @@ fun MsgKey.res(): Int = when (this) {
     MsgKey.CSV_EXPECT_LATITUDE -> R.string.msg_csv_expect_latitude
     MsgKey.CSV_EXPECT_LONGITUDE -> R.string.msg_csv_expect_longitude
     MsgKey.CSV_EXPECT_BOTH_COORDINATES -> R.string.msg_csv_expect_both_coordinates
+    MsgKey.CSV_EXPECT_YES_NO -> R.string.msg_csv_expect_yes_no
     MsgKey.CSV_UNUSED_COLUMN -> R.string.msg_csv_unused_column
     MsgKey.CSV_SKIP_GLIDER_EXISTS -> R.string.msg_csv_skip_glider_exists
     MsgKey.CSV_SKIP_AIRFIELD_EXISTS -> R.string.msg_csv_skip_airfield_exists

@@ -2,8 +2,9 @@
 <resources>
     <string name="backup_title">Backup</string>
     <string name="backup_folder">Backup folder</string>
-    <string name="backup_folder_not_set">Not set. Tap to choose a folder, which can be a cloud-synced one.</string>
-    <string name="backup_folder_lost">The chosen folder can no longer be reached. Tap to choose again.</string>
+    <string name="backup_choose_folder">Choose folder</string>
+    <string name="backup_folder_not_set">Not set. Choose a folder, which can be a cloud-synced one.</string>
+    <string name="backup_folder_lost">The chosen folder can no longer be reached. Choose it again.</string>
     <string name="backup_folder_set">Backup folder set</string>
     <string name="backup_folder_unusable">That folder cannot be used for backups</string>
     <string name="backup_last">Last backup: %1$s</string>

@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Messages built by the plain-Kotlin code as Msg values. One string per MsgKey, named msg_<key>. -->
+<resources>
+    <!-- Flight form -->
+    <string name="msg_log_no_positive">Gib eine ganze Zahl über 0 ein</string>
+    <string name="msg_log_no_used">Log-Nr. %1$d wird bereits von %2$s verwendet</string>
+    <string name="msg_flight_on">dem Flug am %1$s in %2$s</string>
+    <string name="msg_date_required">Wähle das Flugdatum</string>
+    <string name="msg_duration_format">Gib die Dauer als Ziffern ein, zum Beispiel 324 für 3:24</string>
+    <string name="msg_duration_range">Die Dauer muss zwischen 0:01 und 24:00 liegen</string>
+    <string name="msg_glider_required">Wähle ein Segelflugzeug</string>
+    <string name="msg_airfield_required">Wähle einen Flugplatz</string>
+    <string name="msg_club_required">Wähle einen Verein</string>
+    <string name="msg_launch_type_required">Wähle eine Startart</string>
+    <string name="msg_pic_required">Gib den verantwortlichen Piloten ein</string>
+    <string name="msg_pic_other_required">Gib den Namen des verantwortlichen Piloten ein</string>
+    <string name="msg_time_format">Gib eine Uhrzeit im 24-Stunden-Format ein, zum Beispiel 1305</string>
+    <string name="msg_landing_after_launch">Die Landung muss nach dem Start liegen</string>
+    <string name="msg_landing_airfield_required">Wähle den Landeplatz</string>
+    <string name="msg_landing_place_required">Beschreibe, wo der Flug endete</string>
+    <string name="msg_times_disagree">Die Dauer %1$s weicht von Start bis Landung ab (%2$s)</string>
+
+    <!-- Records -->
+    <string name="msg_registration_required">Gib das Kennzeichen ein</string>
+    <string name="msg_glider_exists">%1$s steht bereits in der Segelflugzeugliste</string>
+    <string name="msg_glider_gone">Das Segelflugzeug existiert nicht mehr</string>
+    <string name="msg_logbook_hours_and_date">Gib die Stunden und das Datum ein, für das sie gelten</string>
+    <string name="msg_flights_negative">Die Zahl der Flüge darf nicht negativ sein</string>
+    <string name="msg_airfield_name_required">Gib den Namen des Flugplatzes ein</string>
+    <string name="msg_coordinates_both">Gib Breiten- und Längengrad ein, oder keines von beiden</string>
+    <string name="msg_latitude_range">Der Breitengrad muss zwischen -90 und 90 liegen</string>
+    <string name="msg_longitude_range">Der Längengrad muss zwischen -180 und 180 liegen</string>
+    <string name="msg_radius_positive">Der Abgleichradius muss über 0 liegen</string>
+    <string name="msg_airfield_exists">%1$s steht bereits in der Flugplatzliste</string>
+    <string name="msg_club_name_required">Gib den Namen des Vereins ein</string>
+    <string name="msg_club_exists">%1$s steht bereits in der Vereinsliste</string>
+    <string name="msg_launch_type_name_required">Gib den Namen der Startart ein</string>
+    <string name="msg_launch_type_exists">%1$s steht bereits in der Liste der Startarten</string>
+    <string name="msg_balances_negative">Anfangsbestände dürfen nicht negativ sein</string>
+
+    <!-- CSV import. Column names, YYYY-MM-DD, HH:MM, H:MM and the role names are file vocabulary: keep them as they are. -->
+    <string name="msg_csv_error_found">Zeile %1$d, %2$s: gefunden %3$s, erwartet %4$s</string>
+    <string name="msg_csv_error_column">Zeile %1$d, %2$s: erwartet %3$s</string>
+    <string name="msg_csv_error_row">Zeile %1$d: erwartet %2$s</string>
+    <string name="msg_csv_blank">leer</string>
+    <string name="msg_csv_expect_header">eine Kopfzeile</string>
+    <string name="msg_csv_expect_column">eine Spalte %1$s</string>
+    <string name="msg_csv_expect_positive">eine ganze Zahl über 0</string>
+    <string name="msg_csv_expect_whole">eine ganze Zahl</string>
+    <string name="msg_csv_expect_log_no_free">eine Log-Nr., die noch nicht im Flugbuch vorkommt</string>
+    <string name="msg_csv_expect_log_no_unique">eine Log-Nr., die weiter oben in der Datei nicht verwendet wird (Zeile %1$d)</string>
+    <string name="msg_csv_expect_date">YYYY-MM-DD</string>
+    <string name="msg_csv_expect_duration">H:MM oder ganze Minuten</string>
+    <string name="msg_csv_expect_duration_range">zwischen 1 Minute und 24:00</string>
+    <string name="msg_csv_expect_registration">ein Segelflugzeug-Kennzeichen</string>
+    <string name="msg_csv_expect_airfield">ein Flugplatzname</string>
+    <string name="msg_csv_expect_role">PIC, STUDENT, INSTRUCTOR, COACH oder MUTUAL</string>
+    <string name="msg_csv_expect_launch_type">eines von %1$s</string>
+    <string name="msg_csv_expect_pic">der Name des verantwortlichen Piloten in einer %1$s-Zeile</string>
+    <string name="msg_csv_expect_time">HH:MM</string>
+    <string name="msg_csv_expect_after_launch">eine Zeit nach der Startzeit %1$s</string>
+    <string name="msg_csv_expect_one_landing">landing_airfield oder landing_place, nicht beides</string>
+    <string name="msg_csv_expect_flight_row">mindestens eine Flugzeile</string>
+    <string name="msg_csv_expect_glider_type">der Segelflugzeugtyp</string>
+    <string name="msg_csv_expect_latitude">Dezimalgrad zwischen -90 und 90</string>
+    <string name="msg_csv_expect_longitude">Dezimalgrad zwischen -180 und 180</string>
+    <string name="msg_csv_expect_both_coordinates">Breiten- und Längengrad, oder keines von beiden</string>
+    <!-- "yes" and "no" stay in English: they are the values the column takes in every language. -->
+    <string name="msg_csv_expect_yes_no">yes, no oder leer</string>
+    <string name="msg_csv_unused_column">Spalte %1$s wird nicht verwendet und wurde ignoriert</string>
+    <string name="msg_csv_skip_glider_exists">Zeile %1$d: %2$s steht bereits in der Segelflugzeugliste</string>
+    <string name="msg_csv_skip_airfield_exists">Zeile %1$d: %2$s steht bereits in der Flugplatzliste</string>
+    <string name="msg_csv_skip_repeat">Zeile %1$d: %2$s kommt weiter oben in der Datei vor</string>
+
+    <!-- Backup file, restore and merge -->
+    <string name="msg_backup_not_json">Das ist keine Flugbuch-Sicherungsdatei: Sie ist kein gültiges JSON.</string>
+    <string name="msg_backup_not_backup">Das ist keine Flugbuch-Sicherungsdatei.</string>
+    <string name="msg_backup_no_version">Die Sicherungsdatei enthält keine Formatversion.</string>
+    <string name="msg_backup_newer">Diese Sicherung wurde mit einer neueren Version der App erstellt (Format %1$d). Aktualisiere die App und versuche es erneut.</string>
+    <string name="msg_backup_unknown_version">Unbekannte Version des Sicherungsformats: %1$d.</string>
+    <string name="msg_backup_no_upgrade">Keine Aktualisierung vom Sicherungsformat %1$d möglich.</string>
+    <string name="msg_backup_damaged">Die Sicherungsdatei ist beschädigt oder unvollständig: %1$s</string>
+    <string name="msg_backup_needs_empty">Wiederherstellen erfordert ein leeres Flugbuch. Verwende Zusammenführen, um eine Sicherung mit den Flügen auf diesem Telefon zu kombinieren.</string>
+    <string name="msg_backup_file_unreadable">Die Datei konnte nicht gelesen werden.</string>
+    <string name="msg_backup_folder_refused">Der Sicherungsordner hat keine neue Datei angenommen</string>
+    <string name="msg_backup_write_failed">Die Sicherungsdatei konnte nicht geschrieben werden</string>
+    <string name="msg_backup_failed">Die Sicherung konnte nicht geschrieben werden: %1$s</string>
+
+    <!-- Backup validation: the first group names what a problem is about -->
+    <string name="msg_bk_table_launch_types">Startarten</string>
+    <string name="msg_bk_table_clubs">Vereine</string>
+    <string name="msg_bk_table_airfields">Flugplätze</string>
+    <string name="msg_bk_table_gliders">Segelflugzeuge</string>
+    <string name="msg_bk_table_flights">Flüge</string>
+    <string name="msg_bk_table_import_batches">Importläufe</string>
+    <string name="msg_bk_launch_type">Startart %1$s</string>
+    <string name="msg_bk_club">Verein %1$s</string>
+    <string name="msg_bk_airfield">Flugplatz %1$s</string>
+    <string name="msg_bk_glider">Segelflugzeug %1$s</string>
+    <string name="msg_bk_flight">Flug %1$d</string>
+    <string name="msg_bk_balance">Anfangsbestand %1$s</string>
+    <string name="msg_bk_batch">Importlauf %1$s</string>
+    <string name="msg_bk_duplicate_id">%1$s: ID %2$s kommt mehrfach vor</string>
+    <string name="msg_bk_no_time">%1$s hat keine Zeit</string>
+    <string name="msg_bk_bad_time">%1$s hat eine nicht lesbare Zeit: %2$s</string>
+    <string name="msg_bk_no_name">%1$s hat keinen Namen</string>
+    <string name="msg_bk_no_registration">%1$s hat kein Kennzeichen</string>
+    <string name="msg_bk_missing_club">%1$s verweist auf einen fehlenden Verein %2$s</string>
+    <string name="msg_bk_default_club">%1$s hat einen Standardverein, der keiner seiner Vereine ist</string>
+    <string name="msg_bk_missing_launch_type">%1$s verweist auf eine fehlende Startart</string>
+    <string name="msg_bk_one_coordinate">%1$s hat nur eine Koordinate</string>
+    <string name="msg_bk_latitude_range">%1$s hat einen Breitengrad außerhalb des gültigen Bereichs</string>
+    <string name="msg_bk_longitude_range">%1$s hat einen Längengrad außerhalb des gültigen Bereichs</string>
+    <string name="msg_bk_bad_logbook_date">%1$s hat ein nicht lesbares Bordbuch-Datum</string>
+    <string name="msg_bk_log_no_positive">%1$s: Die Log-Nr. muss über 0 liegen</string>
+    <string name="msg_bk_bad_date">%1$s: nicht lesbares Datum %2$s</string>
+    <string name="msg_bk_duration_range">%1$s: Die Dauer von %2$d Minuten liegt außerhalb des gültigen Bereichs</string>
+    <string name="msg_bk_missing_glider">%1$s verweist auf ein fehlendes Segelflugzeug</string>
+    <string name="msg_bk_missing_airfield">%1$s verweist auf einen fehlenden Flugplatz</string>
+    <string name="msg_bk_missing_landing_airfield">%1$s verweist auf einen fehlenden Landeplatz</string>
+    <string name="msg_bk_both_landing">%1$s hat sowohl einen Landeplatz als auch einen Landeort</string>
+    <string name="msg_bk_unknown_role">%1$s: unbekannte Rolle %2$s</string>
+    <string name="msg_bk_unknown_source">%1$s: unbekannte Quelle %2$s</string>
+    <string name="msg_bk_no_pic">%1$s hat keinen verantwortlichen Piloten</string>
+    <string name="msg_bk_bad_launch_time">%1$s: nicht lesbare Startzeit</string>
+    <string name="msg_bk_bad_landing_time">%1$s: nicht lesbare Landezeit</string>
+    <string name="msg_bk_landing_before_launch">%1$s: Die Landung liegt nicht nach dem Start</string>
+    <string name="msg_bk_balance_role">Anfangsbestand für unbekannte Rolle %1$s</string>
+    <string name="msg_bk_balance_negative">Der Anfangsbestand für %1$s ist negativ</string>
+    <string name="msg_bk_balance_date">Der Anfangsbestand für %1$s hat ein nicht lesbares Datum</string>
+    <string name="msg_bk_balance_duplicate">Der Anfangsbestand für %1$s kommt mehrfach vor</string>
+    <string name="msg_bk_log_no_collision">Log-Nr. %1$d wird von zwei verschiedenen Flügen verwendet: %2$s und %3$s</string>
+    <string name="msg_bk_duplicate_key">%1$s kommt mehrfach mit unterschiedlichen IDs vor</string>
+
+    <!-- WeGlide -->
+    <string name="msg_weglide_status">WeGlide antwortete %1$d: %2$s</string>
+    <string name="msg_weglide_no_host">WeGlide war nicht erreichbar. Prüfe, ob das Telefon online ist und ob soarlogs Daten verwenden darf (Android-Einstellungen, Apps, soarlogs, Datennutzung).</string>
+    <string name="msg_weglide_unreachable">WeGlide war nicht erreichbar: %1$s</string>
+    <string name="msg_weglide_no_list">WeGlide hat keine verwendbare Flugzeugliste gesendet</string>
+    <string name="msg_aircraft_save_failed">Die Flugzeugliste konnte nicht gespeichert werden</string>
+    <string name="msg_igc_no_date">Das ist keine IGC-Datei: Sie enthält kein Flugdatum</string>
+    <string name="msg_igc_no_fixes">Die IGC-Datei enthält keine gültigen GPS-Fixes</string>
+    <string name="msg_igc_no_flight">In dieser IGC-Datei wurde kein Flug gefunden</string>
+    <string name="msg_igc_unreadable">Die Datei konnte nicht gelesen werden</string>
+    <string name="msg_lxnav_connect_failed">Verbindung zum Logger fehlgeschlagen. Prüfe, ob er eingeschaltet und in der Nähe ist.</string>
+    <string name="msg_lxnav_no_logbook">Der Logger hat seine Flugliste nicht gesendet</string>
+    <string name="msg_lxnav_gave_up">Der Download wurde bei Zeile %1$d abgebrochen. Versuche es erneut, um von dort fortzufahren.</string>
+    <string name="msg_lxnav_size_mismatch">Die heruntergeladene Datei hat %1$d Bytes, der Logger listet aber %2$d, daher wurde sie verworfen</string>
+</resources>

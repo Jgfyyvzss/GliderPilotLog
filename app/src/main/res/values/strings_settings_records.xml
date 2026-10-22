@@ -45,7 +45,8 @@
     <string name="settings_instruction_pic">Instructor and Coach count as PIC</string>
     <string name="settings_instruction_pic_hint">The PIC row in Totals also includes Instructor and Coach flights.</string>
     <string name="settings_balances_hint">Totals carried over from your paper logbook</string>
-    <string name="settings_spreadsheets_hint">Export, import, and undo the last import</string>
+    <string name="settings_spreadsheets_hint">Flights, gliders and airfields as spreadsheet files: export them, import them, and undo the last import.</string>
+    <string name="settings_spreadsheets_button">Export, Import, Undo</string>
     <string name="settings_weglide">WeGlide</string>
     <string name="settings_lists">Lists</string>
 
