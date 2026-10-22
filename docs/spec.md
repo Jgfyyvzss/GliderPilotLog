@@ -238,6 +238,11 @@ It is strictly sequential, so there is no skip and no jump. A repeated `FILE_OK`
 - **Read-only:** the app must not delete files on the logger, upload files to it, or change its settings or declarations, although the specification describes all three.
 - **No long waits for the user:** the download runs with a progress display and can be cancelled, which sends `FILE_CANCEL`.
 
+### UI considerations
+- Downloads of large files can take many minutes over BT. A progress indicator is needed to reassure users that the DL is still progressing.
+- An estimate of the selected file DL time would be a nice-to-have.
+- Files should be shown recent first. Probably only the most recent 3 files is sufficient for a daily flight log. Maybe a "More" button could be helpful for eg instructors who do many short flights in a day.
+
 ### XCSoar as a reference
 
 - XCSoar 7.44 (March 2026) lists an LXNAV integration overhaul with protocol 1.05 support and improved flight download, including for Nano devices. XCSoar's documentation site has an LXNAV Protocol page.
