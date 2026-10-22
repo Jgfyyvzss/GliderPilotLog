@@ -306,6 +306,28 @@ A lost phone must not lose the logbook, so one JSON file is the only backup and 
 
 **Test:** export, import into an empty database, export again, and compare the two files, which should be identical with stable ordering apart from `exported_at`.
 
+## Templated PDF creation
+
+### Approach: The PDF is drawn on the device with Android’s PdfDocument API, driven by a JSON template. There is no PDF library and no preview step.
+
+### Filters: The export uses whatever filters are currently applied, so there is no override switch. The dialog shows the flight count and a one-line filter summary, and the same summary is printed in the page footer.
+
+### Templates
+
+A template is a JSON file that sets page size and orientation, margins, the columns, the totals rows and the header and footer.
+Each template decides how role is shown, by listing which role columns it has. The GFA-style template has only PIC and Dual. Each flight’s duration goes in the column its role maps to. The template defines that mapping, including where Student, Instructor, Coach and Mutual time lands. I’ll settle that once I see a page of the real logbook.
+The built-in templates are Simple list, Compact and GFA-style. A user can import further templates from a file. There is no in-app editor, now or later.
+
+Totals: Page total, brought forward and carried forward, running within the exported set only. The footer says so when the export is filtered. They use the same arithmetic as the on-screen totals.
+
+Settings: The H:MM or decimal hours setting applies. The place and times columns only appear when those settings are on and the template includes them.
+
+Fonts: One bundled font in regular and bold, chosen for wide glyph coverage so it still works once the app is multi-language.
+
+Output: The user picks a destination with the system file picker, or uses the share sheet. The work runs in the background with progress and a cancel button, writing pages as it goes so 10,000 flights stay within memory.
+
+### Testing: Check page and total arithmetic against the on-screen totals, run a 10,000-flight export, and confirm a filtered export contains only the filtered flights.
+
 ## Appendix A: Database schema
 
 The appendices hold proposed defaults written while preparing this spec for implementation, and an implementer should ask before departing from them. Primary keys are UUID strings (except opening\_balance, keyed by role, and airfield\_club, with a composite key), dates are ISO text (YYYY-MM-DD), and instants are epoch milliseconds in UTC. Tables with a tombstone have `deleted_at`, null for live rows.
