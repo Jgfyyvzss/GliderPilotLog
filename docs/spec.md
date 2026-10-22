@@ -146,114 +146,103 @@ Confirmed: drop the zone from airfields and flights entirely, and use the device
 
 This also removes the scroll-and-search zone picker, the LatLongToTimezone dependency, and the country and zone data.
 
-## LXNAV flight download (investigation)
+## LXNAV flight download
 
-This is an investigation, not a build step. Minimal testing has been done without success, so nothing beyond the prototype described below should be built until it has worked.
+**Status:** the protocol is proven on an S100 (firmware 9.27, serial 33418, advertising as `LXNAV-S33418`) from a Linux PC, using a Python script over a raw RFCOMM socket. Nothing has been tried from Android, and the Nano, Nano3 and Nano4 are untested. The script, `lxnav_dl.py`, is kept in the repository under `tools/` and is the executable reference for everything below.
 
 **Goal:** download an IGC flight log from an LXNAV logger over Bluetooth, feed it into the IGC import flow, and optionally upload it to WeGlide, so the pilot needs neither a cable nor a separate app to move the file. The app analyses the file itself to pre-fill the form, and WeGlide receives the same bytes for its own analysis.
 
 1. The pilot pairs the logger in Android's Bluetooth settings and chooses From logger on the Home screen.
-2. The app lists the paired devices, then reads the chosen logger's logbook: for each IGC file, its name, date, the start and end times the logger recorded, and its size.
-3. The pilot picks a flight. The app downloads the file to a temporary file in app-private storage, byte for byte, and checks it against the expected size and the checksums.
+2. The app lists the paired devices, then reads the chosen logger's logbook: for each IGC file, its name, date, start time and size.
+3. The pilot picks a flight. The app downloads the file to a temporary file in app-private storage, byte for byte, and checks its size against the logbook.
 4. The file goes into the normal IGC import flow, and the optional WeGlide upload uses the same bytes.
 5. The temporary file is deleted when the import or upload finishes or is cancelled.
 
-**What the DataPort specification says**
+### Protocol as observed on the S100
 
-The LXNAV Data Port Specification, version 1.04 dated 2022-07-19 (66 pages), is marked Draft and Internal, so it is only unofficially available and may be out of date. The points below were checked against its text.
+The source is the LXNAV Data Port Specification 1.04 (2022-07-19, marked Draft and Internal, so only unofficially available). It covers Nano and Nano3 only, and the S100 follows it with the differences noted here. Where the two disagree, this section is what was observed on the device.
 
-- **Scope:** serial or Bluetooth communication with Nano and Nano3 devices, version 3 protocol only. Nano4, S100 and newer devices are not covered.
-- **Framing:** each sentence starts with `$`, ends with `*` followed by a two-digit hexadecimal XOR checksum of the characters between them, then CR LF. Fields are comma separated and a sentence has at most 256 characters. The specification's examples omit the `$`, the checksum and the line ending, so they are not what goes over the link.
-- **Listing:** `PLXVC,LOGBOOKSIZE,R` returns the number of IGC files in the root folder. `PLXVC,LOGBOOK,R,<start>,<end>` returns, for each flight, its number, the total, the file name, the date (DD.MM.YYYY), the start and end times (HH:MM:SS, or --:--:--) and the size in bytes. The end index is exclusive.
-- **Download:** there are two methods. The older `PLXVC,FLIGHT` reads the file line by line, recommending blocks of 7 lines. The newer one starts with `FILE_INFO` and receives base64 payloads of up to 100 bytes in blocks of up to 30, with a running CRC32 on each line. The client asks for the next block with `FILE_OK` and for a repeat with `FILE_DATA_LOST` or `FILE_CS_INVALID`, receives a whole-file CRC32 at the end, and closes with `FILE_CRC_OK`. Skipping the close can make the next download fail.
-- **Bluetooth module:** `PLXVC,BT_INFO,R` returns -1 (none), 0 (BTM 182) or 1 (BM77). The BM77 can freeze on large transfers, so a block size of 1 is advised for it. The specification names the modules but does not say whether they use Classic Bluetooth or BLE.
-- **Timing:** the device counts the lines of a file before it starts sending, which can take a long time for large files, so the client must keep waiting. Keep-alive messages are described as not yet implemented.
-- **Never used:** the specification also describes deleting files and uploading files to the device. This app must do neither.
-- **Update after testing** IGC download over Bluetooth from LXNAV S100 / Nano: findings for the prototype
+**Transport**
 
-Status: Tested on an S100 (fw 9.27, serial 33418, advertises as LXNAV-S33418) from a Linux PC using Python over RFCOMM. lxnav_dl.py is a working reference implementation. The protocol is the LXNAV DataPort spec v1.04 (PLXVC sentences), with the deviations below.
+- Bluetooth Classic serial port profile. The S100's SDP record lists a Serial Port service (0x1101) on RFCOMM channel 6, plus a separate PnP record.
+- Opening the socket is enough to connect. The logger does not hold a connection open while idle, so the OS showing it as disconnected before the app connects is normal.
+- All testing was done with no other device connected. Assume the logger serves one client at a time.
+- `PLXVC,BT_INFO,R` returned 1, the BM77 module. The specification says to keep blocks small on this module because it has no flow control and can freeze on large transfers.
 
-Transport
+**Framing**
 
-Bluetooth Classic SPP, RFCOMM channel 6 on this unit. Read it from the SDP record rather than assuming a number. Do not run SDP queries during a session, because the module can drop the link.
-The device connects on demand. Opening the socket is enough, and the OS showing “disconnected” while idle is normal.
-Only one client can be connected at a time.
+- A sentence is `$<body>*<CS>` followed by CR LF. The checksum `<CS>` is two hexadecimal digits, the XOR of every character between `$` and `*`. There are no spaces anywhere, and a sentence has at most 256 characters.
+- The logger streams NMEA at about 1 Hz (GPRMC, GPGGA, LXWP0 and others), and replies arrive interleaved with it. Ignore anything that is not a valid `PLXV*` sentence, and validate every checksum.
+- Replies use query type `A`. The specification's examples sometimes show `R`.
 
-Framing
+**Commands used**
 
-$<body>*<XOR hex>\r\n. The checksum is the XOR of every character between $ and *. There are no spaces, and sentences are limited to 256 chars.
-The device sends a 1 Hz NMEA stream (GPRMC, GPGGA, LXWP*) that is interleaved with replies. Ignore anything that isn’t a valid PLXV* sentence, and validate every checksum.
+| Purpose | Send | Reply |
+| --- | --- | --- |
+| Reset a transfer | `$PLXVC,FILE_CANCEL,R*5C` | None. Send at the start and end of every session. |
+| Device info | `$PLXVC,INFO,R*0D` and `$PLXVC,BT_INFO,R*44` | `PLXVC,INFO,A,NINC,9.27,...` and `PLXVC,BT_INFO,A,1`. |
+| File count | `$PLXVC,LOGBOOKSIZE,R*4B` | `PLXVC,LOGBOOKSIZE,A,<n>` |
+| Logbook | `$PLXVC,LOGBOOK,R,1,<n+1>*<CS>` (the end index is exclusive) | One `PLXVC,LOGBOOK,A,<i>,<n>,<name>,<DD.MM.YYYY>,<HH:MM:SS>,<end>,<bytes>` per file. |
+| File lines | `$PLXVC,FLIGHT,R,<name>,<start>,<end>*<CS>` | One `PLXVC,FLIGHT,A,,<line>,<total>,<content>` per line from `start` to `end-1`. |
 
-Download method (recommended): FLIGHT line ranges
+The checksums shown were computed and confirmed on the device.
 
-$PLXVC,LOGBOOKSIZE,R*4B gives the file count. Then $PLXVC,LOGBOOK,R,1,<n+1>*.. lists the files. Each reply row has file name, date DD.MM.YYYY, start time (UTC; the end time is always 00:00:00) and size in bytes.
-$PLXVC,FLIGHT,R,<name>,<start>,<end>*.. returns lines start..end-1, one per reply: PLXVC,FLIGHT,A,,<line>,<total>,<content>. There is an extra empty field versus the spec, and the content can contain commas, so everything after the total must be rejoined.
-Use 7 lines per request, as the spec recommends for the BM77 Bluetooth module. Replies arrive in one burst, 60–170 ms after the request.
-Lines arrive without line endings. Add CRLF to every line, including the last. The result matched the logbook size byte-for-byte on 5 files in testing.
-Re-request any block that is incomplete or late. Requests are idempotent, so retrying is safe.
+**Differences from the specification**
 
-Reliability observed
+- A `FLIGHT` reply has an extra empty field after `A`. Parse by position, and because the content can itself contain commas (for example `HFFTYFRTYPE:LXNAV,S100`), rejoin everything after the total-lines field.
+- Line numbers are 1-based, `total` is the file's line count, and a range that runs past the end returns only the lines that exist.
+- Lines arrive without line endings. The original file has CRLF after every line, including the last, and adding it back reproduced the logbook size exactly.
+- In the logbook, the start time is UTC and the end time is always `00:00:00`. The file name is not parsed for the date.
+- The 1 Hz stream continues during a transfer, so a reply may be preceded by a few stream sentences. A 7-line block arrives in one burst, 60 to 170 ms after the request.
 
-Roughly 1 in a few thousand blocks stalls, either with no data at all or with one line missing. Recovery was a retry or a reconnect, with FILE_CANCEL sent after reconnecting. Persist progress so an interrupted download can resume.
-Throughput is about 0.2 s per 7-line block, which is roughly 2.5 KB/s. A 1.3 MB file takes about 9 minutes, and a full 10-file set of 5.5 MB takes about 40 minutes.
+### Download method: FLIGHT line ranges
 
-Not recommended: FILE_INFO / FILE_OK block download
+1. Send `FILE_CANCEL` and discard any pending input.
+2. Read the logbook and show it to the pilot.
+3. For the chosen file, request lines 1 to 8 in 7-line blocks. The first reply gives the total line count, and the blocks continue to the end.
+4. A block is complete when every line number in its range has arrived with a valid checksum. Replies outside the requested range are stale and ignored. Wait up to 4 seconds. On failure, send `FILE_CANCEL`, back off, and ask again. After two failures switch to single-line requests, after three reconnect (waiting about 3 seconds), and give up after eight.
+5. Save each completed block as it arrives, so an interrupted download resumes where it stopped.
+6. Join the lines, each followed by CRLF, and compare the size with the logbook. A mismatch fails the download.
+7. Send `FILE_CANCEL` when the session ends, however it ends.
 
-It is strictly sequential, with no skip or jump. FILE_DATA_LOST was ignored at block size 1, and a repeated FILE_OK is ignored. Cancel and start again restarts from line 0.
-It also needs about 13,000 messages for the largest file. The per-line CRC32 algorithm is unknown (no standard parameters matched), so it can’t be validated.
+Requests can be repeated safely, and the device returns identical lines each time. This is why `FLIGHT` is used and the `FILE_INFO` method is not.
 
-Not verified yet
+**Timing and reliability**
 
-Byte-for-byte equality with a copy from Nano Config or the SD card.
-The whole-file CRC, FILE_CRC32.
-FLIGHT on the largest file (1.3 MB) in a single uninterrupted run.
-FILE_CNT and FILE_LIST, which got no reply. The logbook is sufficient anyway.
+- Throughput is about 0.2 seconds per 7-line block, roughly 2.6 KB/s. A 52 KB file took 22 seconds and an 812 KB file took 311 seconds. A 1.3 MB file would take about 9 minutes, and all ten files on the test unit (5.5 MB) about 40 minutes. These two figures are extrapolated. A large file therefore needs visible progress and a download that survives the screen turning off.
+- In the first runs, two stalls happened in roughly 3,000 blocks. At line 7,302 of one file, six retries all failed and the pilot reported that the Bluetooth connection had dropped. This was before reconnecting was added. At line 2,297 of the same file, a block came back one line short and the link then went silent (no bytes at all, not even the NMEA stream). The reconnect step then recovered, which is inferred from the run continuing to line 5,658 afterwards. Later runs had no failures. The cause is unknown.
+- The reconnect step and the resume file exist for this: a dropped link costs a few seconds, and no completed block is lost.
 
-Open decision: whether the production app runs on Android, where RFCOMM comes from the platform Bluetooth API rather than a raw socket. The protocol layer should stay platform-independent.
+**Not used: FILE_INFO block download**
 
-**XCSoar**
+It is strictly sequential, so there is no skip and no jump. A repeated `FILE_OK` and `FILE_DATA_LOST` at block size 1 were both ignored, and cancelling and starting again restarts at line 0. The largest file would need about 13,000 messages. Each message carries a running CRC32 per line whose algorithm could not be identified, so the data cannot be validated. `FILE_CNT` and `FILE_LIST` gave no reply, and the logbook is enough.
 
-- XCSoar 7.44 (March 2026) lists an LXNAV integration overhaul with protocol 1.05 support and improved flight download, including for Nano devices. It credits LXNAV for sharing protocol documentation and a contributor for Nano download robustness, and XCSoar's documentation site has an LXNAV Protocol page.
-- The XCSoar files seen so far carry GPL-2.0-or-later headers, so copying code would bring GPL obligations. Use it as a protocol reference, not a source to copy. This is not legal advice. The driver's source path is not verified.
-- XCSoar can also serve as a workaround and a test oracle: it can download flights from supported LXNAV loggers, the saved IGC file can be shared into this app, and the same file gives a reference for a byte-for-byte comparison.
+### Verified, and not yet verified
 
-**Open questions (unverified)**
+**Verified on the S100:** the logbook listing (10 files, matching the earlier phone capture); `FLIGHT` block downloads from the start, middle and end of a file, identical across repeat runs; the downloaded size matched the logbook on every file completed so far, including the 52 KB and 812 KB files; three downloaded files opened cleanly in a web IGC viewer; an interrupted download resuming from the saved line. Automatic reconnect appears to work (see Timing and reliability) but was not seen in isolation.
 
-- Whether the Nano, Nano3, Nano4 and S100 use Bluetooth Classic (an RFCOMM serial link) or BLE. This decides the Android API, and BLE is the harder path. A Bluetooth scan and the Android Bluetooth HCI snoop log can show which.
-- Whether the documented commands work on the S100 and Nano4, and which protocol version each reports. The specification in hand is 1.04, and XCSoar supports 1.05.
-- Whether Nano Config uses commands beyond the documented ones. That would matter for settings, declarations and firmware, not for IGC download.
+**Not yet verified:**
+
+- Byte-for-byte equality with a copy from another route, such as XCSoar, Nano Config or the logger's own storage. Download the same flight with a trusted tool and compare hashes.
+- The whole-file `FILE_CRC32`, and whether it is a standard CRC-32.
+- An uninterrupted download of the 1.3 MB file.
+- Any Nano, Nano3 or Nano4. XCSoar 7.44 reports support for protocol 1.05, and the specification in hand is 1.04.
 - Whether Nano4 IGC files are signed, so that any change would invalidate them. This is reported but not verified.
+- Android: whether a connection by the standard serial UUID works with this module. That connection performs an SDP lookup, and one manual `sdptool browse` dropped the link during testing, so connecting directly to channel 6 may be needed. Treat this as the first thing to test on a device.
 
-**Test results**
-
-- **2026-10-19, S100 over Bluetooth:** four sentences were sent from a Bluetooth serial terminal (INFO, LOGBOOKSIZE, LOGBOOK 1 to 5 and BT\_INFO) and the S100 gave no response. This does not yet show that the S100 lacks the feature. The specification covers Nano and Nano3 only, and the terminal's line ending and the state of the link were not independently confirmed. LXNAV's own S10 specification page, and a retailer's S100 page, both state that flights are downloadable through Bluetooth, so the capability exists even if these sentences are not how it is done.
-- **Checksum helper:** the shell function must be given the sentence body in single quotes, without the `$` or the checksum, for example `cs 'PLXVC,LOGBOOKSIZE,R'`, because an unquoted `$PLXVC` is expanded by the shell. The correct output for that call is `$PLXVC,LOGBOOKSIZE,R*4B`.
-
-**Design constraints**
+### Design constraints
 
 - **Paired devices only:** the pilot pairs the logger in Android's Bluetooth settings, and the app lists the already-paired devices without scanning. Android's documentation says an app that communicates with paired devices needs the `BLUETOOTH_CONNECT` permission, a runtime permission on Android 12 and later, and that scanning for devices additionally needs `BLUETOOTH_SCAN`. The legacy Bluetooth permissions apply only up to Android 11. The permission is requested the first time the pilot uses From logger.
-- **Layering:** the protocol code (sentence framing, checksums, CRC32, block handling and retries) sits in the `core` package behind a transport interface with a fake implementation, so it can be tested without hardware. The Android Bluetooth transport sits in `data`.
-- **Files:** an IGC file is stored byte for byte and is never re-encoded, trimmed or converted. It lives in a private temporary file, is checked against the size from the logbook and the CRC32, and is deleted after use.
-- **Reliability:** timeouts that allow for the long line count, repeat requests for lost or corrupt lines, `FILE_CANCEL` to abandon a transfer, a block size of 1 for the BM77, and a clean restart after a failure, remembering that skipping `FILE_CRC_OK` can make the next download fail.
-- **Read-only:** no deleting files, no uploading files, and no changing settings or declarations on the logger.
+- **Layering:** the protocol code (sentence framing, checksums, line reassembly, retries, resume) sits in the `core` package behind a transport interface. The Android Bluetooth transport sits in `data`. A fake transport must be able to reproduce the behaviours above: interleaved NMEA sentences, the extra empty field, commas inside lines, a lost line, a lost reply, a silent stall, and a dropped connection.
+- **Files:** an IGC file is stored byte for byte and is never re-encoded, trimmed or converted. It lives in a private temporary file, is checked against the logbook size, and is deleted after use.
+- **Read-only:** the app must not delete files on the logger, upload files to it, or change its settings or declarations, although the specification describes all three.
+- **No long waits for the user:** the download runs with a progress display and can be cancelled, which sends `FILE_CANCEL`.
 
-**Prototype plan**
+### XCSoar as a reference
 
-1. Get a reference file by downloading a flight with XCSoar or another trusted tool, and record its size and a hash.
-2. Pair the logger in Android settings. In a Bluetooth serial terminal app that can send CR LF, first check that the link carries data (the logger should stream NMEA sentences), then send the strings below and note any reply. Make sure no other app, such as XCSoar, is holding the connection. The checksums were computed by hand from the specification's rule, so recompute them with a tool if nothing comes back. Bare text without the `$`, the checksum and the line ending would not be recognised, which is one possible explanation for the earlier failed tests.
-
-```
-$PLXVC,LOGBOOKSIZE,R*4B
-$PLXVC,BT_INFO,R*44
-$PLXVC,INFO,R*0D
-```
-
-3. If there is no reply, capture the traffic of XCSoar or Nano Config with the Android Bluetooth HCI snoop log and read it in Wireshark, to find the framing and whether the link is Classic or BLE.
-4. Build the minimal client: list the flights, then download one file with `FILE_INFO`, checking the CRCs, and compare its size and hash with the reference file.
-5. Only then connect it to the IGC import flow as From logger.
-6. Optionally ask LXNAV for the current specification.
-
-The prototype is done when the flight list matches what the logger shows, a downloaded file has the same size and hash as the reference, an interrupted transfer recovers or fails cleanly, and the file opens in the IGC import flow.
+- XCSoar 7.44 (March 2026) lists an LXNAV integration overhaul with protocol 1.05 support and improved flight download, including for Nano devices. XCSoar's documentation site has an LXNAV Protocol page.
+- The XCSoar files seen so far carry GPL-2.0-or-later headers, so copying code would bring GPL obligations. Use it as a protocol reference, not a source to copy. This is not legal advice. The driver's source path is not verified.
+- XCSoar can also serve as a test oracle: it can download flights from supported LXNAV loggers, and the saved IGC file gives a reference for the byte-for-byte comparison above.
 
 ## WeGlide upload
 
@@ -463,7 +452,7 @@ All WeGlide code sits behind one interface with a fake implementation for tests.
 - **Android versions:** propose a minimum of API 26 (Android 8.0), which has the java.time classes built in, pending the decision listed below. Use the current stable compile and target versions at project start.
 - **Stack:** Kotlin, Jetpack Compose with Material 3, Navigation Compose, Room with KSP and its Paging integration, DataStore (Preferences), WorkManager for scheduled exports, kotlinx.serialization for JSON, and OkHttp for HTTP. Use the latest stable releases at project start, pinned in a version catalogue, and check them against the official documentation. CSV needs only a small RFC 4180 reader and writer in the core package.
 - **Layout:** one Gradle module with `core` (pure Kotlin, no `android.*` imports), `data` (Room, DataStore, files) and `ui` packages. A `testdata` folder holds the pilot's glider table, an anonymised flights CSV and a few real IGC files.
-- **Permissions:** INTERNET only for the first releases. The LXNAV download, if it is built, adds the Bluetooth permissions described in its section. Files are read and written through the system document pickers, with a persisted tree permission for the backup folder, so no storage permissions are needed.
+- **Permissions:** INTERNET only for the first releases. The LXNAV download adds the Bluetooth permissions described in its section. Files are read and written through the system document pickers, with a persisted tree permission for the backup folder, so no storage permissions are needed.
 - **Scheduled backups:** after each saved change, if at least the set number of changes (default 20) or days (default 7) have passed since the last export, enqueue a one-time WorkManager job. Changes are counted from `updated_at`, so no counter is stored. The Home screen nudges when there are flights and the last backup is more than 7 days old or missing. Keep the last 10 files, named glider-logbook-YYYYMMDD-HHMMSS.json.
 - **Display:** dates use the device locale's short format, durations use the Settings choice, Material dynamic colour is used, dark mode follows the system, and rotation must not lose form state. Touch targets are at least 48 dp.
 - **Languages:** the UI is English for the first releases, with German and then French to follow, in that order. Every piece of text the pilot sees lives in string resources, plurals included. The `core` package returns message keys with arguments instead of English sentences, and the UI turns them into text. Roles are stored as their enum names and the seeded launch types are shown in the device language until the pilot renames them. Stored names (gliders, airfields, clubs, renamed launch types), the CSV column names and values, the JSON backup format and the IGC data stay the same in every language. A language picker and the per-app language setting (`locales_config`) wait until the first translation exists. Added 2026-10-21.
@@ -508,7 +497,8 @@ The first three steps give a usable logbook with safe backups before any integra
 6. **WeGlide aircraft list.** Done when the bundled list loads and searches, Update in Settings replaces it and keeps it on failure, picking an entry on a glider sets the ID and type after showing the change, the Gliders list marks gliders without a WeGlide type, the gliders export writes `weglide_aircraft_name`, and mock-server and fake tests cover success and failure. Moved ahead of IGC import so each glider's type is settled early.
 7. **IGC import.** Done when the sample files give the logbook's date and duration to within a minute, airfield matching and the create prompt work, multi-segment files list their segments, the form is pre-filled, and an IGC file shared from another app opens the flow.
 8. **WeGlide upload.** Done when mock-server tests cover upload success and failure, the upload gate prompts for anything missing, and one manual upload with the pilot's own account succeeds.
-9. **OGN import.** Not to be started until it has its own specification. The LXNAV flight download is likewise not a build step until its prototype, described in its own section, has worked.
+9. **LXNAV flight download.** Done when the Android transport connects to the pilot's S100, the flight list matches what the logger shows, a downloaded file has the same size as the logbook entry and the same hash as a reference copy, an interrupted transfer (the logger switched off mid-download) resumes or fails cleanly, the fake-transport tests pass, and the file opens in the IGC import flow as From logger. Start with the connection test described in its section.
+10. **OGN import.** Not to be started until it has its own specification.
 
 ## Decisions and open points
 
