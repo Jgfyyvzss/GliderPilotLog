@@ -1,4 +1,9 @@
-gliderpilotplugins {
+import com.android.build.api.artifact.SingleArtifact
+import com.android.build.api.variant.BuiltArtifactsLoader
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+
+plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
@@ -7,11 +12,11 @@ gliderpilotplugins {
 }
 
 android {
-    namespace = "io.github.jgfyyvzss.gliderpilotlog"
+    namespace = "io.github.jgfyyvzss.soarlog"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "io.github.jgfyyvzss.gliderpilotlog"
+        applicationId = "io.github.jgfyyvzss.soarlog"
         minSdk = 26
         targetSdk = 37
         versionCode = 1
@@ -48,6 +53,51 @@ android {
 
 room {
     schemaDirectory("$projectDir/schemas")
+}
+
+/**
+ * Copies a built APK to `SoarLog-<versionName>-<buildType>.apk`, because AGP 9 no longer lets a build rename its
+ * own output. Follows the listenToArtifacts recipe in android/gradle-recipes (agp-9.2 branch, checked 2026-10-23).
+ */
+abstract class NamedApkCopy : DefaultTask() {
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val input: DirectoryProperty
+
+    @get:OutputDirectory
+    abstract val output: DirectoryProperty
+
+    @get:Internal
+    abstract val builtArtifactsLoader: Property<BuiltArtifactsLoader>
+
+    @get:Input
+    abstract val buildType: Property<String>
+
+    @TaskAction
+    fun copy() {
+        val dir = output.get().asFile
+        dir.deleteRecursively()
+        dir.mkdirs()
+        val built = builtArtifactsLoader.get().load(input.get()) ?: throw GradleException("Cannot load the built APK")
+        built.elements.forEach { apk ->
+            val version = apk.versionName?.takeIf { it.isNotBlank() }?.let { "-$it" }.orEmpty()
+            val target = File(dir, "SoarLog$version-${buildType.get()}.apk")
+            Files.copy(File(apk.outputFile).toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            logger.lifecycle("Named APK: ${target.path}")
+        }
+    }
+}
+
+// The release APK is also saved as app/build/outputs/named_apks/release/SoarLog-<versionName>-release.apk.
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        val copy = tasks.register<NamedApkCopy>("nameApkFor${variant.name.replaceFirstChar { it.uppercase() }}") {
+            output.set(layout.buildDirectory.dir("outputs/named_apks/${variant.name}"))
+            builtArtifactsLoader.set(variant.artifacts.getBuiltArtifactsLoader())
+            buildType.set(variant.buildType ?: variant.name)
+        }
+        variant.artifacts.use(copy).wiredWith { it.input }.toListenTo(SingleArtifact.APK)
+    }
 }
 
 dependencies {

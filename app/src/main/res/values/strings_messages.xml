@@ -142,7 +142,7 @@
 
     <!-- WeGlide -->
     <string name="msg_weglide_status">WeGlide answered %1$d: %2$s</string>
-    <string name="msg_weglide_no_host">Could not reach WeGlide. Check the phone is online, and that soarlogs is allowed to use data (Android Settings, Apps, soarlogs, Data usage).</string>
+    <string name="msg_weglide_no_host">Could not reach WeGlide. Check the phone is online, and that SoarLog is allowed to use data (Android Settings, Apps, SoarLog, Data usage).</string>
     <string name="msg_weglide_unreachable">Could not reach WeGlide: %1$s</string>
     <string name="msg_weglide_no_list">WeGlide sent no usable aircraft list</string>
     <string name="msg_aircraft_save_failed">The aircraft list could not be saved</string>
@@ -157,8 +157,8 @@
     <string name="msg_witness_no_flights">Tick at least one flight to witness</string>
     <string name="msg_witness_is_pilot">The witness cannot be you: the name or number matches your profile</string>
     <string name="msg_witness_not_pic">The pilot in command of these Student flights is %1$s, not the witness</string>
-    <string name="msg_pdf_template_unreadable">This is not a soarlogs PDF template</string>
-    <string name="msg_pdf_template_newer">This template needs a newer version of soarlogs</string>
+    <string name="msg_pdf_template_unreadable">This is not a SoarLog PDF template</string>
+    <string name="msg_pdf_template_newer">This template needs a newer version of SoarLog</string>
     <!-- The JSON field name stays as written in the file -->
     <string name="msg_pdf_template_problem">The template has a problem with %1$s</string>
     <string name="msg_lxnav_size_mismatch">The downloaded file has %1$d bytes but the logger lists %2$d, so it was discarded</string>

@@ -142,7 +142,7 @@
 
     <!-- WeGlide -->
     <string name="msg_weglide_status">WeGlide antwortete %1$d: %2$s</string>
-    <string name="msg_weglide_no_host">WeGlide war nicht erreichbar. Prüfe, ob das Telefon online ist und ob soarlogs Daten verwenden darf (Android-Einstellungen, Apps, soarlogs, Datennutzung).</string>
+    <string name="msg_weglide_no_host">WeGlide war nicht erreichbar. Prüfe, ob das Telefon online ist und ob SoarLog Daten verwenden darf (Android-Einstellungen, Apps, SoarLog, Datennutzung).</string>
     <string name="msg_weglide_unreachable">WeGlide war nicht erreichbar: %1$s</string>
     <string name="msg_weglide_no_list">WeGlide hat keine verwendbare Flugzeugliste gesendet</string>
     <string name="msg_aircraft_save_failed">Die Flugzeugliste konnte nicht gespeichert werden</string>

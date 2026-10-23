@@ -1,5 +1,5 @@
 {
-  "format": "soarlogs-pdf-template",
+  "format": "soarlog-pdf-template",
   "version": 1,
   "name": "Simple list",
   "page": { "size": "A4", "orientation": "landscape" },

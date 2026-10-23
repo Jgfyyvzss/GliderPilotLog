@@ -31,7 +31,7 @@
     <string name="backup_merge_text">Sicherung vom %1$s mit %2$s. %3$d Datensätze werden hinzugefügt und %4$d mit einer neueren Kopie aktualisiert; %5$d sind bereits auf dem neuesten Stand. Die Einstellungen bleiben unverändert.</string>
     <string name="backup_unknown_date">unbekannten Datum</string>
 
-    <string name="first_run_welcome">Willkommen bei soarlogs</string>
+    <string name="first_run_welcome">Willkommen bei SoarLog</string>
     <string name="first_run_text">Beginne ein neues Flugbuch oder stelle eines aus einer Sicherungsdatei wieder her.</string>
     <string name="first_run_fresh">Neu beginnen</string>
     <string name="first_run_restore">Aus Sicherung wiederherstellen</string>

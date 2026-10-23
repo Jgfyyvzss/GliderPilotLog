@@ -3,7 +3,7 @@
     <!-- From logger: LXNAV flight download over Bluetooth -->
     <string name="home_from_logger">From logger</string>
     <string name="logger_no_bluetooth">This phone has no Bluetooth.</string>
-    <string name="logger_permission">soarlogs needs permission to connect to your paired logger. It does not scan for devices or use your location.</string>
+    <string name="logger_permission">SoarLog needs permission to connect to your paired logger. It does not scan for devices or use your location.</string>
     <string name="logger_allow">Allow Bluetooth</string>
     <string name="logger_app_settings">Open app settings</string>
     <string name="logger_bluetooth_off">Bluetooth is off.</string>

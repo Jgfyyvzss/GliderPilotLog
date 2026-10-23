@@ -12,13 +12,13 @@
     <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
 
     <application
-        android:name=".SoarlogsApp"
+        android:name=".SoarLogApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Soarlogs">
+        android:theme="@style/Theme.SoarLog">
         <activity
             android:name=".MainActivity"
             android:exported="true"

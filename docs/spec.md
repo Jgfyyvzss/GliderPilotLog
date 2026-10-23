@@ -294,7 +294,7 @@ CSV is for spreadsheets and other systems, not for backup. The app exports fligh
 - Each unmatched name has a "use existing…" dropdown to avoid near-duplicates such as "Mt Beauty" and "Mount Beauty".
 - Every import, of flights, gliders or airfields, is tagged with a batch ID, and Settings offers "Undo last import", which also removes that batch's unused stubs. Undo can be repeated, each time removing the most recent remaining import. It removes the batch's flights even if they were edited since, keeps any glider or airfield the batch created that another live flight now uses, and leaves clubs and club links the import created. Removed records are kept as tombstones so a later Merge respects the removal, and the confirmation shows the counts first.
 
-**Export:** Settings, Spreadsheets (CSV), Export to a folder writes all live flights (not the current filter), gliders and airfields as three timestamped files, for example `soarlogs-flights-20261021-1405.csv`.
+**Export:** Settings, Spreadsheets (CSV), Export to a folder writes all live flights (not the current filter), gliders and airfields as three timestamped files, for example `soarlog-flights-20261021-1405.csv`.
 
 **Gliders and airfields files:** each has its own export and import (gliders: registration and type; airfields: name, coordinates and club names), so a fleet or field list can be loaded without parsing it from the log.
 
@@ -374,7 +374,7 @@ Reference pictures are in `testdata`: `flugbuecher segelflug A.jpg` (left page) 
 4. **Two PDF pages per spread:** a page-break column, so the left page's columns go on one PDF page and the right page's on the next, each half with its own totals rows. GFA-style could then also print as two A5 pages.
 5. **Four time columns:** Gesamtzeit (every role), PIC-Zeit, Dual-Zeit and FI/FE-Zeit (instructor), each split into h and min. The role mapping is to be decided. Under EASA rules FI time is also PIC time, so one flight may land in two columns, which the engine already allows.
 6. **Not recorded by the app:** Begleiter (the other crew member) and Strecke in km print as blank columns.
-**Template format (version 1):** a JSON object with `format` set to `soarlogs-pdf-template`, `version` (1), `name`, and:
+**Template format (version 1):** a JSON object with `format` set to `soarlog-pdf-template` (templates saved with the earlier `soarlogs-pdf-template` still load), `version` (1), `name`, and:
 
 - `page`: `size` (A4, A5, LETTER, or CUSTOM with `width_mm` and `height_mm`) and `orientation` (portrait or landscape).
 - `margins_mm`: `top`, `bottom`, `left`, `right`. `font_size` in points (4 to 20) and `rows_per_page` (1 to 200).
@@ -560,7 +560,7 @@ These are options to weigh if the speed rule proves unsuitable. Any of them can 
 
 All WeGlide code sits behind one interface with a fake implementation for tests. The base URL is a single constant, `https://api.weglide.org`, with `GET /v1/aircraft` and `POST /v1/igcfile`. The pilot supplied both paths, and the shared host is an assumption to check with a first real call.
 
-- **Headers:** every request sends a browser-style `User-Agent` that names the app, `Mozilla/5.0 (Linux; Android) soarlogs/<version>`. WeGlide's firewall (an AWS load balancer) refused `soarlogs/0.1.0 (Android)` and `soarlogs/0.1.0` with an empty 403 on 2026-10-21, while it accepted this form, a plain browser string and `XCSoar/7.44`. WeGlide only makes an allowance for an app once it has 1,000 users (pilot's enquiry, 2026-10-21), so the browser-style form stays. Do not change it back to the plain form.
+- **Headers:** every request sends a browser-style `User-Agent` that names the app, `Mozilla/5.0 (Linux; Android) SoarLog/<version>` (`soarlogs/<version>` until the rename on 2026-10-23; the renamed form is to be confirmed with the next manual upload). WeGlide's firewall (an AWS load balancer) refused `soarlogs/0.1.0 (Android)` and `soarlogs/0.1.0` with an empty 403 on 2026-10-21, while it accepted this form, a plain browser string and `XCSoar/7.44`. WeGlide only makes an allowance for an app once it has 1,000 users (pilot's enquiry, 2026-10-21), so the browser-style form stays. Do not change it back to the plain form.
 - **Aircraft list:** GET with no credentials. The response is a JSON array whose entries have `id`, `name`, `kind`, `sc_class` and `dmst_index`. Skip entries without a numeric `id` and a string `name`. The app ships with a copy of the list (`assets/weglide-aircraft.json`, from WeGlide, redistribution confirmed by the pilot) and uses it until the pilot taps Update in Settings. An update saves the raw response in app-private storage, which then replaces the bundled copy, and keeps the list in use if it fails or returns nothing usable. There is no automatic refresh, because new types are rare. Settings shows the number of aircraft and the date of the last update.
 - **Search:** lower-case both strings, remove accents, and remove everything except letters and digits. Rank exact matches first, then starts-with, then contains, ties by name. Show the name with its `kind` and `sc_class` exactly as returned.
 - **Picking:** store the ID on the glider and replace its type with WeGlide's name, after showing the confirmation line described above.
@@ -573,7 +573,8 @@ All WeGlide code sits behind one interface with a fake implementation for tests.
 
 ## Appendix F: Project setup and tests
 
-- **Identity:** the app name is soarlogs and the package ID is `io.github.jgfyyvzss.gliderpilotlog`, confirmed 2026-10-19.
+- **Identity:** the app name is SoarLog and the package ID is `io.github.jgfyyvzss.soarlog`. Both were renamed on 2026-10-23 from soarlogs and `io.github.jgfyyvzss.gliderpilotlog` (confirmed 2026-10-19), with the GitHub repository, now `Jgfyyvzss/SoarLog`. The new package ID installs as a separate app, so the logbook moves across with Back up and Restore.
+- **Release APK name:** a release build also saves its APK as `app/build/outputs/named_apks/release/SoarLog-<versionName>-release.apk`, through an `androidComponents.onVariants` task in `app/build.gradle.kts` (AGP 9 removed the old rename; added 2026-10-23).
 - **Android versions:** propose a minimum of API 26 (Android 8.0), which has the java.time classes built in, pending the decision listed below. Use the current stable compile and target versions at project start.
 - **Stack:** Kotlin, Jetpack Compose with Material 3, Navigation Compose, Room with KSP and its Paging integration, DataStore (Preferences), WorkManager for scheduled exports, kotlinx.serialization for JSON, and OkHttp for HTTP. Use the latest stable releases at project start, pinned in a version catalogue, and check them against the official documentation. CSV needs only a small RFC 4180 reader and writer in the core package.
 - **Layout:** one Gradle module with `core` (pure Kotlin, no `android.*` imports), `data` (Room, DataStore, files) and `ui` packages. A `testdata` folder holds the pilot's glider table, an anonymised flights CSV and a few real IGC files.

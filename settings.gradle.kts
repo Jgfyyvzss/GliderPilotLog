@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "GliderPilotLog"
+rootProject.name = "SoarLog"
 include(":app")

@@ -31,7 +31,7 @@
     <string name="backup_merge_text">Backup from %1$s with %2$s. %3$d records will be added and %4$d updated with a newer copy; %5$d are already up to date. Settings stay as they are.</string>
     <string name="backup_unknown_date">an unknown date</string>
 
-    <string name="first_run_welcome">Welcome to soarlogs</string>
+    <string name="first_run_welcome">Welcome to SoarLog</string>
     <string name="first_run_text">Start a new logbook, or restore one from a backup file.</string>
     <string name="first_run_fresh">Start fresh</string>
     <string name="first_run_restore">Restore from backup</string>
