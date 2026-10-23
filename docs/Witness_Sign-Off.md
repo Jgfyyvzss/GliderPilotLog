@@ -4,7 +4,7 @@ Oct 20, 2026 · @Peter
 
 ## Status and purpose
 
-This optional witness sign-off lets a pilot show that someone else confirmed a logbook entry, and it is not part of the main specification's build order. It aims for reasonable assurance that an entry was not self-witnessed, not for any legal standard.
+This optional witness sign-off lets a pilot show that someone else confirmed a logbook entry. It was adopted on 2026-10-23 as build step 11 of the main specification (see Decisions and Build plan below). It aims for reasonable assurance that an entry was not self-witnessed, not for any legal standard.
 
 The design suits an instructor who may sign only once, so there is no account, no PIN and nothing to remember. The witness types a name and number, is photographed by the phone's camera, and ticks a consent line. The app then seals the flight's signed fields together with those details, so a later edit to a signed field shows.
 
@@ -13,7 +13,7 @@ The design suits an instructor who may sign only once, so there is no account, n
 The feature sits behind a Setting called Witness sign-off, which is off by default. Turning it off hides every witness screen and keeps any existing data.
 
 1. The pilot opens a flight, or a day's group in the Flights list, and taps Witness. Each unwitnessed flight in the group is ticked and can be unticked.
-2. The witness enters their name and licence or membership number, or taps a previous witness from a quick-pick list built from earlier sign-offs.
+2. The witness enters their name and, if they have it to hand, their licence or membership number, or taps a previous witness from a quick-pick list built from earlier sign-offs.
 3. The phone's own camera app opens and the witness takes a photo of their face.
 4. The witness ticks the consent line: "I witnessed these flights and agree my photo is stored with them in this logbook."
 5. The app saves one sign-off and seals each ticked flight.
@@ -27,7 +27,7 @@ The feature sits behind a Setting called Witness sign-off, which is off by defau
 
 - A witness whose name or number matches the pilot profile is rejected.
 - On Student flights, the witness name is pre-filled from the PIC field when all ticked flights share it, with a warning if the witness is someone else.
-- Name and number are both required.
+- The name is required; the number is optional (decided 2026-10-23).
 
 ## The seal
 
@@ -47,7 +47,7 @@ One new table holds the sign-off events, and two nullable columns on the flight 
 
 | Record | Fields | Rules |
 | --- | --- | --- |
-| witness\_signoff (new table) | id (UUID), witness\_name, witness\_identifier, signed\_at (epoch ms, UTC), photo (JPEG bytes, nullable), photo\_sha256 (nullable), photo\_removed, seal\_version, consent\_confirmed, updated\_at, deleted\_at | Name and identifier are required and non-blank. `consent_confirmed` must be true. Name and identifier are never edited after signing, so a correction means deleting the sign-off and witnessing again. The photo is at most 100 KB. |
+| witness\_signoff (new table) | id (UUID), witness\_name, witness\_identifier (nullable), signed\_at (epoch ms, UTC), photo (JPEG bytes, nullable), photo\_sha256 (nullable), photo\_removed, seal\_version, consent\_confirmed, updated\_at, deleted\_at | The name is required and non-blank; the identifier is optional, null when not given. `consent_confirmed` must be true. Name and identifier are never edited after signing, so a correction means deleting the sign-off and witnessing again. The photo is at most 100 KB. |
 | flight (two added columns) | witness\_signoff\_id (nullable foreign key), witness\_seal (text, nullable) | Both are set together or both are null. Index on `witness_signoff_id`. |
 | Setting | witness\_signoff (boolean) | Default off, and backed up with the other settings. |
 
@@ -137,14 +137,40 @@ Adopting the feature touches seven parts of the main specification and adds one 
 8. CSV import never creates a witness mark.
 9. Remove photo and Remove witness mark work, and unreferenced sign-offs are cleaned up.
 
-## Open questions
+## Decisions (2026-10-23)
 
-1. **Which flights:** can any flight be witnessed, as assumed here, or only Student ones? A reminder for unwitnessed Student flights is a possible addition.
-2. **Witness number:** it is required here. Is that too strict for a one-off witness who has no number to hand?
-3. **Auto Backup:** accept the photos in Android's Google backup, or store them as files in a directory that the backup rules exclude?
-4. **Consent wording:** the line proposed in How it works needs the pilot's approval and a check against local privacy rules.
-5. **Photo size:** 200 pixels and quality 70 are proposals. Check on a real phone that the face is still recognisable.
-6. **Drawn signature:** a signature on the same screen would add familiarity but no assurance. Add it or leave it out?
+1. **Which flights:** any flight can be witnessed, singly or as a whole day's group from the Flights list.
+2. **Witness number:** optional. The name is required. The self-witness check compares the name, and the number when given.
+3. **Auto Backup:** photos stay in the database as designed. Anyone who wants nothing on Google turns Auto Backup off, which covers the whole logbook anyway, and many pilots keep their JSON backups on Google Drive. Keeping photos as separate files would add code and edge cases for no real gain (for example, an Auto Backup restore that brings back sign-offs without their photos).
+4. **Consent wording:** minimalist and generic. To be discussed and refined with the pilot when the screen is built.
+5. **Photo size:** 200 pixels on the longest side is fine, and smaller is probably adequate too. Confirm on a phone.
+6. **Drawn signature:** left out.
+7. **Backup format:** version 2. The app still reads version 1 files and upgrades them; an older app refuses a version 2 file instead of silently dropping witness data.
+
+## Review against the built app (2026-10-23)
+
+- **Schema:** the database is at version 2, so this is version 3, with a migration and a `MigrationTestHelper` test. The migration drops the partial indexes first, as every migration does, and the open callback recreates them.
+- **Changed since witnessed filter:** the seal is a SHA-256 over several fields, so SQL cannot test it. The app works out the set of changed flight IDs in Kotlin and the filter passes them as `f.id IN (...)`; at 10,000 flights this is quick. The Witness filter joins the shared filter, so Totals follow it too.
+- **Camera:** the photo comes from the system camera app (`ActivityResultContracts.TakePicture` with a FileProvider address), so no CAMERA permission is declared. Older phones record which way up a photo is in its EXIF data instead of rotating the pixels, so the AndroidX ExifInterface library is needed to rotate it before scaling. Its version is to be checked when building.
+- **CSV:** the flights import warns about columns it does not use. `witnessed_by` and `witnessed_on` should be ignored silently instead.
+- **PDF:** the GFA-style template's Trainers Signature column could show the witness name. Not part of this design; to be decided later.
+
+## Build plan
+
+The work goes in this order, each part with its tests, and the pilot builds and runs them after each part.
+
+1. **Seal and checks (core):** the canonical text and SHA-256 seal with fixed test vectors, verification and the "cannot verify" case for unknown versions, the self-witness check against the profile, and the Student pre-fill from the PIC field.
+2. **Database (version 3):** the `witness_signoff` table, the two flight columns with their index and foreign key, the Setting, and the migration test. Repository operations: sign a batch, remove a photo, remove a witness mark, and clean up sign-offs that no live flight refers to, including when a flight is deleted or an import is undone.
+3. **Photo:** take the picture with the system camera into a temporary file, rotate it the right way up, scale it to 200 pixels on its longest side, re-encode it as JPEG at quality 70, and delete the original. The stored photo is at most 25 KB and carries no location data.
+4. **Screens:** the Setting; the Witness action on a flight and on a day's header; the sign-off screen (flights ticked, name, optional number, quick-pick list, what is stored and why, the camera, the consent tick); the Witnessed and Changed marks in the Flights list; the Witness filter; the witness card on the flight form; the warning before editing a signed field; Remove photo and Remove witness mark.
+5. **JSON backup version 2:** the `witness_signoffs` array, the two flight fields, the Setting, `contains_photos` and the Include witness photos choice. Import checks the photos, reports a seal summary, handles dangling references, and Merge matches sign-offs by ID. The version 1 to 2 upgrade, and the round trip with and without photos.
+6. **CSV:** read-only `witnessed_by` and `witnessed_on` in the flights export, ignored silently on import, which never creates a witness mark.
+7. **Spec:** the seven changes listed under "If adopted" go into the main specification as each part lands.
+
+## Still open
+
+- The consent wording (decision 4), to settle when the sign-off screen is built.
+- Whether the PDF templates should print the witness, for example in GFA-style's Trainers Signature column.
 
 ## Sources
 

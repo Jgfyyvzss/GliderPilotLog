@@ -355,6 +355,23 @@ Check page and total arithmetic against the on-screen totals, run a 10,000-fligh
 - **Totals rows:** brought forward at the top of each page, then the page total and carried forward at the foot, each with its number of flights. Every flight counts once in each time column whose roles take it, as on the Totals screen.
 - **Templates:** Simple list (A4 landscape, 25 rows), Compact (A4 portrait, 55 rows) and GFA-style (A4 landscape spread, 20 rows), in `assets/pdf-templates/`. Imported templates are kept in app-private storage, where an import with the same name replaces the earlier one, and they can be removed.
 
+### Later: German glider logbook template (not built)
+
+Reference pictures are in `testdata`: `flugbuecher segelflug A.jpg` (left page) and `B.jpg` (right page) are readable; `flugbuecher segelflug.jpg` shows the two as one spread. `schiffmann flugbuch.webp` is an EASA powered-aircraft logbook (SEP, Night and IFR columns), usable only as a rough reference for a general EASA template. Recorded 2026-10-23, to build later.
+
+**Layout:** landscape A5 pages, 10 rows each, so the open spread is about 420 × 148 mm and does not fit A4.
+
+- **Left page:** Lfd. Nr. · Jahr above Tag · Flugzeug (Muster, Kennzeichen) · Besatzung (Verantwortlicher Luftfahrzeugführer (PIC), Begleiter) · Startart · Ort (Start, Landung). Below the table: "Unterschrift des Piloten für die Richtigkeit der Eintragungen".
+- **Right page:** Uhrzeit UTC (Start, Landung) · Flugzeit (Gesamtzeit, PIC-Zeit, Dual-Zeit, FI/FE-Zeit, each in h and min) · Strecke in km · Anzahl Landungen · Bemerkungen / Bestätigungen. "Überträge" (brought forward) across the top of the time columns, and "Gesamtzeit dieser Seite" and "Total" at the foot.
+
+**What the engine needs first:**
+
+1. **Arrival place:** a field that prints the landing airfield or place, and the departure airfield when the flight ended where it began. Today `landing_place` prints only with the Place setting on and is blank for same-place flights. GAus (Appendix G) also asks for departure and arrival.
+2. **Landings count:** a column with 1 per flight, totalled.
+3. **UTC times:** times are stored as local clock times, so printing UTC means converting with the phone's time zone. That is right at home, but wrong for a trip flight in another zone.
+4. **Two PDF pages per spread:** a page-break column, so the left page's columns go on one PDF page and the right page's on the next, each half with its own totals rows. GFA-style could then also print as two A5 pages.
+5. **Four time columns:** Gesamtzeit (every role), PIC-Zeit, Dual-Zeit and FI/FE-Zeit (instructor), each split into h and min. The role mapping is to be decided. Under EASA rules FI time is also PIC time, so one flight may land in two columns, which the engine already allows.
+6. **Not recorded by the app:** Begleiter (the other crew member) and Strecke in km print as blank columns.
 **Template format (version 1):** a JSON object with `format` set to `soarlogs-pdf-template`, `version` (1), `name`, and:
 
 - `page`: `size` (A4, A5, LETTER, or CUSTOM with `width_mm` and `height_mm`) and `orientation` (portrait or landscape).
@@ -574,7 +591,8 @@ The first three steps give a usable logbook with safe backups before any integra
 8. **WeGlide upload.** Done when mock-server tests cover upload success and failure, the upload gate prompts for anything missing, and one manual upload with the pilot's own account succeeds.
 9. **LXNAV flight download.** Done when the Android transport connects to the pilot's S100, the flight list matches what the logger shows, a downloaded file has the same size as the logbook entry and the same hash as a reference copy, an interrupted transfer (the logger switched off mid-download) resumes or fails cleanly, the fake-transport tests pass, and the file opens in the IGC import flow as From logger. Start with the connection test described in its section.
 10. **Logbook PDF.** Done when the Simple list, Compact and GFA-style templates print the exported flights with page totals, brought forward and carried forward matching the on-screen totals, a filtered export holds only the filtered flights and says so, a 10,000-flight export completes in the background with progress and cancel, and a template imported from a file works. Started 2026-10-23, ahead of OGN.
-11. **OGN import.** Not to be started until it has its own specification.
+11. **Witness sign-off.** Optional, behind a Setting that is off by default. Designed in `docs/Witness_Sign-Off.md`, adopted 2026-10-23; done when that document's nine build-step criteria pass. It extends the JSON backup (format version 2) and the CSV export, so it follows those steps.
+12. **OGN import.** Not to be started until it has its own specification.
 
 ## Decisions and open points
 
