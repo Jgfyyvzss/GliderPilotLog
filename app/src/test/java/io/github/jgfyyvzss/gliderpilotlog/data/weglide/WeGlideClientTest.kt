@@ -4,7 +4,9 @@ import io.github.jgfyyvzss.gliderpilotlog.core.MsgKey
 import io.github.jgfyyvzss.gliderpilotlog.core.msg
 import io.github.jgfyyvzss.gliderpilotlog.english
 import java.io.File
+import io.github.jgfyyvzss.gliderpilotlog.core.weglide.WeGlideCredentials
 import java.nio.file.Files
+import java.time.LocalDate
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -57,9 +59,60 @@ class WeGlideClientTest {
         assertTrue(api().fetchAircraftJson() is ApiResult.Failed)
     }
 
+    // Upload. The ID and date of birth are made-up test values, not anyone's account.
+    private val credentials = WeGlideCredentials("12345", LocalDate.of(1970, 1, 2))
+
+    private fun fixture(name: String): ByteArray =
+        listOf(File("../testdata"), File("testdata")).first { it.isDirectory }.resolve(name).readBytes()
+
+    @Test fun uploadSendsTheFileAndFieldsAsMultipartForm() = runTest {
+        server.enqueue(MockResponse().setResponseCode(201).setBody("[]"))
+        val igc = fixture("52DVPSA1.igc")
+        assertTrue(api().uploadIgc(igc, "52DVPSA1.igc", credentials, 1234) is ApiResult.Ok)
+        val request = server.takeRequest()
+        assertEquals("POST", request.method)
+        assertEquals("/v1/igcfile", request.path)
+        assertEquals("Mozilla/5.0 (Linux; Android) soarlogs/1.2.3", request.getHeader("User-Agent"))
+        assertTrue(request.getHeader("Content-Type")!!.startsWith("multipart/form-data; boundary="))
+        val body = request.body.readByteArray().toString(Charsets.ISO_8859_1)
+        assertTrue(body.contains("""name="file"; filename="52DVPSA1.igc""""))
+        assertTrue("the file goes byte for byte", body.contains(igc.toString(Charsets.ISO_8859_1)))
+        listOf("user_id" to "12345", "date_of_birth" to "1970-01-02", "aircraft_id" to "1234").forEach { (name, value) ->
+            assertTrue(name, Regex("""name=""\r\n(?:[^\r\n]+\r\n)*\r\n\r\n""").containsMatchIn(body))
+        }
+    }
+
+    @Test fun uploadNamesAFileWithoutTheIgcExtension() = runTest {
+        server.enqueue(MockResponse().setResponseCode(201).setBody("[]"))
+        api().uploadIgc(fixture("52DVPSA1.igc"), "download", credentials, 1)
+        assertTrue(server.takeRequest().body.readUtf8().contains("""filename="download.igc""""))
+    }
+
+    @Test fun uploadOnlySucceedsOn201() = runTest {
+        server.enqueue(MockResponse().setResponseCode(200).setBody("[]"))
+        assertTrue(api().uploadIgc(fixture("52DVPSA1.igc"), "a.igc", credentials, 1) is ApiResult.Failed)
+        server.enqueue(MockResponse().setResponseCode(400).setBody("Invalid date of birth " + "y".repeat(500)))
+        val r = (api().uploadIgc(fixture("52DVPSA1.igc"), "a.igc", credentials, 1) as ApiResult.Failed).message.english()
+        assertTrue(r, r.startsWith("WeGlide answered 400: Invalid date of birth"))
+        assertTrue(r.length < 340)
+    }
+
+    @Test fun uploadToAnUnreachableServerIsAFailure() = runTest {
+        server.shutdown()
+        assertTrue(api().uploadIgc(fixture("52DVPSA1.igc"), "a.igc", credentials, 1) is ApiResult.Failed)
+    }
+
+    @Test fun credentialsNeverShowInText() {
+        assertEquals("WeGlideCredentials(hidden)", credentials.toString())
+        assertTrue(WeGlideCredentials.validUserId("12345"))
+        assertTrue(!WeGlideCredentials.validUserId("12a45"))
+        assertTrue(!WeGlideCredentials.validUserId(""))
+    }
+
     /** A stand-in for WeGlide that returns a fixed answer. */
     private class FakeApi(var answer: ApiResult<String>) : WeGlideApi {
         override suspend fun fetchAircraftJson() = answer
+        override suspend fun uploadIgc(file: ByteArray, fileName: String, credentials: WeGlideCredentials, aircraftId: Long) = answer
     }
 
     @Test fun catalogUsesTheBundledListUntilUpdated() = runTest {

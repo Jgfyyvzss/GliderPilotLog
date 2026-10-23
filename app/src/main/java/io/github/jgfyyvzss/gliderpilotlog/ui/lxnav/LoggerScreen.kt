@@ -46,6 +46,7 @@ import io.github.jgfyyvzss.gliderpilotlog.R
 import io.github.jgfyyvzss.gliderpilotlog.core.lxnav.LxnavFile
 import io.github.jgfyyvzss.gliderpilotlog.data.lxnav.BluetoothStatus
 import io.github.jgfyyvzss.gliderpilotlog.data.lxnav.PairedDevice
+import io.github.jgfyyvzss.gliderpilotlog.ui.appContainer
 import io.github.jgfyyvzss.gliderpilotlog.ui.shortText
 import io.github.jgfyyvzss.gliderpilotlog.ui.text
 import io.github.jgfyyvzss.gliderpilotlog.ui.vmFactory
@@ -56,8 +57,21 @@ import kotlinx.coroutines.delay
 private const val RECENT_FILES = 3
 
 @Composable
-fun LoggerScreen() {
-    val vm: LoggerViewModel = viewModel(factory = vmFactory { LoggerViewModel(it.loggers, it.loggerPartial, it.igcImport) })
+fun LoggerScreen(forUpload: Boolean = false, onDone: () -> Unit = {}) {
+    val vm: LoggerViewModel = viewModel(
+        factory = vmFactory { app ->
+            LoggerViewModel(app.loggers, app.loggerPartial, onDownloaded = { file ->
+                // For an upload the file goes back to the upload screen; otherwise into the logbook import.
+                if (forUpload) app.uploadSelection.select(app.igcFiles.add(file.name, file.bytes).id)
+                else app.igcImport.openDownloaded(file.name, file.bytes)
+            })
+        },
+    )
+    // Back to the upload screen once a new file has been downloaded for it.
+    val selection = appContainer().uploadSelection
+    val onEntry = remember { selection.selected.value }
+    val chosen by selection.selected.collectAsStateWithLifecycle()
+    LaunchedEffect(chosen) { if (forUpload && chosen != null && chosen != onEntry) onDone() }
     val state by vm.state.collectAsStateWithLifecycle()
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refresh() }
 

@@ -10,7 +10,7 @@ import io.github.jgfyyvzss.gliderpilotlog.core.lxnav.LxnavFile
 import io.github.jgfyyvzss.gliderpilotlog.core.lxnav.LxnavProgress
 import io.github.jgfyyvzss.gliderpilotlog.core.lxnav.PartialDownload
 import io.github.jgfyyvzss.gliderpilotlog.core.msg
-import io.github.jgfyyvzss.gliderpilotlog.data.IgcImportStore
+import io.github.jgfyyvzss.gliderpilotlog.data.weglide.IgcFile
 import io.github.jgfyyvzss.gliderpilotlog.data.lxnav.BluetoothLoggers
 import io.github.jgfyyvzss.gliderpilotlog.data.lxnav.BluetoothStatus
 import io.github.jgfyyvzss.gliderpilotlog.data.lxnav.PairedDevice
@@ -38,7 +38,8 @@ sealed interface LoggerState {
 class LoggerViewModel(
     private val loggers: BluetoothLoggers,
     private val partial: PartialDownload,
-    private val igcImport: IgcImportStore,
+    /** Where a finished download goes: the logbook import, or the WeGlide upload screen that opened this one. */
+    private val onDownloaded: suspend (IgcFile) -> Unit,
     private val now: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
     private val _state = MutableStateFlow<LoggerState>(LoggerState.Devices(loggers.status()))
@@ -78,7 +79,7 @@ class LoggerViewModel(
                     download(file, partial) { p -> _state.value = LoggerState.Downloading(device, file, p, started) }
                 }
                 _state.value = LoggerState.Files(device, files)
-                igcImport.openDownloaded(bytes)
+                onDownloaded(IgcFile(file.name, bytes))
             }
         }
     }

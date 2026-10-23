@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.TextButton
@@ -54,11 +55,11 @@ import io.github.jgfyyvzss.gliderpilotlog.ui.appContainer
 import io.github.jgfyyvzss.gliderpilotlog.ui.settings.lastBackupText
 
 /**
- * New flight, From IGC, From logger and the aircraft logbook calculator, a compact unfiltered totals card, totals by
- * aircraft type as far as the screen allows, and the last backup.
+ * New flight, From IGC, From logger, Upload to WeGlide and the aircraft logbook calculator, a compact unfiltered
+ * totals card, totals for the top aircraft types, and the last backup.
  */
 @Composable
-fun HomeScreen(onNewFlight: () -> Unit, onFromIgc: () -> Unit, onFromLogger: () -> Unit, onTotals: () -> Unit, onBackup: () -> Unit) {
+fun HomeScreen(onNewFlight: () -> Unit, onFromIgc: () -> Unit, onFromLogger: () -> Unit, onUpload: () -> Unit, onTotals: () -> Unit, onBackup: () -> Unit) {
     val app = appContainer()
     val tableFlow = remember { app.totals.observe(FlightFilter()) }
     val table by tableFlow.collectAsStateWithLifecycle(null)
@@ -90,6 +91,10 @@ fun HomeScreen(onNewFlight: () -> Unit, onFromIgc: () -> Unit, onFromLogger: () 
         OutlinedButton(onClick = onFromLogger, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
             Icon(Icons.Default.Bluetooth, contentDescription = null)
             Text("  " + stringResource(R.string.home_from_logger))
+        }
+        OutlinedButton(onClick = onUpload, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
+            Icon(Icons.Default.CloudUpload, contentDescription = null)
+            Text("  " + stringResource(R.string.home_upload))
         }
         OutlinedButton(onClick = { choosingGlider = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
             Icon(Icons.Default.Calculate, contentDescription = null)

@@ -44,7 +44,16 @@
     <string name="igc_import">Import</string>
     <string name="igc_imported">Imported</string>
     <string name="igc_done">Done</string>
-    <!-- Filter -->
+    <!-- Each received IGC file shows both jobs, so a pilot neither uploads without logging nor logs without uploading by mistake. -->
+    <string name="igc_status_logbook_none">Logbook: no flight found to log</string>
+    <string name="igc_status_logbook_not">Logbook: not logged</string>
+    <string name="igc_status_logbook_part">Logbook: %1$d of %2$d flights logged</string>
+    <string name="igc_status_logbook_done">Logbook: logged ✓</string>
+    <string name="igc_status_weglide_not">WeGlide: not uploaded</string>
+    <string name="igc_status_weglide_done">WeGlide: uploaded ✓</string>
+    <string name="igc_status_weglide_done_id">WeGlide: uploaded ✓ (flight %1$s)</string>
+    <string name="igc_log_flight">Log flight</string>
+    <string name="igc_all_logged">All flights in this file are in the logbook.</string>    <!-- Filter -->
     <string name="filter_button">Filter</string>
     <string name="filter_title">Filter flights</string>
     <string name="filter_from">From</string>

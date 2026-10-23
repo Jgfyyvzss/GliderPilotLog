@@ -18,4 +18,45 @@
     <string name="weglide_aircraft">WeGlide-Flugzeug</string>
     <string name="weglide_search">Suchen</string>
     <string name="weglide_no_match">Keine Treffer. Versuche es mit weniger Buchstaben, zum Beispiel ASK.</string>
+    
+    <!-- Upload to WeGlide -->
+    <string name="home_upload">Zu WeGlide hochladen</string>
+    <string name="upload_intro">Lade eine IGC-Datei zu WeGlide hoch, ob sie in deinem Flugbuch steht oder nicht.</string>
+    <string name="upload_file">IGC-Datei</string>
+    <string name="upload_no_file">Noch keine Datei ausgewählt.</string>
+    <string name="upload_choose_file">Datei auswählen</string>
+    <!-- Local date, launch time, duration, then the glider ID from the file -->
+    <string name="upload_summary">%1$s, Start %2$s, %3$s, Segelflugzeug %4$s</string>
+    <string name="upload_several_flights">Die Datei enthält %1$d Flüge. WeGlide erhält die ganze Datei.</string>
+    <string name="upload_no_flight_found">Kein Flug in der Datei gefunden. WeGlide kann sie trotzdem erhalten.</string>
+    <string name="upload_glider_no_type">%1$s hat noch keinen WeGlide-Typ. Die Auswahl wird auch beim Segelflugzeug gespeichert.</string>
+    <string name="upload_choose_aircraft_hint">Wähle den Flugzeugtyp, damit WeGlide die Variante nicht raten muss.</string>
+    <string name="upload_account">WeGlide-Konto</string>
+    <string name="upload_account_saved">WeGlide-ID und Geburtsdatum gespeichert</string>
+    <string name="upload_change">Ändern</string>
+    <string name="upload_weglide_id">WeGlide-ID</string>
+    <string name="upload_weglide_id_hint">Die Nummer in der Adresse deines WeGlide-Profils</string>
+    <string name="upload_date_of_birth">Geburtsdatum</string>
+    <string name="upload_account_privacy">Verschlüsselt auf diesem Telefon gespeichert und nur beim Hochladen an WeGlide gesendet. Nie in Sicherungen oder Exporten enthalten.</string>
+    <string name="upload_button">Zu WeGlide hochladen</string>
+    <string name="upload_uploading">Wird hochgeladen…</string>
+    <string name="upload_failed_hint">Wenn deine WeGlide-ID oder dein Geburtsdatum falsch ist, ändere sie oben und versuche es erneut.</string>
+    <string name="upload_done">Zu WeGlide hochgeladen</string>
+    <string name="upload_done_no_details">WeGlide hat die Datei angenommen, aber keine Flugdetails gesendet.</string>
+    <string name="upload_result_flight">Flug %1$s</string>
+    <string name="upload_result_date">Wertungsdatum: %1$s</string>
+    <string name="upload_result_pilot">Pilot: %1$s</string>
+    <string name="upload_result_aircraft">Flugzeug: %1$s</string>
+    <string name="upload_result_registration">Kennzeichen: %1$s</string>
+    <string name="upload_result_competition_id">Wettbewerbskennzeichen: %1$s</string>
+    <string name="upload_another">Weitere Datei hochladen</string>
+    <string name="upload_recent">Empfangene IGC-Dateien</string>
+    <string name="upload_recent_hint">Werden 7 Tage auf diesem Telefon aufbewahrt, damit eine am Flugplatz geladene Datei später hochgeladen werden kann.</string>
+    <string name="upload_use_other">Andere Datei verwenden</string>
+    <string name="upload_remove">Vom Telefon entfernen</string>
+    <string name="upload_already">Diese Datei ist bereits auf WeGlide.</string>
+    <string name="settings_weglide_account">WeGlide-Konto für Uploads</string>
+    <string name="settings_weglide_account_saved">Gespeichert, verschlüsselt auf diesem Telefon</string>
+    <string name="settings_weglide_account_none">Nicht festgelegt. Zu WeGlide hochladen fragt danach.</string>
+    <string name="settings_weglide_account_clear">Entfernen</string>
 </resources>

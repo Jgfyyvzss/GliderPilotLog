@@ -44,6 +44,16 @@
     <string name="igc_import">Importieren</string>
     <string name="igc_imported">Importiert</string>
     <string name="igc_done">Fertig</string>
+    <!-- Each received IGC file shows both jobs, so a pilot neither uploads without logging nor logs without uploading by mistake. -->
+    <string name="igc_status_logbook_none">Flugbuch: kein Flug zum Eintragen gefunden</string>
+    <string name="igc_status_logbook_not">Flugbuch: nicht eingetragen</string>
+    <string name="igc_status_logbook_part">Flugbuch: %1$d von %2$d Flügen eingetragen</string>
+    <string name="igc_status_logbook_done">Flugbuch: eingetragen ✓</string>
+    <string name="igc_status_weglide_not">WeGlide: nicht hochgeladen</string>
+    <string name="igc_status_weglide_done">WeGlide: hochgeladen ✓</string>
+    <string name="igc_status_weglide_done_id">WeGlide: hochgeladen ✓ (Flug %1$s)</string>
+    <string name="igc_log_flight">Flug eintragen</string>
+    <string name="igc_all_logged">Alle Flüge dieser Datei sind im Flugbuch.</string>
     <!-- Filter -->
     <string name="filter_button">Filter</string>
     <string name="filter_title">Flüge filtern</string>

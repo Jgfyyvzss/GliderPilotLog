@@ -119,7 +119,7 @@ The count is labelled "Flights", as everywhere in the app, because a flight is o
 
 ## IGC import
 
-An IGC file pre-fills the flight form and is then discarded: it is read from the file picker or a share action, nothing is stored or linked, and the same stream can be used once for an immediate WeGlide upload.
+An IGC file pre-fills the flight form. It is read from the file picker, a share action or a logger download, and kept for a while in the list of received files (see WeGlide upload) so the same bytes can be uploaded to WeGlide later. The logbook is not an archive of IGC files, and no flight is linked to its file.
 
 **Extraction**
 
@@ -157,7 +157,7 @@ This also removes the scroll-and-search zone picker, the LatLongToTimezone depen
 2. The app lists the paired devices, then reads the chosen logger's logbook: for each IGC file, its name, date, start time and size.
 3. The pilot picks a flight. The app downloads the file to a temporary file in app-private storage, byte for byte, and checks its size against the logbook.
 4. The file goes into the normal IGC import flow, and the optional WeGlide upload uses the same bytes.
-5. The temporary file is deleted when the import or upload finishes or is cancelled.
+5. The finished file joins the received IGC files (see WeGlide upload), which keep it for a week; the partial download is deleted.
 
 ### Protocol as observed on the S100
 
@@ -249,7 +249,7 @@ It is strictly sequential, so there is no skip and no jump. A repeated `FILE_OK`
 - **Downloads:** the screen stays on while a download runs. It shows a progress bar, the line count, the elapsed time and an estimate of the time left. The estimate comes from the logbook size at 2.6 KB/s until the download has run a few seconds, and from the measured rate after that. Before a download, each file shows its estimated download time.
 - **File list:** the three newest files are shown first, and More shows the rest.
 - **Resume:** one partial download is kept in app-private storage that Auto Backup leaves out. A retry of the same file resumes from it, even after the app restarts. Cancel or a completed download deletes it, and so does age over two days. A resumed download asks again for the last saved line, to learn the total and check the partial belongs to this file.
-- **The finished file:** once the size check passes, the file is held in memory for the IGC import and the partial is deleted, so no complete copy is ever written to storage.
+- **The finished file:** once the size check passes, it joins the received IGC files, kept for a week so a crash or flat battery after a long download loses nothing, and the partial is deleted.
 - **Retries and resume:** `LxnavParameters` holds the retry values, and the code follows `lxnav_dl.py`. A dropped link reconnects immediately instead of waiting for the third failure.
 - **Device list:** all paired devices are listed, LXNAV ones first.
 
@@ -261,7 +261,16 @@ It is strictly sequential, so there is no skip and no jump. A repeated `FILE_OK`
 
 ## WeGlide upload
 
-Upload is offered from the IGC import flow using the file the pilot just picked, with no copy kept. This is planned for a later phase.
+Upload to WeGlide is a button on the Home screen that opens its own upload screen, separate from the logbook (pilot's decision, 2026-10-22). IGC files come from many places (USB, Wi-Fi, a logger download, other apps), some pilots never upload, and some may upload without keeping the logbook, so the upload is independent of saving a flight.
+
+- **Received files (decided 2026-10-23):** every IGC file the app receives, from the picker, a share or a logger download, for logging or for upload, is stored byte for byte in app-private storage outside Auto Backup. Holding it only in memory was too fragile after a long logger download. A file is found again by its content, so receiving it twice does not duplicate it. Each is kept until it is 7 days old or more than 50 are kept (oldest first), or until the pilot removes it. The logbook is still not an archive of IGC files.
+- **Both jobs shown everywhere:** each file records which of its flights are logged and whether it is on WeGlide. The logbook import shows the WeGlide status with an Upload to WeGlide button, and the upload screen shows the logbook status with a Log flight button, so a pilot who wants both cannot finish one and forget the other. Pilots who only log, or only upload, can ignore the other line. An uploaded file is not offered for upload again.
+- **The aircraft:** the glider of a flight saved from the file comes first, then the glider matching the file's glider ID header, preferring one with a WeGlide type.
+
+- **The file:** one handed over from the logbook import, one of the received files listed on the screen with both statuses, or a new one from the file picker or From logger. The screen shows the file's date, launch time, duration and glider ID for checking.
+- **The aircraft:** the logbook glider matching the file's glider ID header supplies its WeGlide aircraft ID. If that glider has no ID, picking one on the upload screen also stores it on the glider, with the usual type-change confirmation. With no matching glider, the pilot picks from WeGlide's aircraft list for this upload only, so the logbook is not needed.
+- **Credentials:** asked for on the upload screen when missing, and changeable there. Settings shows whether they are saved and can remove them. They are encrypted with an AES key held in the Android Keystore and stored in the app's no-backup folder. Jetpack's security-crypto library is deprecated in favour of using the Keystore directly.
+- **Result:** WeGlide's flight number, scoring date, pilot, aircraft, registration and competition ID, or the failure message with Try again.
 
 - **Precedent:** WeGlide lists XCSoar among the apps that upload directly, and XCSoar has supported WeGlide IGC upload since version 7.23. XCSoar's WeGlide settings ask for a WeGlide ID and a date of birth, which probably explains its low-friction upload.
 - **Credentials:** the WeGlide ID (sent as `user_id`) and date of birth (sent as `date_of_birth`, yyyy-mm-dd) are kept in encrypted storage and excluded from all exports. If missing or rejected, the app asks the pilot to re-enter them.

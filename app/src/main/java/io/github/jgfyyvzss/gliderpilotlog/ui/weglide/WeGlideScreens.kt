@@ -82,6 +82,28 @@ fun AircraftListSection() {
 }
 
 /**
+ * Settings: whether the WeGlide ID and date of birth are saved, with a way to remove them. They are entered on the
+ * upload screen, the only place they are used, and are never shown back in full.
+ */
+@Composable
+fun WeGlideAccountSection() {
+    val store = appContainer().weglideCredentials
+    val saved by store.saved.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(Unit) { store.load() }
+    val isSaved = saved ?: return
+    Text(stringResource(R.string.settings_weglide_account))
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            stringResource(if (isSaved) R.string.settings_weglide_account_saved else R.string.settings_weglide_account_none),
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.weight(1f),
+        )
+        if (isSaved) TextButton(onClick = { scope.launch { store.clear() } }) { Text(stringResource(R.string.settings_weglide_account_clear)) }
+    }
+}
+
+/**
  * The glider's WeGlide aircraft. Choosing one also replaces the glider's type with WeGlide's name, after showing
  * the change. [onTypeChanged] keeps the glider form's type field in step.
  */
@@ -129,12 +151,15 @@ fun WeGlideTypeSection(gliderId: String, onTypeChanged: (String) -> Unit) {
     }
 }
 
-/** Search WeGlide's list, then confirm the type change before saving. */
+/**
+ * Search WeGlide's list, then confirm the type change before saving. Without a glider to change, as for an upload
+ * of a file that matches no logbook glider, [currentType] is null and the pick is used straight away.
+ */
 @Composable
-private fun AircraftPicker(
+internal fun AircraftPicker(
     aircraft: List<WeGlideAircraft>,
     initialQuery: String,
-    currentType: String,
+    currentType: String?,
     onDismiss: () -> Unit,
     onPick: (WeGlideAircraft) -> Unit,
 ) {
@@ -143,7 +168,7 @@ private fun AircraftPicker(
     val results = remember(query, aircraft) { AircraftSearch.search(aircraft, query) }
 
     val pick = confirming
-    if (pick != null) {
+    if (pick != null && currentType != null) {
         AlertDialog(
             onDismissRequest = { confirming = null },
             title = { Text(pick.label) },
@@ -168,7 +193,7 @@ private fun AircraftPicker(
                 if (results.isEmpty()) Text(stringResource(R.string.weglide_no_match))
                 LazyColumn(Modifier.heightIn(max = 380.dp)) {
                     items(results, key = { it.id }) { a ->
-                        ListItem(headlineContent = { Text(a.label) }, modifier = Modifier.clickable { confirming = a })
+                        ListItem(headlineContent = { Text(a.label) }, modifier = Modifier.clickable { if (currentType == null) onPick(a) else confirming = a })
                     }
                 }
             }

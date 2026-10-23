@@ -47,6 +47,7 @@ import io.github.jgfyyvzss.gliderpilotlog.ui.home.HomeScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.igc.IgcImportScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.igc.rememberIgcPicker
 import io.github.jgfyyvzss.gliderpilotlog.ui.lxnav.LoggerScreen
+import io.github.jgfyyvzss.gliderpilotlog.ui.weglide.UploadScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.settings.ClubsScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.settings.FirstRunScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.settings.LaunchTypesScreen
@@ -68,7 +69,9 @@ import kotlinx.serialization.Serializable
 @Serializable object ClubsRoute
 @Serializable object LaunchTypesRoute
 @Serializable object IgcImportRoute
-@Serializable object LoggerRoute
+/** [forUpload] sends the downloaded file to the WeGlide upload screen instead of the logbook import. */
+@Serializable data class LoggerRoute(val forUpload: Boolean = false)
+@Serializable object UploadRoute
 /** [igcSegment] is the index of the IGC segment that pre-fills a new flight, or -1. */
 @Serializable data class FlightEditRoute(val id: String? = null, val igcSegment: Int = -1)
 @Serializable data class AirfieldEditRoute(val id: String? = null)
@@ -120,6 +123,7 @@ private fun MainScreens() {
         destination?.hasRoute(SpreadsheetsRoute::class) == true -> R.string.title_spreadsheets
         destination?.hasRoute(IgcImportRoute::class) == true -> R.string.home_from_igc
         destination?.hasRoute(LoggerRoute::class) == true -> R.string.home_from_logger
+        destination?.hasRoute(UploadRoute::class) == true -> R.string.home_upload
         destination?.hasRoute(FlightEditRoute::class) == true ->
             if (entry?.toRoute<FlightEditRoute>()?.id == null) R.string.title_new_flight else R.string.title_flight
         destination?.hasRoute(AirfieldEditRoute::class) == true ->
@@ -171,7 +175,8 @@ private fun MainScreens() {
                 HomeScreen(
                     onNewFlight = { nav.navigate(FlightEditRoute()) },
                     onFromIgc = pickIgc,
-                    onFromLogger = { nav.navigate(LoggerRoute) },
+                    onFromLogger = { nav.navigate(LoggerRoute()) },
+                    onUpload = { nav.navigate(UploadRoute) },
                     onTotals = { nav.navigateTopLevel(TotalsRoute) },
                     onBackup = { nav.navigate(SettingsRoute) },
                 )
@@ -184,9 +189,14 @@ private fun MainScreens() {
                 val route = it.toRoute<FlightEditRoute>()
                 FlightEditScreen(id = route.id, igcSegment = route.igcSegment.takeIf { s -> s >= 0 }, onDone = { nav.popBackStack() })
             }
-            composable<LoggerRoute> { LoggerScreen() }
+            composable<LoggerRoute> { LoggerScreen(forUpload = it.toRoute<LoggerRoute>().forUpload, onDone = { nav.popBackStack() }) }
+            composable<UploadRoute> { UploadScreen(onFromLogger = { nav.navigate(LoggerRoute(forUpload = true)) }) }
             composable<IgcImportRoute> {
-                IgcImportScreen(onImport = { i -> nav.navigate(FlightEditRoute(igcSegment = i)) }, onFinish = { nav.popBackStack() })
+                IgcImportScreen(
+                    onImport = { i -> nav.navigate(FlightEditRoute(igcSegment = i)) },
+                    onUpload = { nav.navigate(UploadRoute) },
+                    onFinish = { nav.popBackStack() },
+                )
             }
             composable<AirfieldsRoute> {
                 AirfieldListScreen(onOpen = { nav.navigate(AirfieldEditRoute(it)) }, onNew = { nav.navigate(AirfieldEditRoute()) })

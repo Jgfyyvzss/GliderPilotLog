@@ -8,6 +8,7 @@ import io.github.jgfyyvzss.gliderpilotlog.core.igc.IgcFlights
 import io.github.jgfyyvzss.gliderpilotlog.core.igc.IgcParser
 import io.github.jgfyyvzss.gliderpilotlog.core.igc.IgcRead
 import io.github.jgfyyvzss.gliderpilotlog.core.igc.IgcSegment
+import io.github.jgfyyvzss.gliderpilotlog.core.igc.StoredIgc
 import io.github.jgfyyvzss.gliderpilotlog.core.msg
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -22,15 +23,15 @@ import kotlinx.coroutines.withContext
 sealed interface IgcImportState {
     data object Reading : IgcImportState
     data class Failed(val message: Msg) : IgcImportState
-    /** The file's flying segments and which of them have been saved as flights. */
-    data class Ready(val gliderIdHeader: String?, val segments: List<IgcSegment>, val imported: Set<Int> = emptySet()) : IgcImportState
+    /** The stored file's flying segments and which of them have been saved as flights. */
+    data class Ready(val fileId: String, val gliderIdHeader: String?, val segments: List<IgcSegment>, val imported: Set<Int> = emptySet()) : IgcImportState
 }
 
 /**
- * The IGC file being imported, from the file picker or another app's share. The file is read once into memory and
- * only its segments are kept, here and nowhere else; nothing is written to storage, and [clear] drops them.
+ * The IGC file being logged, from the file picker, another app's share, a logger download, or a file already
+ * received (from the upload screen). Every file goes into [IgcFiles] first, which records the flights logged from it.
  */
-class IgcImportStore(private val context: Context, private val scope: CoroutineScope) {
+class IgcImportStore(private val context: Context, private val scope: CoroutineScope, private val files: IgcFiles) {
     private val _state = MutableStateFlow<IgcImportState?>(null)
     val state: StateFlow<IgcImportState?> = _state
 
@@ -38,59 +39,41 @@ class IgcImportStore(private val context: Context, private val scope: CoroutineS
     /** Fires each time a file is opened, so the UI can show the import screen. */
     val openRequests = opened.receiveAsFlow()
 
-    fun open(uri: Uri) {
+    fun open(uri: Uri) = start { files.add(context.contentResolver, uri) }
+
+    /** A file downloaded from a logger. */
+    fun openDownloaded(name: String, bytes: ByteArray) = start { files.add(name, bytes) }
+
+    /** A file already received, for example from the upload screen's Log flight. */
+    fun openStored(id: String) = start { files.get(id) }
+
+    private fun start(find: suspend () -> StoredIgc?) {
         _state.value = IgcImportState.Reading
         opened.trySend(Unit)
-        scope.launch { _state.value = read(uri) }
+        scope.launch { _state.value = find()?.let { load(it) } ?: IgcImportState.Failed(msg(MsgKey.IGC_UNREADABLE)) }
     }
 
-    /** A file downloaded from a logger, already in memory. Its bytes are analysed as they are and not stored. */
-    fun openDownloaded(bytes: ByteArray) {
-        _state.value = IgcImportState.Reading
-        opened.trySend(Unit)
-        scope.launch { _state.value = withContext(Dispatchers.Default) { analyse(bytes.toString(Charsets.ISO_8859_1)) } }
+    /** Records a saved flight against its segment, and its glider for the WeGlide upload. */
+    fun markImported(index: Int, gliderId: String?) {
+        val ready = _state.value as? IgcImportState.Ready ?: return
+        _state.update { s -> if (s is IgcImportState.Ready) s.copy(imported = s.imported + index) else s }
+        scope.launch { files.update(ready.fileId) { it.copy(logged = it.logged + index, loggedGliderId = gliderId ?: it.loggedGliderId) } }
     }
-
-    fun markImported(index: Int) = _state.update { s -> if (s is IgcImportState.Ready) s.copy(imported = s.imported + index) else s }
 
     fun segment(index: Int): Pair<IgcSegment, String?>? =
         (_state.value as? IgcImportState.Ready)?.let { s -> s.segments.getOrNull(index)?.let { it to s.gliderIdHeader } }
 
     fun clear() { _state.value = null }
 
-    private suspend fun read(uri: Uri): IgcImportState = withContext(Dispatchers.IO) {
-        val text = runCatching {
-            context.contentResolver.openInputStream(uri)?.use { input ->
-                val bytes = input.readNBytesCompat(MAX_BYTES + 1)
-                if (bytes.size > MAX_BYTES) null else bytes.toString(Charsets.ISO_8859_1)
-            }
-        }.getOrNull() ?: return@withContext IgcImportState.Failed(msg(MsgKey.IGC_UNREADABLE))
-        analyse(text)
-    }
-
-    private fun analyse(text: String): IgcImportState =
-        when (val r = IgcParser.parse(text)) {
+    private suspend fun load(entry: StoredIgc): IgcImportState = withContext(Dispatchers.Default) {
+        val bytes = files.bytes(entry.id) ?: return@withContext IgcImportState.Failed(msg(MsgKey.IGC_UNREADABLE))
+        when (val r = IgcParser.parse(bytes.toString(Charsets.ISO_8859_1))) {
             is IgcRead.Refused -> IgcImportState.Failed(r.message)
             is IgcRead.Ok -> {
                 val segments = IgcFlights.segments(r.track)
                 if (segments.isEmpty()) IgcImportState.Failed(msg(MsgKey.IGC_NO_FLIGHT))
-                else IgcImportState.Ready(r.track.gliderId, segments)
+                else IgcImportState.Ready(entry.id, r.track.gliderId, segments, entry.logged)
             }
         }
-
-    private fun java.io.InputStream.readNBytesCompat(limit: Int): ByteArray {
-        val out = java.io.ByteArrayOutputStream()
-        val buffer = ByteArray(64 * 1024)
-        while (out.size() < limit) {
-            val n = read(buffer, 0, minOf(buffer.size, limit - out.size()))
-            if (n < 0) break
-            out.write(buffer, 0, n)
-        }
-        return out.toByteArray()
-    }
-
-    private companion object {
-        /** A day of one-second fixes is about 7 MB; anything far larger is not a flight log. */
-        const val MAX_BYTES = 32 * 1024 * 1024
     }
 }
