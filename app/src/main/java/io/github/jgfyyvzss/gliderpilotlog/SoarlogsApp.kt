@@ -7,6 +7,8 @@ import io.github.jgfyyvzss.gliderpilotlog.data.BackupScheduler
 import io.github.jgfyyvzss.gliderpilotlog.data.BackupService
 import io.github.jgfyyvzss.gliderpilotlog.data.CsvService
 import io.github.jgfyyvzss.gliderpilotlog.data.FilterStore
+import io.github.jgfyyvzss.gliderpilotlog.core.igc.IgcLibrary
+import io.github.jgfyyvzss.gliderpilotlog.data.IgcFiles
 import io.github.jgfyyvzss.gliderpilotlog.data.IgcImportStore
 import io.github.jgfyyvzss.gliderpilotlog.data.LogbookDatabase
 import io.github.jgfyyvzss.gliderpilotlog.data.LogbookRepository
@@ -16,7 +18,7 @@ import io.github.jgfyyvzss.gliderpilotlog.core.lxnav.FilePartialDownload
 import io.github.jgfyyvzss.gliderpilotlog.data.lxnav.BluetoothLoggers
 import io.github.jgfyyvzss.gliderpilotlog.data.weglide.AircraftCatalog
 import io.github.jgfyyvzss.gliderpilotlog.data.weglide.CredentialStore
-import io.github.jgfyyvzss.gliderpilotlog.data.weglide.PendingUpload
+import io.github.jgfyyvzss.gliderpilotlog.data.weglide.UploadSelection
 import io.github.jgfyyvzss.gliderpilotlog.data.weglide.OkHttpWeGlideApi
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
@@ -39,12 +41,14 @@ class SoarlogsApp : Application() {
         )
     }
     val csv by lazy { CsvService(database, aircraftName = { id -> aircraft.find(id)?.name }) }
-    val igcImport by lazy { IgcImportStore(this, appScope) }
+    /** Received IGC files, kept for a week for logging and uploading; see [IgcLibrary]. */
+    val igcFiles by lazy { IgcFiles(IgcLibrary(File(noBackupFilesDir, "igc")), appScope) }
+    val igcImport by lazy { IgcImportStore(this, appScope, igcFiles) }
     val loggers by lazy { BluetoothLoggers(this) }
     val weglideApi by lazy { OkHttpWeGlideApi(OkHttpWeGlideApi.userAgent(appVersion())) }
     /** The WeGlide ID and date of birth, encrypted, outside every backup. */
     val weglideCredentials by lazy { CredentialStore(File(noBackupFilesDir, "weglide-credentials.bin")) }
-    val pendingUpload = PendingUpload()
+    val uploadSelection = UploadSelection()
     /** The one unfinished logger download, kept out of Android's Auto Backup. */
     val loggerPartial by lazy { FilePartialDownload(File(noBackupFilesDir, "lxnav.part")) }
 

@@ -1,6 +1,6 @@
 # WeGlide upload: plan for the next round
 
-Written 2026-10-23, for when work returns to the `weglide-upload` branch. Nothing here is built yet.
+Written 2026-10-23, for when work returns to the `weglide-upload` branch. Built on that branch the same day, with the decisions below; not yet tested on a phone.
 
 ## What the pilot wants
 
@@ -20,7 +20,7 @@ A file used to create a log entry, from the file picker, a share or the logger, 
 6. **Tests:** the aircraft choice (saved flight's glider, then header match, then none) as a small `core` function with a JVM test, plus tests for the waiting-file store: expiry, removal after upload, and surviving a restart. The mock-server upload tests stay.
 7. **Branches:** after main is committed, bring main into `weglide-upload` first. Expect conflicts in Home, navigation, the logger screen, Settings and WeGlideScreens, which both branches changed.
 
-## Open questions
+## Decisions
 
-- Age limit, count limit, or both, and their values.
-- Should the IGC import, when finished, also offer an "Upload to WeGlide" shortcut, or is the Home button enough?
+- Files are kept 7 days, at most 50, oldest deleted first.
+- Both the logbook import and the upload screen show both statuses (logbook and WeGlide) with a button for the other job, so a pilot who wants both is not left with one done. Pilots who only log, or only upload, can ignore the other line.

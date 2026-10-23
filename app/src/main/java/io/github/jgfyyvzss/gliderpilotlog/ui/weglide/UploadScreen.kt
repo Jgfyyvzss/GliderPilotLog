@@ -45,7 +45,9 @@ import io.github.jgfyyvzss.gliderpilotlog.R
 import io.github.jgfyyvzss.gliderpilotlog.core.Durations
 import io.github.jgfyyvzss.gliderpilotlog.core.weglide.UploadedFlight
 import io.github.jgfyyvzss.gliderpilotlog.core.weglide.WeGlideCredentials
-import io.github.jgfyyvzss.gliderpilotlog.data.weglide.PendingUpload
+import io.github.jgfyyvzss.gliderpilotlog.ui.igc.fileSummary
+import io.github.jgfyyvzss.gliderpilotlog.ui.igc.logbookStatus
+import io.github.jgfyyvzss.gliderpilotlog.ui.igc.weglideStatus
 import io.github.jgfyyvzss.gliderpilotlog.ui.appContainer
 import io.github.jgfyyvzss.gliderpilotlog.ui.shortText
 import io.github.jgfyyvzss.gliderpilotlog.ui.text
@@ -57,67 +59,78 @@ import java.time.ZoneOffset
 import kotlinx.coroutines.launch
 
 /**
- * Upload to WeGlide, opened from Home. The file can come from the file picker or a logger download, and nothing
- * here touches the logbook, apart from storing a picked WeGlide type on a matching glider.
+ * Upload to WeGlide, opened from Home or from the logbook import. Any received IGC file can be uploaded, logged or
+ * not; the file's logbook status is shown with a Log flight button, so uploading never hides an unlogged flight.
+ * Nothing here changes the logbook, apart from storing a picked WeGlide type on a glider without one.
  */
 @Composable
 fun UploadScreen(onFromLogger: () -> Unit) {
     val app = appContainer()
     val vm: UploadViewModel = viewModel(
-        factory = vmFactory { UploadViewModel(it.repository, it.aircraft, it.weglideApi, it.weglideCredentials, it.pendingUpload) },
+        factory = vmFactory {
+            UploadViewModel(it.repository, it.aircraft, it.weglideApi, it.weglideCredentials, it.igcFiles, it.uploadSelection)
+        },
     )
     val aircraftList by app.aircraft.list.collectAsStateWithLifecycle()
+    val files by vm.files.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val pick = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) scope.launch { PendingUpload.read(app.contentResolver, uri)?.let(app.pendingUpload::set) ?: vm.unreadable() }
+        if (uri != null) scope.launch { app.igcFiles.add(app.contentResolver, uri)?.let { app.uploadSelection.select(it.id) } ?: vm.unreadable() }
     }
     var choosingAircraft by rememberSaveable { mutableStateOf(false) }
     val status = vm.status
+    val entry = vm.fileId?.let { id -> files.firstOrNull { it.id == id } }
 
     Column(
         Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(stringResource(R.string.upload_intro), style = MaterialTheme.typography.bodyMedium)
-
-        // The file
-        Text(stringResource(R.string.upload_file), style = MaterialTheme.typography.titleMedium)
-        val f = vm.file
-        when {
-            f != null -> {
-                Text(f.name)
-                vm.summary?.let { Text(summaryText(it), style = MaterialTheme.typography.bodySmall) }
-            }
-            status !is UploadStatus.Done -> Text(stringResource(R.string.upload_no_file))
-        }
         vm.fileProblem?.let { Text(it.text(), color = MaterialTheme.colorScheme.error) }
-        if (status !is UploadStatus.Done) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilledTonalButton(onClick = { pick.launch(arrayOf("*/*")) }, modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.upload_choose_file))
-                }
-                FilledTonalButton(onClick = onFromLogger, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.home_from_logger)) }
-            }
-        }
 
-        if (f != null) {
-            HorizontalDivider()
-            Text(stringResource(R.string.weglide_aircraft), style = MaterialTheme.typography.titleMedium)
-            val glider = vm.matchedGlider
-            Text(
-                vm.aircraft?.label
-                    ?: if (glider != null) stringResource(R.string.upload_glider_no_type, glider.registration)
-                    else stringResource(R.string.upload_choose_aircraft_hint),
-            )
-            FilledTonalButton(onClick = { choosingAircraft = true }) { Text(stringResource(R.string.common_choose)) }
+        if (entry != null) {
+            // The chosen file, with both of its jobs.
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(entry.name, style = MaterialTheme.typography.titleMedium)
+                    Text(fileSummary(entry), style = MaterialTheme.typography.bodySmall)
+                    Text(logbookStatus(entry))
+                    Text(weglideStatus(entry))
+                }
+            }
+            if (entry.flights > 0 && !entry.fullyLogged) {
+                OutlinedButton(onClick = { app.igcImport.openStored(entry.id) }, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.igc_log_flight))
+                }
+            }
+
+            if (!entry.uploaded || status is UploadStatus.Done) {
+                HorizontalDivider()
+                Text(stringResource(R.string.weglide_aircraft), style = MaterialTheme.typography.titleMedium)
+                val glider = vm.glider
+                Text(
+                    vm.aircraft?.label
+                        ?: if (glider != null) stringResource(R.string.upload_glider_no_type, glider.registration)
+                        else stringResource(R.string.upload_choose_aircraft_hint),
+                )
+                if (!entry.uploaded) {
+                    OutlinedButton(onClick = { choosingAircraft = true }) { Text(stringResource(R.string.common_choose)) }
+                }
+            }
         }
 
         HorizontalDivider()
         Credentials(vm)
 
-        if (f != null) {
+        if (entry != null) {
             HorizontalDivider()
-            Button(onClick = vm::upload, enabled = vm.canUpload, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.upload_button)) }
+            if (entry.uploaded && status !is UploadStatus.Done) {
+                Text(stringResource(R.string.upload_already))
+            } else if (!entry.uploaded) {
+                Button(onClick = vm::upload, enabled = vm.canUpload(entry), modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.upload_button))
+                }
+            }
         }
         when (status) {
             UploadStatus.Idle -> Unit
@@ -128,17 +141,42 @@ fun UploadScreen(onFromLogger: () -> Unit) {
             is UploadStatus.Failed -> {
                 Text(status.message.text(), color = MaterialTheme.colorScheme.error)
                 Text(stringResource(R.string.upload_failed_hint), style = MaterialTheme.typography.bodySmall)
-                OutlinedButton(onClick = vm::upload, enabled = vm.canUpload) { Text(stringResource(R.string.logger_try_again)) }
+                Button(onClick = vm::upload, enabled = vm.canUpload(entry)) { Text(stringResource(R.string.logger_try_again)) }
             }
-            is UploadStatus.Done -> {
-                Result(status.flight)
-                OutlinedButton(onClick = vm::reset, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.upload_another)) }
+            is UploadStatus.Done -> Result(status.flight)
+        }
+
+        if (entry != null) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = vm::close) { Text(stringResource(R.string.upload_use_other)) }
+                TextButton(onClick = vm::remove) { Text(stringResource(R.string.upload_remove)) }
             }
+        } else {
+            // No file chosen: received files with their statuses, so a half-done one stands out, then other sources.
+            HorizontalDivider()
+            Text(stringResource(R.string.upload_recent), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.upload_recent_hint), style = MaterialTheme.typography.bodySmall)
+            if (files.isEmpty()) Text(stringResource(R.string.upload_no_file))
+            files.forEach { f ->
+                Column(
+                    Modifier.fillMaxWidth().clickable { app.uploadSelection.select(f.id) }.padding(vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(f.name, style = MaterialTheme.typography.bodyLarge)
+                    Text(fileSummary(f), style = MaterialTheme.typography.bodySmall)
+                    Text("${logbookStatus(f)} · ${weglideStatus(f)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                HorizontalDivider()
+            }
+            OutlinedButton(onClick = { pick.launch(arrayOf("*/*")) }, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.upload_choose_file))
+            }
+            OutlinedButton(onClick = onFromLogger, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.home_from_logger)) }
         }
     }
 
     if (choosingAircraft) {
-        val glider = vm.matchedGlider
+        val glider = vm.glider
         AircraftPicker(
             aircraft = aircraftList?.aircraft.orEmpty(),
             initialQuery = glider?.type ?: "",
@@ -151,21 +189,6 @@ fun UploadScreen(onFromLogger: () -> Unit) {
         }
     }
 }
-
-@Composable
-private fun summaryText(s: FileSummary): String {
-    val first = s.first ?: return stringResource(R.string.upload_no_flight_found)
-    val zone = ZoneId.systemDefault()
-    val line = stringResource(
-        R.string.upload_summary,
-        first.date(zone).shortText(),
-        first.launchTime(zone).toString(),
-        Durations.formatHm(first.durationMinutes),
-        s.gliderIdHeader ?: "?",
-    )
-    return if (s.flights > 1) line + "\n" + stringResource(R.string.upload_several_flights, s.flights) else line
-}
-
 /** The WeGlide ID and date of birth: asked for when missing, and otherwise only shown as saved. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

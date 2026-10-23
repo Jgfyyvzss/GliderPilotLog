@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -44,12 +45,14 @@ fun rememberIgcPicker(): () -> Unit {
 
 /**
  * The file's flying segments. A file with one segment goes straight to the pre-filled flight form; with several,
- * each is listed with its local launch time and duration and imported as its own flight.
+ * each is listed with its local launch time and duration and imported as its own flight. The file's WeGlide status
+ * is shown with an Upload to WeGlide button, so logging and uploading are each one step from here.
  */
 @Composable
-fun IgcImportScreen(onImport: (Int) -> Unit, onFinish: () -> Unit) {
+fun IgcImportScreen(onImport: (Int) -> Unit, onUpload: () -> Unit, onFinish: () -> Unit) {
     val app = appContainer()
     val state by app.igcImport.state.collectAsStateWithLifecycle()
+    val files by app.igcFiles.files.collectAsStateWithLifecycle()
     val pick = rememberIgcPicker()
     var autoOpened by rememberSaveable { mutableStateOf(false) }
     val zone = ZoneId.systemDefault()
@@ -57,9 +60,10 @@ fun IgcImportScreen(onImport: (Int) -> Unit, onFinish: () -> Unit) {
     val ready = state as? IgcImportState.Ready
     LaunchedEffect(ready) {
         val r = ready ?: return@LaunchedEffect
-        when {
-            r.imported.size == r.segments.size -> { app.igcImport.clear(); onFinish() }
-            r.segments.size == 1 && !autoOpened -> { autoOpened = true; onImport(0) }
+        // Stay here once every flight is logged, so the WeGlide status and button are seen.
+        if (r.segments.size == 1 && !autoOpened && 0 !in r.imported) {
+            autoOpened = true
+            onImport(0)
         }
     }
 
@@ -88,6 +92,16 @@ fun IgcImportScreen(onImport: (Int) -> Unit, onFinish: () -> Unit) {
                             Text(stringResource(R.string.igc_imported), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         } else {
                             OutlinedButton(onClick = { onImport(i) }) { Text(stringResource(R.string.igc_import)) }
+                        }
+                    }
+                }
+                if (s.imported.size == s.segments.size) Text(stringResource(R.string.igc_all_logged))
+                files.firstOrNull { it.id == s.fileId }?.let { f ->
+                    HorizontalDivider()
+                    Text(weglideStatus(f))
+                    if (!f.uploaded) {
+                        OutlinedButton(onClick = { app.uploadSelection.select(f.id); onUpload() }, modifier = Modifier.fillMaxWidth()) {
+                            Text(stringResource(R.string.upload_button))
                         }
                     }
                 }

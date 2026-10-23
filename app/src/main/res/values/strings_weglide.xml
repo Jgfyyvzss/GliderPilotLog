@@ -20,7 +20,7 @@
     <string name="weglide_no_match">No match. Try fewer letters, for example ASK.</string>
     <!-- Upload to WeGlide -->
     <string name="home_upload">Upload to WeGlide</string>
-    <string name="upload_intro">Send any IGC file to WeGlide, whether or not it is in your logbook. The file is not kept on this phone afterwards.</string>
+    <string name="upload_intro">Send an IGC file to WeGlide, whether or not it is in your logbook.</string>
     <string name="upload_file">IGC file</string>
     <string name="upload_no_file">No file chosen yet.</string>
     <string name="upload_choose_file">Choose file</string>
@@ -49,7 +49,11 @@
     <string name="upload_result_registration">Registration: %1$s</string>
     <string name="upload_result_competition_id">Competition ID: %1$s</string>
     <string name="upload_another">Upload another file</string>
-    <string name="settings_weglide_account">WeGlide account for uploads</string>
+    <string name="upload_recent">Received IGC files</string>
+    <string name="upload_recent_hint">Kept on this phone for 7 days, so a file downloaded at the airfield can be uploaded later.</string>
+    <string name="upload_use_other">Use a different file</string>
+    <string name="upload_remove">Remove from phone</string>
+    <string name="upload_already">This file is already on WeGlide.</string>    <string name="settings_weglide_account">WeGlide account for uploads</string>
     <string name="settings_weglide_account_saved">Saved, encrypted on this phone</string>
     <string name="settings_weglide_account_none">Not set. Upload to WeGlide asks for it.</string>
     <string name="settings_weglide_account_clear">Remove</string></resources>

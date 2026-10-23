@@ -62,15 +62,16 @@ fun LoggerScreen(forUpload: Boolean = false, onDone: () -> Unit = {}) {
         factory = vmFactory { app ->
             LoggerViewModel(app.loggers, app.loggerPartial, onDownloaded = { file ->
                 // For an upload the file goes back to the upload screen; otherwise into the logbook import.
-                if (forUpload) app.pendingUpload.set(file) else app.igcImport.openDownloaded(file.bytes)
+                if (forUpload) app.uploadSelection.select(app.igcFiles.add(file.name, file.bytes).id)
+                else app.igcImport.openDownloaded(file.name, file.bytes)
             })
         },
     )
     // Back to the upload screen once a new file has been downloaded for it.
-    val pending = appContainer().pendingUpload
-    val fileOnEntry = remember { pending.file.value }
-    val pendingFile by pending.file.collectAsStateWithLifecycle()
-    LaunchedEffect(pendingFile) { if (forUpload && pendingFile != null && pendingFile !== fileOnEntry) onDone() }
+    val selection = appContainer().uploadSelection
+    val onEntry = remember { selection.selected.value }
+    val chosen by selection.selected.collectAsStateWithLifecycle()
+    LaunchedEffect(chosen) { if (forUpload && chosen != null && chosen != onEntry) onDone() }
     val state by vm.state.collectAsStateWithLifecycle()
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refresh() }
 

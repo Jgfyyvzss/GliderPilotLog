@@ -7,30 +7,26 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.jgfyyvzss.gliderpilotlog.core.Msg
 import io.github.jgfyyvzss.gliderpilotlog.core.MsgKey
-import io.github.jgfyyvzss.gliderpilotlog.core.msg
-import io.github.jgfyyvzss.gliderpilotlog.core.igc.IgcFlights
 import io.github.jgfyyvzss.gliderpilotlog.core.igc.IgcMatching
-import io.github.jgfyyvzss.gliderpilotlog.core.igc.IgcParser
-import io.github.jgfyyvzss.gliderpilotlog.core.igc.IgcRead
-import io.github.jgfyyvzss.gliderpilotlog.core.igc.IgcSegment
+import io.github.jgfyyvzss.gliderpilotlog.core.igc.StoredIgc
+import io.github.jgfyyvzss.gliderpilotlog.core.msg
+import io.github.jgfyyvzss.gliderpilotlog.core.weglide.UploadAircraft
 import io.github.jgfyyvzss.gliderpilotlog.core.weglide.UploadedFlight
 import io.github.jgfyyvzss.gliderpilotlog.core.weglide.WeGlideAircraft
 import io.github.jgfyyvzss.gliderpilotlog.core.weglide.WeGlideCredentials
 import io.github.jgfyyvzss.gliderpilotlog.core.weglide.WeGlideUploadResponse
 import io.github.jgfyyvzss.gliderpilotlog.data.GliderEntity
+import io.github.jgfyyvzss.gliderpilotlog.data.IgcFiles
 import io.github.jgfyyvzss.gliderpilotlog.data.LogbookRepository
 import io.github.jgfyyvzss.gliderpilotlog.data.weglide.AircraftCatalog
 import io.github.jgfyyvzss.gliderpilotlog.data.weglide.ApiResult
 import io.github.jgfyyvzss.gliderpilotlog.data.weglide.CredentialStore
-import io.github.jgfyyvzss.gliderpilotlog.data.weglide.IgcFile
-import io.github.jgfyyvzss.gliderpilotlog.data.weglide.PendingUpload
+import io.github.jgfyyvzss.gliderpilotlog.data.weglide.UploadSelection
 import io.github.jgfyyvzss.gliderpilotlog.data.weglide.WeGlideApi
 import java.time.LocalDate
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-
-/** What the file contains, for the pilot to check before uploading. */
-data class FileSummary(val gliderIdHeader: String?, val first: IgcSegment?, val flights: Int)
 
 /** The WeGlide aircraft for this upload, and the logbook glider it came from, if any. */
 data class AircraftChoice(val aircraftId: Long, val label: String, val glider: GliderEntity?)
@@ -44,28 +40,30 @@ sealed interface UploadStatus {
 }
 
 /**
- * Upload to WeGlide, on its own: any IGC file, with or without a logbook entry. The upload gate from Appendix E is
- * kept by prompting on this screen for anything missing: the file, the WeGlide aircraft and the pilot's WeGlide ID
- * and date of birth.
+ * Upload to WeGlide, for any received IGC file, with or without a logbook entry. The upload gate from Appendix E is
+ * kept by prompting on this screen for anything missing: the file, the WeGlide aircraft, and the pilot's WeGlide ID
+ * and date of birth. The file's logbook status is shown too, with a way to log it, so neither job is forgotten.
  */
 class UploadViewModel(
     private val repo: LogbookRepository,
     private val catalog: AircraftCatalog,
     private val api: WeGlideApi,
     private val store: CredentialStore,
-    private val pending: PendingUpload,
+    private val igcFiles: IgcFiles,
+    private val selection: UploadSelection,
 ) : ViewModel() {
-    var file by mutableStateOf<IgcFile?>(null)
+    /** Every received file, newest first, with live statuses. */
+    val files: StateFlow<List<StoredIgc>> = igcFiles.files
+    /** The chosen file's id; its entry is looked up in [files] so its statuses stay current. */
+    var fileId by mutableStateOf<String?>(null)
         private set
-    var summary by mutableStateOf<FileSummary?>(null)
-        private set
-    /** The file could not be read as IGC. */
+    /** The file could not be read. */
     var fileProblem by mutableStateOf<Msg?>(null)
         private set
     var aircraft by mutableStateOf<AircraftChoice?>(null)
         private set
-    /** The glider in the logbook that matches the file's header, used to start the aircraft search. */
-    var matchedGlider by mutableStateOf<GliderEntity?>(null)
+    /** The glider that supplies, or should be given, the WeGlide aircraft. */
+    var glider by mutableStateOf<GliderEntity?>(null)
         private set
     var credentials by mutableStateOf<WeGlideCredentials?>(null)
         private set
@@ -85,41 +83,35 @@ class UploadViewModel(
             catalog.load()
         }
         viewModelScope.launch {
-            pending.file.collect { f -> if (f != null && f !== file) useFile(f) }
+            selection.selected.collect { s -> if (s != null) choose(s.fileId) }
         }
     }
 
-    private suspend fun useFile(f: IgcFile) {
-        file = f
+    /** Shows a received file, ready to upload once the aircraft and credentials are known. */
+    fun choose(id: String) = viewModelScope.launch {
+        val entry = igcFiles.get(id) ?: run { unreadable(); return@launch }
+        fileId = entry.id
+        fileProblem = null
         status = UploadStatus.Idle
-        aircraft = null
-        matchedGlider = null
-        when (val r = IgcParser.parse(f.bytes.toString(Charsets.ISO_8859_1))) {
-            is IgcRead.Refused -> {
-                summary = null
-                fileProblem = r.message
-            }
-            is IgcRead.Ok -> {
-                fileProblem = null
-                val segments = IgcFlights.segments(r.track)
-                summary = FileSummary(r.track.gliderId, segments.firstOrNull(), segments.size)
-                val glider = IgcMatching.glider(r.track.gliderId, repo.observeGliders().first().filter { !it.archived }) { it.registrationKey }
-                matchedGlider = glider
-                val id = glider?.weglideAircraftId
-                if (id != null) aircraft = AircraftChoice(id, catalog.find(id)?.label ?: id.toString(), glider)
-            }
-        }
+        val gliders = repo.observeGliders().first()
+        val saved = entry.loggedGliderId?.let { g -> gliders.firstOrNull { it.id == g } }
+        val matched = IgcMatching.glider(entry.gliderIdHeader, gliders.filter { !it.archived }) { it.registrationKey }
+        val g = UploadAircraft.choose(saved, matched) { it.weglideAircraftId }
+        glider = g
+        aircraft = g?.weglideAircraftId?.let { id -> AircraftChoice(id, catalog.find(id)?.label ?: id.toString(), g) }
     }
 
     /**
-     * Uses the picked WeGlide aircraft for this upload. When the file matched a logbook glider without a WeGlide
-     * type, the pick is stored on that glider too, as on the glider screen.
+     * Uses the picked WeGlide aircraft for this upload. When the glider has no WeGlide type yet, the pick is stored
+     * on it too, as on the glider screen.
      */
     fun pickAircraft(picked: WeGlideAircraft) = viewModelScope.launch {
-        val glider = matchedGlider?.takeIf { it.weglideAircraftId == null }
-        if (glider != null) repo.setWeGlideAircraft(glider.id, picked)
+        val g = glider?.takeIf { it.weglideAircraftId == null }
+        if (g != null) {
+            repo.setWeGlideAircraft(g.id, picked)
+            glider = repo.glider(g.id)
+        }
         aircraft = AircraftChoice(picked.id, picked.label, glider)
-        if (glider != null) matchedGlider = repo.glider(glider.id)
     }
 
     fun editCredentials() { editingCredentials = true }
@@ -132,46 +124,55 @@ class UploadViewModel(
         editingCredentials = false
     }
 
-    val canUpload get() = file != null && fileProblem == null && aircraft != null && credentials != null && !editingCredentials &&
-        status != UploadStatus.Uploading
+    fun canUpload(entry: StoredIgc?) = entry != null && !entry.uploaded && aircraft != null && credentials != null &&
+        !editingCredentials && status != UploadStatus.Uploading
 
     fun upload() {
-        val f = file ?: return
+        val id = fileId ?: return
         val a = aircraft ?: return
         val c = credentials ?: return
         status = UploadStatus.Uploading
         viewModelScope.launch {
-            status = when (val r = api.uploadIgc(f.bytes, f.name, c, a.aircraftId)) {
+            val entry = igcFiles.get(id)
+            val bytes = igcFiles.bytes(id)
+            if (entry == null || bytes == null) {
+                status = UploadStatus.Failed(msg(MsgKey.IGC_UNREADABLE))
+                return@launch
+            }
+            status = when (val r = api.uploadIgc(bytes, entry.name, c, a.aircraftId)) {
                 is ApiResult.Ok -> {
-                    // Done with the file: it is not kept anywhere.
-                    pending.clear()
-                    file = null
-                    UploadStatus.Done(WeGlideUploadResponse.parse(r.value))
+                    val flight = WeGlideUploadResponse.parse(r.value)
+                    // Marked as uploaded, so it is not offered again; the file stays until it expires, for logging.
+                    igcFiles.update(id) { it.copy(uploaded = true, weglideFlightId = flight?.id) }
+                    UploadStatus.Done(flight)
                 }
                 is ApiResult.Failed -> UploadStatus.Failed(r.message)
             }
         }
     }
 
+    /** Deletes the chosen file from the phone. */
+    fun remove() {
+        val id = fileId ?: return
+        viewModelScope.launch {
+            igcFiles.remove(id)
+            close()
+        }
+    }
+
     /** The picked file could not be read at all. */
     fun unreadable() {
-        file = null
-        summary = null
+        fileId = null
         fileProblem = msg(MsgKey.IGC_UNREADABLE)
     }
 
-    /** Starts again with no file, after a finished upload. */
-    fun reset() {
-        pending.clear()
-        file = null
-        summary = null
+    /** Back to the list of received files. */
+    fun close() {
+        selection.clear()
+        fileId = null
         fileProblem = null
         aircraft = null
-        matchedGlider = null
+        glider = null
         status = UploadStatus.Idle
-    }
-
-    override fun onCleared() {
-        pending.clear()
     }
 }

@@ -39,7 +39,7 @@ class LoggerViewModel(
     private val loggers: BluetoothLoggers,
     private val partial: PartialDownload,
     /** Where a finished download goes: the logbook import, or the WeGlide upload screen that opened this one. */
-    private val onDownloaded: (IgcFile) -> Unit,
+    private val onDownloaded: suspend (IgcFile) -> Unit,
     private val now: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
     private val _state = MutableStateFlow<LoggerState>(LoggerState.Devices(loggers.status()))

@@ -73,7 +73,7 @@ fun FlightEditScreen(id: String?, igcSegment: Int? = null, onDone: () -> Unit) {
     )
     LaunchedEffect(vm.done) {
         if (vm.done) {
-            igcSegment?.let(app.igcImport::markImported)
+            igcSegment?.let { app.igcImport.markImported(it, vm.draft.gliderId) }
             onDone()
         }
     }

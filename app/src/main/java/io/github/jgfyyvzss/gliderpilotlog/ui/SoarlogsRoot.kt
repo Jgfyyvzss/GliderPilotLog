@@ -192,7 +192,11 @@ private fun MainScreens() {
             composable<LoggerRoute> { LoggerScreen(forUpload = it.toRoute<LoggerRoute>().forUpload, onDone = { nav.popBackStack() }) }
             composable<UploadRoute> { UploadScreen(onFromLogger = { nav.navigate(LoggerRoute(forUpload = true)) }) }
             composable<IgcImportRoute> {
-                IgcImportScreen(onImport = { i -> nav.navigate(FlightEditRoute(igcSegment = i)) }, onFinish = { nav.popBackStack() })
+                IgcImportScreen(
+                    onImport = { i -> nav.navigate(FlightEditRoute(igcSegment = i)) },
+                    onUpload = { nav.navigate(UploadRoute) },
+                    onFinish = { nav.popBackStack() },
+                )
             }
             composable<AirfieldsRoute> {
                 AirfieldListScreen(onOpen = { nav.navigate(AirfieldEditRoute(it)) }, onNew = { nav.navigate(AirfieldEditRoute()) })
