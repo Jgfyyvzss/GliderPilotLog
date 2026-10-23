@@ -59,6 +59,12 @@ object FlightCsv {
         "log_no", "date", "glider", "airfield", "club", "launch_type", "role", "pic", "duration",
         "launch_time", "landing_time", "landing_airfield", "landing_place", "notes",
     )
+    /**
+     * Read-only witness columns, exported while the Witness sign-off Setting is on: the witness (name, and the
+     * number in brackets) and the signing date, for flights whose seal still matches. Import ignores them without a
+     * warning and never creates a witness mark, so a spreadsheet cannot be used to witness a flight.
+     */
+    val witnessColumns = listOf("witnessed_by", "witnessed_on")
     private val required = listOf("date", "glider", "duration", "airfield", "role")
     const val MAX_ERRORS = 200
 
@@ -67,22 +73,28 @@ object FlightCsv {
         val logNo: Int, val date: String, val glider: String, val airfield: String, val club: String?, val launchType: String,
         val role: String, val pic: String, val durationMinutes: Int, val launchTime: String?, val landingTime: String?,
         val landingAirfield: String?, val landingPlace: String?, val notes: String?,
+        val witnessedBy: String? = null, val witnessedOn: String? = null,
     )
 
-    fun export(rows: List<ExportRow>): String = Csv.file(
-        exportColumns,
+    /** With [witness], the two [witnessColumns] follow the others. */
+    fun export(rows: List<ExportRow>, witness: Boolean = false): String = Csv.file(
+        if (witness) exportColumns + witnessColumns else exportColumns,
         rows.map {
             listOf(
                 it.logNo.toString(), it.date, it.glider, it.airfield, it.club.orEmpty(), it.launchType, it.role, it.pic,
                 Durations.formatHm(it.durationMinutes), it.launchTime.orEmpty(), it.landingTime.orEmpty(),
                 it.landingAirfield.orEmpty(), it.landingPlace.orEmpty(), it.notes.orEmpty(),
-            )
+            ) + if (witness) listOf(it.witnessedBy.orEmpty(), it.witnessedOn.orEmpty()) else emptyList()
         },
     )
 
+    /** The witnessed_by cell: the name, then the number in brackets when there is one. */
+    fun witnessedBy(name: String, identifier: String?): String = if (identifier.isNullOrBlank()) name else "$name ($identifier)"
+
     /** Checks the whole file. Nothing may be imported while [FlightImport.errors] is not empty. */
     fun parse(text: String, known: KnownNames): FlightImport {
-        val table = CsvTable.read(text, exportColumns.toSet())
+        // The witness columns are known, so they raise no unused-column warning, but nothing reads them.
+        val table = CsvTable.read(text, (exportColumns + witnessColumns).toSet())
             ?: return FlightImport(emptyList(), listOf(CsvError(1, null, null, msg(MsgKey.CSV_EXPECT_HEADER))), emptyList(), emptyMap(), emptyMap(), 0, false, 0)
         val errors = mutableListOf<CsvError>()
         required.filter { !table.has(it) }.forEach { errors += CsvError(1, it, null, msg(MsgKey.CSV_EXPECT_COLUMN, it)) }

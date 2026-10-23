@@ -132,6 +132,8 @@ data class FlightListRow(
     @ColumnInfo(name = "launch_type_id") val launchTypeId: String,
     /** The first characters of the notes, enough for the list row. */
     @ColumnInfo(name = "notes_start") val notesStart: String? = null,
+    /** Set when the flight is witnessed; its seal status comes from [WitnessRepository]. */
+    @ColumnInfo(name = "witness_signoff_id") val witnessSignoffId: String? = null,
 )
 
 /** Enough about a flight to name it in a duplicate log number message. */
@@ -159,6 +161,10 @@ interface FlightDao {
     /** A glider's live flights on one day, for the aircraft logbook calculator. */
     @Query("SELECT * FROM flight WHERE deleted_at IS NULL AND glider_id = :gliderId AND date = :date ORDER BY log_no")
     suspend fun onDay(gliderId: String, date: String): List<FlightEntity>
+
+    /** Every live flight on one day, for witnessing a day's group. */
+    @Query("SELECT * FROM flight WHERE deleted_at IS NULL AND date = :date ORDER BY log_no")
+    suspend fun onDate(date: String): List<FlightEntity>
 
     /** The gliders flown on one day, ignoring any filter. */
     @Query(
@@ -197,6 +203,7 @@ data class RoleTotalRow(val role: String, val minutes: Int, val flights: Int)
 
 /** A flight with every name the logbook PDF prints. */
 data class PdfFlightRow(
+    val id: String,
     @ColumnInfo(name = "log_no") val logNo: Int,
     val date: String,
     val registration: String,
@@ -225,7 +232,7 @@ object FlightQueries {
             """
             SELECT f.id, f.log_no, f.date, f.duration_minutes, f.role,
                    g.registration, g.type AS glider_type, a.name AS airfield_name, lt.name AS launch_type_name, f.launch_type_id,
-                   substr(f.notes, 1, 80) AS notes_start
+                   substr(f.notes, 1, 80) AS notes_start, f.witness_signoff_id
             FROM flight f
             JOIN glider g ON g.id = f.glider_id
             JOIN airfield a ON a.id = f.airfield_id
@@ -242,7 +249,7 @@ object FlightQueries {
         val where = FilterSql.where(filter)
         return SimpleSQLiteQuery(
             """
-            SELECT f.log_no, f.date, g.registration, g.type AS glider_type, a.name AS airfield_name, c.name AS club_name,
+            SELECT f.id, f.log_no, f.date, g.registration, g.type AS glider_type, a.name AS airfield_name, c.name AS club_name,
                    f.launch_type_id, lt.name AS launch_type_name, f.role, f.pic_name, f.duration_minutes,
                    f.launch_time, f.landing_time, la.name AS landing_airfield_name, f.landing_place, f.notes
             FROM flight f
@@ -280,4 +287,55 @@ interface OpeningBalanceDao {
     fun observeAll(): Flow<List<OpeningBalanceEntity>>
 
     @Update suspend fun update(balances: List<OpeningBalanceEntity>)
+}
+
+/** A previous witness, for the quick-pick list. */
+data class WitnessPick(
+    @ColumnInfo(name = "witness_name") val name: String,
+    @ColumnInfo(name = "witness_identifier") val identifier: String?,
+)
+
+@Dao
+interface WitnessDao {
+    @Insert suspend fun insert(signoff: WitnessSignoffEntity)
+    @Update suspend fun update(signoff: WitnessSignoffEntity)
+
+    @Query("SELECT * FROM witness_signoff WHERE id = :id")
+    suspend fun get(id: String): WitnessSignoffEntity?
+
+    @Query("SELECT * FROM witness_signoff WHERE deleted_at IS NULL")
+    suspend fun live(): List<WitnessSignoffEntity>
+
+    /** Distinct name and number pairs of live sign-offs, most recently used first. */
+    @Query(
+        "SELECT witness_name, witness_identifier FROM witness_signoff WHERE deleted_at IS NULL " +
+            "GROUP BY witness_name, witness_identifier ORDER BY MAX(signed_at) DESC",
+    )
+    fun observePicks(): Flow<List<WitnessPick>>
+
+    @Query("SELECT * FROM flight WHERE deleted_at IS NULL AND witness_signoff_id IS NOT NULL")
+    suspend fun witnessedFlights(): List<FlightEntity>
+
+    @Query("SELECT * FROM flight WHERE deleted_at IS NULL AND witness_signoff_id IS NOT NULL")
+    fun observeWitnessedFlights(): Flow<List<FlightEntity>>
+
+    @Query("SELECT * FROM witness_signoff WHERE deleted_at IS NULL")
+    fun observeLive(): Flow<List<WitnessSignoffEntity>>
+
+    /** The sign-off a flight points to, kept up to date as the flight is witnessed again or its mark removed. */
+    @Query("SELECT s.* FROM witness_signoff s JOIN flight f ON f.witness_signoff_id = s.id WHERE f.id = :flightId")
+    fun observeForFlight(flightId: String): Flow<WitnessSignoffEntity?>
+
+    @Query("UPDATE flight SET witness_signoff_id = :signoffId, witness_seal = :seal, updated_at = :time WHERE id = :flightId")
+    suspend fun setWitness(flightId: String, signoffId: String?, seal: String?, time: Long)
+
+    /**
+     * Deletes, as tombstones without their photos, the sign-offs that no live flight refers to. Called after a mark
+     * is removed, a flight is deleted or witnessed again, or an import is undone.
+     */
+    @Query(
+        "UPDATE witness_signoff SET photo = NULL, updated_at = :time, deleted_at = :time WHERE deleted_at IS NULL AND id NOT IN " +
+            "(SELECT witness_signoff_id FROM flight WHERE deleted_at IS NULL AND witness_signoff_id IS NOT NULL)",
+    )
+    suspend fun deleteUnreferenced(time: Long): Int
 }

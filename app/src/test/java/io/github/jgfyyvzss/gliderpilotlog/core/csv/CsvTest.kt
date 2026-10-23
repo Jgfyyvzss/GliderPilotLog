@@ -127,6 +127,23 @@ class CsvTest {
         assertTrue(text.startsWith(Csv.BOM + FlightCsv.exportColumns.joinToString(",")))
     }
 
+    @Test fun witnessColumnsAreExportedButNeverImported() {
+        val row = FlightCsv.ExportRow(
+            5, "2026-10-17", "FQM", "YMBT", null, "Winch", "STUDENT", "Lee Instructor", 30, null, null, null, null, null,
+            witnessedBy = FlightCsv.witnessedBy("Lee Instructor", "GFA 1"), witnessedOn = "2026-10-18",
+        )
+        val text = FlightCsv.export(listOf(row), witness = true)
+        assertTrue(text.startsWith(Csv.BOM + (FlightCsv.exportColumns + FlightCsv.witnessColumns).joinToString(",")))
+        assertTrue(text.endsWith(",Lee Instructor (GFA 1),2026-10-18\r\n"))
+        assertEquals("Lee", FlightCsv.witnessedBy("Lee", " "))
+        assertFalse("off by default", FlightCsv.export(listOf(row)).contains("witnessed_by"))
+
+        val imp = FlightCsv.parse(text, known)
+        assertEquals(emptyList<String>(), messages(imp))
+        assertTrue("no unused-column warning", imp.warnings.isEmpty())
+        assertEquals(1, imp.flights.size)
+    }
+
     @Test fun archivedColumnIsReadAndWritten() {
         val g = GliderCsv.parse("registration,type,archived\r\nGZY,Junior,YES\r\nBLNK,Blanik,\r\nKA6,Ka 6,no\r\nX,Y,maybe\r\n", emptySet())
         assertEquals(listOf(true, false, false), g.records.map { it.archived })

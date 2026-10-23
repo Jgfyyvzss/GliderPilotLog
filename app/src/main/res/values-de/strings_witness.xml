@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Witness sign-off (docs/Witness_Sign-Off.md) -->
+    <string name="settings_witness">Zeugenbestätigung</string>
+    <string name="settings_witness_hint">Ein Zeuge, etwa ein Fluglehrer, bestätigt Flüge mit seinem Namen und einem Foto. Ausgeschaltet sind die Zeugen-Bildschirme verborgen, Gespeichertes bleibt erhalten.</string>
+
+    <!-- Flights list: marks and filter -->
+    <string name="witness_action">Bezeugen</string>
+    <string name="witness_mark_witnessed">Bezeugt</string>
+    <string name="witness_mark_changed">Geändert</string>
+    <string name="witness_mark_cannot_verify">Nicht prüfbar</string>
+    <string name="witness_filter">Zeuge</string>
+    <string name="witness_filter_witnessed">Bezeugt</string>
+    <string name="witness_filter_not">Nicht bezeugt</string>
+    <string name="witness_filter_changed">Seit Bezeugung geändert</string>
+
+    <!-- Sign-off screen -->
+    <string name="title_witness">Zeugenbestätigung</string>
+    <string name="witness_flights">Zu bezeugende Flüge</string>
+    <string name="witness_no_flights_here">Hier gibt es keine Flüge zu bezeugen.</string>
+    <string name="witness_flight_line">Nr. %1$d · %2$s · %3$s · %4$s</string>
+    <string name="witness_already_by">Bereits bezeugt von %1$s</string>
+    <string name="witness_name">Name des Zeugen</string>
+    <string name="witness_number">Lizenz- oder Mitgliedsnummer (optional)</string>
+    <!-- An earlier witness's name and number -->
+    <string name="witness_pick">%1$s (%2$s)</string>
+    <string name="witness_previous">Frühere Zeugen</string>
+    <string name="witness_stored_title">Was gespeichert wird</string>
+    <string name="witness_stored_text">Ihr Name, die Nummer falls angegeben, der Zeitpunkt der Bestätigung und ein kleines Foto Ihres Gesichts werden mit diesen Flügen in diesem Flugbuch auf diesem Telefon und in seinen Sicherungen gespeichert. Sie zeigen, wer die Flüge bezeugt hat, und lassen die App eine spätere Änderung erkennen.</string>
+    <string name="witness_take_photo">Foto aufnehmen</string>
+    <string name="witness_retake_photo">Neu aufnehmen</string>
+    <string name="witness_photo">Foto des Zeugen</string>
+    <string name="witness_photo_failed">Das Foto konnte nicht gelesen werden. Bitte erneut versuchen.</string>
+    <string name="witness_no_camera">Auf diesem Telefon wurde keine Kamera-App gefunden.</string>
+    <string name="witness_consent">Ich habe diese Flüge bezeugt und bin einverstanden, dass mein Name, meine Nummer und mein Foto mit ihnen in diesem Flugbuch gespeichert werden.</string>
+    <string name="witness_save">Bestätigung speichern</string>
+    <string name="witness_refused_consent">Bitte zuerst die Einverständniserklärung ankreuzen.</string>
+    <string name="witness_refused_photo">Das Foto ist zu groß. Bitte neu aufnehmen.</string>
+
+    <!-- Witness card on the flight form -->
+    <string name="witness_card_none">Nicht bezeugt.</string>
+    <string name="witness_card_by">Bezeugt von %1$s</string>
+    <string name="witness_card_by_number">Bezeugt von %1$s (%2$s)</string>
+    <string name="witness_card_signed">Bestätigt am %1$s</string>
+    <plurals name="witness_card_signed_after">
+        <item quantity="one">Bestätigt am %1$s, %2$d Tag nach dem Flug</item>
+        <item quantity="other">Bestätigt am %1$s, %2$d Tage nach dem Flug</item>
+    </plurals>
+    <string name="witness_card_photo_removed">Foto entfernt</string>
+    <string name="witness_again">Erneut bezeugen</string>
+    <string name="witness_remove_photo">Foto entfernen</string>
+    <string name="witness_remove_photo_text">Das Foto des Zeugen löschen? Name, Nummer und Siegel bleiben, auf allen Flügen dieser Bestätigung.</string>
+    <string name="witness_remove_mark">Zeugenvermerk entfernen</string>
+    <string name="witness_remove_mark_text">Den Zeugen von diesem Flug entfernen? Eine Bestätigung, die kein anderer Flug nutzt, wird mit ihrem Foto gelöscht.</string>
+    <string name="witness_remove">Entfernen</string>
+    <string name="witness_edit_title">Bezeugter Flug</string>
+    <string name="witness_edit_text">Dieser Flug wurde von %1$s bezeugt. Eine Änderung markiert ihn als seit Bezeugung geändert.</string>
+    <string name="witness_edit_confirm">Trotzdem ändern</string>
+</resources>

@@ -6,6 +6,7 @@ import io.github.jgfyyvzss.gliderpilotlog.core.FlightDraft
 import io.github.jgfyyvzss.gliderpilotlog.core.Keys
 import io.github.jgfyyvzss.gliderpilotlog.core.Role
 import io.github.jgfyyvzss.gliderpilotlog.core.backup.BackupCodec
+import io.github.jgfyyvzss.gliderpilotlog.core.witness.SealStatus
 import io.github.jgfyyvzss.gliderpilotlog.ui.text
 import java.time.LocalDate
 import kotlinx.coroutines.flow.first
@@ -78,6 +79,36 @@ class BackupServiceTest {
 
         assertEquals(BackupCodec.withoutExportTime(first), BackupCodec.withoutExportTime(second))
         assertEquals(2, (BackupCodec.decode(second) as io.github.jgfyyvzss.gliderpilotlog.core.backup.DecodeResult.Ok).file.flights.count { it.deletedAt == null })
+    }
+
+    /** Witnesses flights 1 and 3 of [seed] with a small JPEG-like photo. */
+    private suspend fun witness(db: LogbookDatabase): ByteArray {
+        val photo = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte()) + ByteArray(3_000) { it.toByte() }
+        val live = db.backupDao().allFlights().filter { it.deletedAt == null }.map { it.id }
+        WitnessRepository(db, now = { ++clock }).sign(live, "Lee Instructor", "GFA 1", photo, consent = true)
+        return photo
+    }
+
+    @Test fun witnessDataRoundTripsWithAndWithoutPhotos() = runTest {
+        seed(source)
+        val photo = witness(source)
+        val full = service(source).exportJson()
+        assertTrue(full.contains("\"contains_photos\": true"))
+
+        val restore = service(target).prepareRestore(full) as Prepared.Restore
+        assertEquals(2, restore.witness.verified)
+        service(target).restore(restore)
+        assertEquals(BackupCodec.withoutExportTime(full), BackupCodec.withoutExportTime(service(target).exportJson()))
+        val statuses = WitnessRepository(target).statuses()
+        assertEquals(listOf(SealStatus.WITNESSED, SealStatus.WITNESSED), statuses.values.toList())
+        assertTrue(photo.contentEquals(target.backupDao().allWitnessSignoffs().single().photo))
+
+        val bare = service(source).exportJson(includePhotos = false)
+        assertTrue(bare.contains("\"contains_photos\": false"))
+        assertTrue("names and seals stay", bare.contains("Lee Instructor") && bare.contains("\"witness_seal\": \""))
+        // Merging the photo-less file into the full logbook keeps the photo.
+        service(target).merge(service(target).prepareMerge(bare) as Prepared.Merge)
+        assertTrue(photo.contentEquals(target.backupDao().allWitnessSignoffs().single().photo))
     }
 
     @Test fun restoredLogbookWorksNormally() = runTest {

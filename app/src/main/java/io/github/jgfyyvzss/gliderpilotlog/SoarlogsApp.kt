@@ -14,6 +14,8 @@ import io.github.jgfyyvzss.gliderpilotlog.data.LogbookDatabase
 import io.github.jgfyyvzss.gliderpilotlog.data.LogbookRepository
 import io.github.jgfyyvzss.gliderpilotlog.data.SettingsRepository
 import io.github.jgfyyvzss.gliderpilotlog.data.TotalsService
+import io.github.jgfyyvzss.gliderpilotlog.data.WitnessPhoto
+import io.github.jgfyyvzss.gliderpilotlog.data.WitnessRepository
 import io.github.jgfyyvzss.gliderpilotlog.core.lxnav.FilePartialDownload
 import io.github.jgfyyvzss.gliderpilotlog.data.lxnav.BluetoothLoggers
 import io.github.jgfyyvzss.gliderpilotlog.data.weglide.AircraftCatalog
@@ -28,6 +30,8 @@ import kotlinx.coroutines.SupervisorJob
 class SoarlogsApp : Application() {
     val database by lazy { testDatabase ?: LogbookDatabase.build(this) }
     val repository by lazy { LogbookRepository(database) }
+    val witness by lazy { WitnessRepository(database) }
+    val witnessPhoto by lazy { WitnessPhoto(this) }
     val settings by lazy { SettingsRepository(this) }
     val filter = FilterStore()
     val totals by lazy { TotalsService(repository, settings) }

@@ -22,6 +22,6 @@
     { "field": "time", "width": 1.4, "title": ["In Com."], "roles": ["PIC", "MUTUAL"], "instruction": "when_pic", "split_hm": true },
     { "field": "gap", "width": 1.1 },
     { "field": "notes", "width": 6.8, "title": ["Remarks", "Exercise / Task / Turnpoints / Landing point / Km"] },
-    { "field": "blank", "width": 2.2, "title": ["Trainers", "Signature"] }
+    { "field": "witness", "width": 2.2, "title": ["Trainers", "Signature"] }
   ]
 }

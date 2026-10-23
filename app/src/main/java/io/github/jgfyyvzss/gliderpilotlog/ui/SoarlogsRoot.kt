@@ -56,6 +56,7 @@ import io.github.jgfyyvzss.gliderpilotlog.ui.settings.PdfExportScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.settings.SettingsScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.settings.SpreadsheetsScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.totals.TotalsScreen
+import io.github.jgfyyvzss.gliderpilotlog.ui.witness.WitnessSignScreen
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
 
@@ -78,6 +79,8 @@ import kotlinx.serialization.Serializable
 @Serializable data class FlightEditRoute(val id: String? = null, val igcSegment: Int = -1)
 @Serializable data class AirfieldEditRoute(val id: String? = null)
 @Serializable data class GliderEditRoute(val id: String? = null)
+/** Witness one flight ([flightId]) or a day's group ([date], YYYY-MM-DD). */
+@Serializable data class WitnessRoute(val flightId: String? = null, val date: String? = null)
 
 private data class TopLevel(val route: Any, @StringRes val label: Int, val icon: ImageVector)
 
@@ -127,6 +130,7 @@ private fun MainScreens() {
         destination?.hasRoute(IgcImportRoute::class) == true -> R.string.home_from_igc
         destination?.hasRoute(LoggerRoute::class) == true -> R.string.home_from_logger
         destination?.hasRoute(UploadRoute::class) == true -> R.string.home_upload
+        destination?.hasRoute(WitnessRoute::class) == true -> R.string.title_witness
         destination?.hasRoute(FlightEditRoute::class) == true ->
             if (entry?.toRoute<FlightEditRoute>()?.id == null) R.string.title_new_flight else R.string.title_flight
         destination?.hasRoute(AirfieldEditRoute::class) == true ->
@@ -186,11 +190,22 @@ private fun MainScreens() {
             }
             composable<TotalsRoute> { TotalsScreen() }
             composable<FlightsRoute> {
-                FlightListScreen(onOpen = { nav.navigate(FlightEditRoute(it)) }, onNew = { nav.navigate(FlightEditRoute()) })
+                FlightListScreen(
+                    onOpen = { nav.navigate(FlightEditRoute(it)) },
+                    onNew = { nav.navigate(FlightEditRoute()) },
+                    onWitnessDay = { nav.navigate(WitnessRoute(date = it)) },
+                )
             }
             composable<FlightEditRoute> {
                 val route = it.toRoute<FlightEditRoute>()
-                FlightEditScreen(id = route.id, igcSegment = route.igcSegment.takeIf { s -> s >= 0 }, onDone = { nav.popBackStack() })
+                FlightEditScreen(
+                    id = route.id, igcSegment = route.igcSegment.takeIf { s -> s >= 0 }, onDone = { nav.popBackStack() },
+                    onWitness = { flightId -> nav.navigate(WitnessRoute(flightId = flightId)) },
+                )
+            }
+            composable<WitnessRoute> {
+                val route = it.toRoute<WitnessRoute>()
+                WitnessSignScreen(flightId = route.flightId, date = route.date, onDone = { nav.popBackStack() })
             }
             composable<LoggerRoute> { LoggerScreen(forUpload = it.toRoute<LoggerRoute>().forUpload, onDone = { nav.popBackStack() }) }
             composable<UploadRoute> { UploadScreen(onFromLogger = { nav.navigate(LoggerRoute(forUpload = true)) }) }

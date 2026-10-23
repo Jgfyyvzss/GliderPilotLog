@@ -7,6 +7,7 @@ import io.github.jgfyyvzss.gliderpilotlog.core.Totals
 import java.io.File
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -30,6 +31,13 @@ class LogbookPdfTest {
         }
         assertEquals(20, template("gfa.json").rowsPerPage)
         assertEquals(297f to 210f, template("gfa.json").page.sizeMm())
+    }
+
+    @Test fun gfaSignatureColumnPrintsTheWitness() {
+        val col = template("gfa.json").columns.last()
+        assertEquals(Field.WITNESS, col.field)
+        assertEquals(listOf("Trainers", "Signature"), col.title)
+        assertFalse("not a time column, so never totalled", col.totals)
     }
 
     @Test fun badTemplatesAreRefusedWithTheirProblem() {

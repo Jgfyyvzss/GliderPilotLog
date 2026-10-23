@@ -55,10 +55,11 @@ class BackupFolder(
 
     /** Writes a backup now, prunes old ones and records the time. */
     suspend fun backUpNow(): BackupOutcome {
-        val uriText = settings.settings.first().backupFolderUri ?: return BackupOutcome.NoFolder
+        val s = settings.settings.first()
+        val uriText = s.backupFolderUri ?: return BackupOutcome.NoFolder
         val tree = Uri.parse(uriText)
         val started = now()
-        val text = backup.exportJson()
+        val text = backup.exportJson(includePhotos = s.backupWitnessPhotos)
         return withContext(Dispatchers.IO) {
             runCatching {
                 val parent = DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))

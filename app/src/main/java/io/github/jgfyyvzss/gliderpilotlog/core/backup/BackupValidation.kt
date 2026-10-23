@@ -35,6 +35,7 @@ object BackupValidation {
         dupIds(MsgKey.BK_TABLE_GLIDERS, file.gliders) { it.id }
         dupIds(MsgKey.BK_TABLE_FLIGHTS, file.flights) { it.id }
         dupIds(MsgKey.BK_TABLE_IMPORT_BATCHES, file.importBatches) { it.id }
+        dupIds(MsgKey.BK_TABLE_WITNESS_SIGNOFFS, file.witnessSignoffs) { it.id }
 
         val launchTypeIds = file.launchTypes.map { it.id }.toSet()
         val clubIds = file.clubs.map { it.id }.toSet()
@@ -86,6 +87,13 @@ object BackupValidation {
             val landing = f.landingTime?.let { ClockTime.parse(it) ?: run { p += msg(MsgKey.BK_BAD_LANDING_TIME, n); null } }
             if (launch != null && landing != null && ClockTime.minutesBetween(launch, landing) == null) p += msg(MsgKey.BK_LANDING_BEFORE_LAUNCH, n)
             ts(n, f.updatedAt); ts(n, f.deletedAt, nullable = true)
+        }
+        // Witness sign-offs: a missing photo or reference is repaired by BackupWitness, not refused here.
+        file.witnessSignoffs.forEach { s ->
+            val n = msg(MsgKey.BK_WITNESS, s.witnessName.ifBlank { s.id })
+            if (s.witnessName.isBlank()) p += msg(MsgKey.BK_NO_NAME, n)
+            if (!s.consentConfirmed) p += msg(MsgKey.BK_WITNESS_NO_CONSENT, n)
+            ts(n, s.signedAt); ts(n, s.updatedAt); ts(n, s.deletedAt, nullable = true)
         }
         file.openingBalances.forEach { b ->
             if (b.role !in roles) p += msg(MsgKey.BK_BALANCE_ROLE, b.role)

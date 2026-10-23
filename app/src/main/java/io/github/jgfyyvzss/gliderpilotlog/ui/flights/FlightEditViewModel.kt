@@ -62,8 +62,15 @@ class FlightEditViewModel(
     /** No airfield is near the IGC launch point, so the form offers to create one there. */
     var offerAirfieldAtLaunch by mutableStateOf(false)
         private set
+    /** The flight's saved date, for the witness card's "days after the flight". */
+    var savedDate by mutableStateOf<LocalDate?>(null)
+        private set
+    /** The witness's name while the form asks before a save changes a signed field. */
+    var witnessWarning by mutableStateOf<String?>(null)
+        private set
     /** Set once the pilot has seen the warnings, so the next save goes ahead. */
     private var warningsShownFor: FlightDraft? = null
+    private var witnessChangeConfirmedFor: FlightDraft? = null
     private var profileName = ""
     /** A launch type the pilot picked is never replaced by an airfield's default. */
     private var launchTypeChosen = id != null
@@ -88,6 +95,7 @@ class FlightEditViewModel(
             } else {
                 repo.flight(id)?.toDraft() ?: FlightDraft()
             }
+            savedDate = if (id == null) null else draft.date
             igc?.let { (segment, header) -> prefillFromIgc(segment, header) }
             draft.airfieldId?.let { airfieldClubs = repo.clubsFor(it) }
             loaded = true
@@ -264,12 +272,24 @@ class FlightEditViewModel(
             warningsShownFor = draft
             return@launch
         }
+        if (id != null && settings.value.witnessSignoff && witnessChangeConfirmedFor != draft) {
+            repo.witnessAffectedBy(id, draft)?.let { witnessWarning = it; return@launch }
+        }
         val (result, _) = repo.saveFlight(id, draft, if (igc != null) FlightSource.IGC else FlightSource.MANUAL)
         when (result) {
             is FlightValidation.Valid -> done = true
             is FlightValidation.Invalid -> { errors = result.errors; warnings = result.warnings }
         }
     }
+
+    /** The pilot agreed to change a witnessed flight's signed field; it will show as changed since witnessed. */
+    fun confirmWitnessChange() {
+        witnessChangeConfirmedFor = draft
+        witnessWarning = null
+        save()
+    }
+
+    fun dismissWitnessWarning() { witnessWarning = null }
 
     fun delete() = viewModelScope.launch {
         id?.let { repo.deleteFlight(it) }

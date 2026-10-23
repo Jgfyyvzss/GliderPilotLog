@@ -131,6 +131,14 @@
     <string name="msg_bk_balance_duplicate">Opening balance for %1$s appears more than once</string>
     <string name="msg_bk_log_no_collision">Log number %1$d is used by two different flights: %2$s and %3$s</string>
     <string name="msg_bk_duplicate_key">%1$s appears more than once with different ids</string>
+    <string name="msg_bk_table_witness_signoffs">Witness sign-offs</string>
+    <string name="msg_bk_witness">Witness sign-off by %1$s</string>
+    <string name="msg_bk_witness_no_consent">%1$s has no consent confirmed</string>
+    <string name="msg_bk_witness_dangling">%1$s refers to a witness sign-off that is not in the file, so its witness mark was removed</string>
+    <string name="msg_bk_photo_not_base64">%1$s: the photo is unreadable and was left out</string>
+    <string name="msg_bk_photo_not_jpeg">%1$s: the photo is not a JPEG and was left out</string>
+    <string name="msg_bk_photo_too_large">%1$s: the photo is over 100 KB and was left out</string>
+    <string name="msg_bk_photo_hash">%1$s: the photo does not match its hash and was left out</string>
 
     <!-- WeGlide -->
     <string name="msg_weglide_status">WeGlide answered %1$d: %2$s</string>
@@ -145,9 +153,14 @@
     <string name="msg_lxnav_connect_failed">Could not connect to the logger. Check it is switched on and nearby.</string>
     <string name="msg_lxnav_no_logbook">The logger did not send its list of flights</string>
     <string name="msg_lxnav_gave_up">The download stopped at line %1$d. Try again to continue from there.</string>
+    <string name="msg_witness_name_required">Enter the witness\'s name</string>
+    <string name="msg_witness_no_flights">Tick at least one flight to witness</string>
+    <string name="msg_witness_is_pilot">The witness cannot be you: the name or number matches your profile</string>
+    <string name="msg_witness_not_pic">The pilot in command of these Student flights is %1$s, not the witness</string>
     <string name="msg_pdf_template_unreadable">This is not a soarlogs PDF template</string>
     <string name="msg_pdf_template_newer">This template needs a newer version of soarlogs</string>
     <!-- The JSON field name stays as written in the file -->
     <string name="msg_pdf_template_problem">The template has a problem with %1$s</string>
     <string name="msg_lxnav_size_mismatch">The downloaded file has %1$d bytes but the logger lists %2$d, so it was discarded</string>
+    <string name="msg_witness_photo_required">Take a photo of the witness. It is the evidence of who witnessed the flights.</string>
 </resources>

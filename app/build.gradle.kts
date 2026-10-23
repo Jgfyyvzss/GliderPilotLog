@@ -1,4 +1,4 @@
-plugins {
+gliderpilotplugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
@@ -74,6 +74,10 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
+    // Declared directly so the app and its device tests use the same coroutines version as kotlinx-coroutines-test.
+    implementation(libs.kotlinx.coroutines.android)
+    // Reads which way up a camera photo is, so a witness photo can be turned upright before it is shrunk.
+    implementation(libs.androidx.exifinterface)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

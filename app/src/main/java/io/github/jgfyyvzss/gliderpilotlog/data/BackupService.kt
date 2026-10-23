@@ -16,6 +16,9 @@ import io.github.jgfyyvzss.gliderpilotlog.core.backup.BackupOpeningBalance
 import io.github.jgfyyvzss.gliderpilotlog.core.backup.BackupSchedule
 import io.github.jgfyyvzss.gliderpilotlog.core.backup.BackupTime
 import io.github.jgfyyvzss.gliderpilotlog.core.backup.BackupValidation
+import io.github.jgfyyvzss.gliderpilotlog.core.backup.BackupWitness
+import io.github.jgfyyvzss.gliderpilotlog.core.backup.BackupWitnessSignoff
+import io.github.jgfyyvzss.gliderpilotlog.core.backup.WitnessSummary
 import io.github.jgfyyvzss.gliderpilotlog.core.backup.DecodeResult
 import io.github.jgfyyvzss.gliderpilotlog.core.backup.MergeSummary
 import java.util.concurrent.Callable
@@ -26,10 +29,10 @@ import kotlinx.coroutines.withContext
 /** What a backup file holds, shown before Restore or Merge commits. */
 data class BackupContents(val flights: Int, val gliders: Int, val airfields: Int, val clubs: Int, val exportedAt: String)
 
-/** A checked file, ready to commit. */
+/** A checked file, ready to commit. [witness] is the seal summary and anything repaired, shown with the contents. */
 sealed interface Prepared {
-    data class Restore(val file: BackupFile, val contents: BackupContents) : Prepared
-    data class Merge(val merged: BackupFile, val contents: BackupContents, val summary: MergeSummary) : Prepared
+    data class Restore(val file: BackupFile, val contents: BackupContents, val witness: WitnessSummary) : Prepared
+    data class Merge(val merged: BackupFile, val contents: BackupContents, val summary: MergeSummary, val witness: WitnessSummary) : Prepared
     /** Nothing is written. [problems] lists every reason, such as a log number collision. */
     data class Refused(val problems: List<Msg>) : Prepared
 }
@@ -57,22 +60,28 @@ class BackupService(
         return BackupSchedule.isDue(changesSinceLastBackup(), s.lastBackupAt, now(), s.backupAfterChanges, s.backupAfterDays)
     }
 
-    /** The whole logbook as backup text, including archived records, tombstones and the backed-up settings. */
-    suspend fun exportJson(): String = BackupCodec.encode(snapshot())
+    /**
+     * The whole logbook as backup text, including archived records, tombstones and the backed-up settings. Without
+     * [includePhotos] the witness photos are left out; names, numbers, hashes and seals stay.
+     */
+    suspend fun exportJson(includePhotos: Boolean = true): String = BackupCodec.encode(snapshot(includePhotos))
 
-    suspend fun snapshot(): BackupFile {
+    suspend fun snapshot(includePhotos: Boolean = true): BackupFile {
         val s = settings.settings.first()
         return withContext(Dispatchers.IO) {
             db.runInTransaction(Callable {
                 val links = dao.allAirfieldClubs().groupBy({ it.airfieldId }, { it.clubId })
+                val signoffs = dao.allWitnessSignoffs().map { it.toBackup(includePhotos) }
                 BackupFile(
                     exportedAt = BackupTime.toIso(now()),
                     appVersion = appVersion,
+                    containsPhotos = signoffs.any { it.photo != null },
                     launchTypes = dao.allLaunchTypes().map { it.toBackup() },
                     clubs = dao.allClubs().map { it.toBackup() },
                     airfields = dao.allAirfields().map { it.toBackup(links[it.id].orEmpty()) },
                     gliders = dao.allGliders().map { it.toBackup() },
                     flights = dao.allFlights().map { it.toBackup() },
+                    witnessSignoffs = signoffs,
                     openingBalances = dao.allOpeningBalances().map { it.toBackup() },
                     importBatches = dao.allImportBatches().map { it.toBackup() },
                     settings = s.toBackup(),
@@ -97,7 +106,9 @@ class BackupService(
         }
         if (!isEmpty()) return Prepared.Refused(listOf(msg(MsgKey.BACKUP_NEEDS_EMPTY)))
         val problems = BackupValidation.validate(file)
-        return if (problems.isEmpty()) Prepared.Restore(file, contents(file)) else Prepared.Refused(problems)
+        if (problems.isNotEmpty()) return Prepared.Refused(problems)
+        val review = BackupWitness.review(file)
+        return Prepared.Restore(review.file, contents(review.file), review.summary)
     }
 
     /** Reads a file, merges it with this phone's logbook in memory, and checks the result. */
@@ -107,9 +118,14 @@ class BackupService(
             is DecodeResult.Ok -> d.file
         }
         BackupValidation.validate(incoming).takeIf { it.isNotEmpty() }?.let { return Prepared.Refused(it) }
-        val result = BackupMerge.merge(snapshot(), incoming)
+        // Bad photos and dangling references in the file are reported first; the seals are counted on the result.
+        val cleaned = BackupWitness.review(incoming)
+        val result = BackupMerge.merge(snapshot(), cleaned.file)
         val problems = BackupValidation.validate(result.merged)
-        return if (problems.isEmpty()) Prepared.Merge(result.merged, contents(incoming), result.summary) else Prepared.Refused(problems)
+        if (problems.isNotEmpty()) return Prepared.Refused(problems)
+        val review = BackupWitness.review(result.merged)
+        val witness = review.summary.copy(notes = (cleaned.summary.notes + review.summary.notes).distinct())
+        return Prepared.Merge(review.file, contents(incoming), result.summary, witness)
     }
 
     /** Commits a prepared Restore: the logbook and every backed-up setting, including the pilot profile. */
@@ -131,6 +147,7 @@ class BackupService(
             val sql = db.openHelper.writableDatabase
             SchemaSql.dropPartialIndexes(sql::execSQL)
             dao.deleteFlights()
+            dao.deleteWitnessSignoffs()
             dao.deleteAirfieldClubs()
             dao.deleteAirfields()
             dao.deleteGliders()
@@ -145,7 +162,9 @@ class BackupService(
             dao.insertAirfieldClubs(file.airfields.flatMap { a -> a.clubIds.distinct().map { AirfieldClubEntity(a.id, it) } })
             dao.insertGliders(file.gliders.map { it.toEntity() })
             dao.insertImportBatches(file.importBatches.map { it.toEntity() })
+            dao.insertWitnessSignoffs(file.witnessSignoffs.map { it.toEntity() })
             dao.insertFlights(file.flights.map { it.toEntity() })
+            dao.deleteUnreferencedSignoffs(now())
             dao.insertOpeningBalances(file.openingBalances.map { it.toEntity() })
             SchemaSql.partialUniqueIndexes.forEach(sql::execSQL)
         })
@@ -185,11 +204,20 @@ private fun BackupGlider.toEntity() = GliderEntity(
 
 private fun FlightEntity.toBackup() = BackupFlight(
     id, logNo, date, durationMinutes, gliderId, airfieldId, clubId, launchTypeId, role, picName, launchTime, landingTime,
-    landingAirfieldId, landingPlace, notes, source, importBatchId, updatedAt.iso(), deletedAt?.iso(),
+    landingAirfieldId, landingPlace, notes, source, importBatchId, updatedAt.iso(), deletedAt?.iso(), witnessSignoffId, witnessSeal,
 )
 private fun BackupFlight.toEntity() = FlightEntity(
     id, logNo, date, durationMinutes, gliderId, airfieldId, clubId, launchTypeId, role, picName, launchTime, landingTime,
-    landingAirfieldId, landingPlace, notes, source, importBatchId, updatedAt.ms(), deletedAt?.ms(),
+    landingAirfieldId, landingPlace, notes, source, importBatchId, updatedAt.ms(), deletedAt?.ms(), witnessSignoffId, witnessSeal,
+)
+
+private fun WitnessSignoffEntity.toBackup(includePhoto: Boolean) = BackupWitnessSignoff(
+    id, witnessName, witnessIdentifier, signedAt.iso(), photo?.takeIf { includePhoto }?.let(BackupWitness::encodePhoto),
+    photoSha256, photoRemoved, sealVersion, consentConfirmed, updatedAt.iso(), deletedAt?.iso(),
+)
+private fun BackupWitnessSignoff.toEntity() = WitnessSignoffEntity(
+    id, witnessName, witnessIdentifier, signedAt.ms(), photo?.let(BackupWitness::decodePhoto),
+    photoSha256, photoRemoved, sealVersion, consentConfirmed, updatedAt.ms(), deletedAt?.ms(),
 )
 
 private fun OpeningBalanceEntity.toBackup() = BackupOpeningBalance(role, asOfDate, minutes, flights, updatedAt.iso())

@@ -97,6 +97,14 @@ fun MsgKey.res(): Int = when (this) {
     MsgKey.BK_TABLE_AIRFIELDS -> R.string.msg_bk_table_airfields
     MsgKey.BK_TABLE_GLIDERS -> R.string.msg_bk_table_gliders
     MsgKey.BK_TABLE_FLIGHTS -> R.string.msg_bk_table_flights
+    MsgKey.BK_TABLE_WITNESS_SIGNOFFS -> R.string.msg_bk_table_witness_signoffs
+    MsgKey.BK_WITNESS -> R.string.msg_bk_witness
+    MsgKey.BK_WITNESS_NO_CONSENT -> R.string.msg_bk_witness_no_consent
+    MsgKey.BK_WITNESS_DANGLING -> R.string.msg_bk_witness_dangling
+    MsgKey.BK_PHOTO_NOT_BASE64 -> R.string.msg_bk_photo_not_base64
+    MsgKey.BK_PHOTO_NOT_JPEG -> R.string.msg_bk_photo_not_jpeg
+    MsgKey.BK_PHOTO_TOO_LARGE -> R.string.msg_bk_photo_too_large
+    MsgKey.BK_PHOTO_HASH -> R.string.msg_bk_photo_hash
     MsgKey.BK_TABLE_IMPORT_BATCHES -> R.string.msg_bk_table_import_batches
     MsgKey.BK_LAUNCH_TYPE -> R.string.msg_bk_launch_type
     MsgKey.BK_CLUB -> R.string.msg_bk_club
@@ -152,6 +160,11 @@ fun MsgKey.res(): Int = when (this) {
     MsgKey.PDF_TEMPLATE_UNREADABLE -> R.string.msg_pdf_template_unreadable
     MsgKey.PDF_TEMPLATE_NEWER -> R.string.msg_pdf_template_newer
     MsgKey.PDF_TEMPLATE_PROBLEM -> R.string.msg_pdf_template_problem
+    MsgKey.WITNESS_NAME_REQUIRED -> R.string.msg_witness_name_required
+    MsgKey.WITNESS_NO_FLIGHTS -> R.string.msg_witness_no_flights
+    MsgKey.WITNESS_IS_PILOT -> R.string.msg_witness_is_pilot
+    MsgKey.WITNESS_NOT_PIC -> R.string.msg_witness_not_pic
+    MsgKey.WITNESS_PHOTO_REQUIRED -> R.string.msg_witness_photo_required
 }
 
 /** A message in the pilot's language. Arguments that are messages, roles or dates are shown in that language too. */

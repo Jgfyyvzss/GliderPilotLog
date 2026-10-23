@@ -115,6 +115,7 @@ data class ImportBatchEntity(
         ForeignKey(entity = ClubEntity::class, parentColumns = ["id"], childColumns = ["club_id"], onDelete = ForeignKey.RESTRICT),
         ForeignKey(entity = LaunchTypeEntity::class, parentColumns = ["id"], childColumns = ["launch_type_id"], onDelete = ForeignKey.RESTRICT),
         ForeignKey(entity = AirfieldEntity::class, parentColumns = ["id"], childColumns = ["landing_airfield_id"], onDelete = ForeignKey.RESTRICT),
+        ForeignKey(entity = WitnessSignoffEntity::class, parentColumns = ["id"], childColumns = ["witness_signoff_id"], onDelete = ForeignKey.RESTRICT),
     ],
     indices = [
         Index("date"),
@@ -125,6 +126,7 @@ data class ImportBatchEntity(
         Index("import_batch_id"),
         Index("launch_type_id"),
         Index("landing_airfield_id"),
+        Index("witness_signoff_id"),
     ],
 )
 data class FlightEntity(
@@ -147,7 +149,39 @@ data class FlightEntity(
     @ColumnInfo(name = "import_batch_id") val importBatchId: String? = null,
     @ColumnInfo(name = "updated_at") val updatedAt: Long,
     @ColumnInfo(name = "deleted_at") val deletedAt: Long? = null,
+    /** The sign-off that witnessed this flight; set together with [witnessSeal], or both null. */
+    @ColumnInfo(name = "witness_signoff_id") val witnessSignoffId: String? = null,
+    /** The SHA-256 seal over the signed fields when witnessed; see core/witness/WitnessSeal. */
+    @ColumnInfo(name = "witness_seal") val witnessSeal: String? = null,
 )
+
+/**
+ * One witness sign-off, which can cover many flights (docs/Witness_Sign-Off.md). The name and number are never
+ * edited after signing; a correction means removing the mark and witnessing again. The photo is a small JPEG kept
+ * in the row; removing it keeps its hash, so the seals stay valid.
+ */
+@Entity(tableName = "witness_signoff")
+class WitnessSignoffEntity(
+    @PrimaryKey val id: String,
+    @ColumnInfo(name = "witness_name") val witnessName: String,
+    /** The licence or membership number, when the witness gave one. */
+    @ColumnInfo(name = "witness_identifier") val witnessIdentifier: String? = null,
+    @ColumnInfo(name = "signed_at") val signedAt: Long,
+    @ColumnInfo(typeAffinity = ColumnInfo.BLOB) val photo: ByteArray? = null,
+    @ColumnInfo(name = "photo_sha256") val photoSha256: String? = null,
+    @ColumnInfo(name = "photo_removed") val photoRemoved: Boolean = false,
+    @ColumnInfo(name = "seal_version") val sealVersion: Int,
+    @ColumnInfo(name = "consent_confirmed") val consentConfirmed: Boolean,
+    @ColumnInfo(name = "updated_at") val updatedAt: Long,
+    @ColumnInfo(name = "deleted_at") val deletedAt: Long? = null,
+) {
+    fun copy(
+        photo: ByteArray? = this.photo,
+        photoRemoved: Boolean = this.photoRemoved,
+        updatedAt: Long = this.updatedAt,
+        deletedAt: Long? = this.deletedAt,
+    ) = WitnessSignoffEntity(id, witnessName, witnessIdentifier, signedAt, photo, photoSha256, photoRemoved, sealVersion, consentConfirmed, updatedAt, deletedAt)
+}
 
 /** Where a flight record came from. */
 enum class FlightSource { MANUAL, IGC, CSV }
