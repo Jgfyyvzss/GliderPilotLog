@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- WeGlide's own aircraft names are shown as WeGlide supplies them and are never translated. -->
+<resources>
+    <string name="weglide_list">WeGlide-Flugzeugliste</string>
+    <string name="weglide_list_bundled">%1$d Flugzeuge, die in der App enthaltene Kopie</string>
+    <string name="weglide_list_updated">%1$d Flugzeuge, aktualisiert %2$s</string>
+    <string name="weglide_loading">Lädt</string>
+    <string name="weglide_update">Aktualisieren</string>
+    <string name="weglide_updating">Aktualisiere</string>
+    <string name="weglide_updated">Aktualisiert: %1$d Flugzeuge</string>
+    <string name="weglide_not_updated">Nicht aktualisiert: %1$s</string>
+    <string name="weglide_type">WeGlide-Typ</string>
+    <string name="weglide_type_not_set">Nicht festgelegt. Der WeGlide-Upload braucht ihn, damit WeGlide die Variante nicht raten muss.</string>
+    <string name="weglide_type_unknown">WeGlide-Flugzeug %1$s, nicht in der aktuellen Liste</string>
+    <string name="weglide_type_stays">Der Typ bleibt %1$s.</string>
+    <string name="weglide_type_changes">Der Typ wird von %1$s in %2$s geändert. Der alte Text wird nicht aufbewahrt, der Typ lässt sich aber weiterhin von Hand bearbeiten.</string>
+    <string name="weglide_blank">(leer)</string>
+    <string name="weglide_aircraft">WeGlide-Flugzeug</string>
+    <string name="weglide_search">Suchen</string>
+    <string name="weglide_no_match">Keine Treffer. Versuche es mit weniger Buchstaben, zum Beispiel ASK.</string>
+</resources>

@@ -74,7 +74,7 @@ fun IgcImportScreen(onImport: (Int) -> Unit, onFinish: () -> Unit) {
                     ((s as? IgcImportState.Failed)?.message ?: msg(MsgKey.IGC_UNREADABLE)).text(),
                     color = MaterialTheme.colorScheme.error,
                 )
-                Button(onClick = pick, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.igc_choose_other)) }
+                OutlinedButton(onClick = pick, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.igc_choose_other)) }
             }
             is IgcImportState.Ready -> {
                 if (s.segments.size > 1) Text(stringResource(R.string.igc_segments, s.segments.size))
@@ -87,11 +87,11 @@ fun IgcImportScreen(onImport: (Int) -> Unit, onFinish: () -> Unit) {
                         if (i in s.imported) {
                             Text(stringResource(R.string.igc_imported), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         } else {
-                            Button(onClick = { onImport(i) }) { Text(stringResource(R.string.igc_import)) }
+                            OutlinedButton(onClick = { onImport(i) }) { Text(stringResource(R.string.igc_import)) }
                         }
                     }
                 }
-                OutlinedButton(onClick = { app.igcImport.clear(); onFinish() }, modifier = Modifier.fillMaxWidth()) {
+                Button(onClick = { app.igcImport.clear(); onFinish() }, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.igc_done))
                 }
             }

@@ -2,14 +2,17 @@ package io.github.jgfyyvzss.gliderpilotlog.core
 
 import java.time.LocalDate
 
-/** The Flights list and Totals filter. Every bound is inclusive and null means no restriction. */
+/**
+ * The Flights list and Totals filter. Every bound is inclusive and null means no restriction. Glider, airfield, club
+ * and role each take any number of choices: a flight matches any one of them, and an empty set means no restriction.
+ */
 data class FlightFilter(
-    val gliderId: String? = null,
-    val airfieldId: String? = null,
-    val clubId: String? = null,
+    val gliderIds: Set<String> = emptySet(),
+    val airfieldIds: Set<String> = emptySet(),
+    val clubIds: Set<String> = emptySet(),
     val dateFrom: LocalDate? = null,
     val dateTo: LocalDate? = null,
-    val role: Role? = null,
+    val roles: Set<Role> = emptySet(),
     val logNoFrom: Int? = null,
     val logNoTo: Int? = null,
     val launchFrom: ClockTime? = null,
@@ -33,12 +36,15 @@ object FilterSql {
             parts += sql
             args.addAll(values)
         }
-        filter.gliderId?.let { add("f.glider_id = ?", it) }
-        filter.airfieldId?.let { add("f.airfield_id = ?", it) }
-        filter.clubId?.let { add("f.club_id = ?", it) }
+        fun anyOf(column: String, values: Collection<String>) {
+            if (values.isNotEmpty()) add("$column IN (${values.joinToString(",") { "?" }})", *values.sorted().toTypedArray())
+        }
+        anyOf("f.glider_id", filter.gliderIds)
+        anyOf("f.airfield_id", filter.airfieldIds)
+        anyOf("f.club_id", filter.clubIds)
         filter.dateFrom?.let { add("f.date >= ?", it.toString()) }
         filter.dateTo?.let { add("f.date <= ?", it.toString()) }
-        filter.role?.let { add("f.role = ?", it.name) }
+        anyOf("f.role", filter.roles.map { it.name })
         filter.logNoFrom?.let { add("f.log_no >= ?", it) }
         filter.logNoTo?.let { add("f.log_no <= ?", it) }
         filter.launchFrom?.let { add("f.launch_time >= ?", it.toString()) }

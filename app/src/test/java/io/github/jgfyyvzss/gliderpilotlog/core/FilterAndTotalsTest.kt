@@ -15,19 +15,26 @@ class FilterAndTotalsTest {
 
     @Test fun everyCriterionBecomesAnInclusiveCondition() {
         val f = FlightFilter(
-            gliderId = "g", airfieldId = "a", clubId = "c",
+            gliderIds = setOf("g"), airfieldIds = setOf("a"), clubIds = setOf("c"),
             dateFrom = LocalDate.of(2026, 1, 1), dateTo = LocalDate.of(2026, 12, 31),
-            role = Role.INSTRUCTOR, logNoFrom = 100, logNoTo = 200,
+            roles = setOf(Role.INSTRUCTOR), logNoFrom = 100, logNoTo = 200,
             launchFrom = ClockTime.parse("10:00"), launchTo = ClockTime.parse("12:30"),
         )
         assertTrue(f.isActive)
         val w = FilterSql.where(f)
         assertEquals(
-            "f.deleted_at IS NULL AND f.glider_id = ? AND f.airfield_id = ? AND f.club_id = ? AND f.date >= ? AND " +
-                "f.date <= ? AND f.role = ? AND f.log_no >= ? AND f.log_no <= ? AND f.launch_time >= ? AND f.launch_time <= ?",
+            "f.deleted_at IS NULL AND f.glider_id IN (?) AND f.airfield_id IN (?) AND f.club_id IN (?) AND f.date >= ? AND " +
+                "f.date <= ? AND f.role IN (?) AND f.log_no >= ? AND f.log_no <= ? AND f.launch_time >= ? AND f.launch_time <= ?",
             w.sql,
         )
         assertEquals(listOf("g", "a", "c", "2026-01-01", "2026-12-31", "INSTRUCTOR", 100, 200, "10:00", "12:30"), w.args)
+    }
+
+    @Test fun severalChoicesMatchAnyOfThem() {
+        val w = FilterSql.where(FlightFilter(gliderIds = setOf("g2", "g1"), roles = setOf(Role.STUDENT, Role.PIC)))
+        assertEquals("f.deleted_at IS NULL AND f.glider_id IN (?,?) AND f.role IN (?,?)", w.sql)
+        assertEquals(listOf("g1", "g2", "PIC", "STUDENT"), w.args)
+        assertFalse(FlightFilter(gliderIds = emptySet()).isActive)
     }
 
     @Test fun singleCriterionHasOneArgument() {

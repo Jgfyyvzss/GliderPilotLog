@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Words used on many screens, roles and the seeded launch types. -->
+<resources>
+    <string name="common_save">Speichern</string>
+    <string name="common_cancel">Abbrechen</string>
+    <string name="common_ok">OK</string>
+    <string name="common_close">Schließen</string>
+    <string name="common_clear">Zurücksetzen</string>
+    <string name="common_delete">Löschen</string>
+    <string name="common_add">Hinzufügen</string>
+    <string name="common_new">Neu</string>
+    <string name="common_back">Zurück</string>
+    <string name="common_choose">Auswählen</string>
+    <string name="common_none">Keine</string>
+    <string name="common_any">Beliebig</string>
+    <string name="common_name">Name</string>
+    <string name="common_archived">Archiviert</string>
+    <string name="common_incomplete">Unvollständig</string>
+    <string name="common_hours">Stunden</string>
+    <string name="common_flights">Flüge</string>
+    <string name="common_flights_optional">Flüge (optional)</string>
+    <string name="common_date">Datum</string>
+    <string name="common_as_of">Stand</string>
+    <string name="common_nothing_changed">Es wurde nichts geändert: %1$s</string>
+    <string name="common_never">nie</string>
+
+    <string name="picker_empty">Noch nichts zur Auswahl. Lege zuerst einen Eintrag an.</string>
+    <!-- For example "+ New glider" at the top of a picker list. -->
+    <string name="picker_add_new">+ %1$s</string>
+
+    <!-- Roles. The stored and exported names (PIC, STUDENT, …) never change. -->
+    <string name="role_pic">PIC</string>
+    <string name="role_student">Flugschüler</string>
+    <string name="role_instructor">Fluglehrer</string>
+    <string name="role_coach">Coach</string>
+    <string name="role_mutual">Gegenseitig</string>
+    <string name="role_dual">Doppelsteuer</string>
+
+    <!-- The seeded launch types, shown in the pilot's language until renamed. -->
+    <string name="launch_type_aero">F-Schlepp</string>
+    <string name="launch_type_winch">Winde</string>
+    <string name="launch_type_self">Eigenstart</string>
+    <string name="launch_type_auto">Autoschlepp</string>
+</resources>

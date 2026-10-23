@@ -11,15 +11,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -40,6 +44,7 @@ import io.github.jgfyyvzss.gliderpilotlog.ui.gliders.pickerLabel
 import io.github.jgfyyvzss.gliderpilotlog.ui.text
 import io.github.jgfyyvzss.gliderpilotlog.ui.uiText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -162,8 +167,6 @@ fun LogbookCalculatorSheet(gliderId: String, day: LocalDate?, onDismiss: () -> U
     var pickDate by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(vm.saved) { if (vm.saved) onDismiss() }
     val display = settings.hoursDisplay
-    val decimal = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-    val number = KeyboardOptions(keyboardType = KeyboardType.Number)
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(
@@ -171,7 +174,11 @@ fun LogbookCalculatorSheet(gliderId: String, day: LocalDate?, onDismiss: () -> U
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             val g = vm.glider ?: return@Column
-            Text(stringResource(R.string.logbook_title, g.pickerLabel()), style = MaterialTheme.typography.titleMedium)
+            // Closing is the standard ✕ in the corner, so Save has the full width in every language.
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.logbook_title, g.pickerLabel()), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, contentDescription = stringResource(R.string.common_close)) }
+            }
             Text(stringResource(R.string.logbook_intro),
                 style = MaterialTheme.typography.bodySmall)
 
@@ -187,33 +194,27 @@ fun LogbookCalculatorSheet(gliderId: String, day: LocalDate?, onDismiss: () -> U
                 }
             }
 
-            Text(stringResource(if (vm.isManual) R.string.logbook_flying_to_add else R.string.logbook_day_total), style = MaterialTheme.typography.titleSmall)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(vm.dayText, { vm.dayText = it; vm.changed() }, label = { Text(stringResource(R.string.common_hours)) }, singleLine = true,
-                    keyboardOptions = decimal, supportingText = hint(vm.dayText, display), visualTransformation = ColonTransformation, modifier = Modifier.weight(1f))
-                OutlinedTextField(vm.dayFlightsText, { vm.dayFlightsText = it.filter(Char::isDigit); vm.changed() }, label = { Text(stringResource(R.string.common_flights)) },
-                    singleLine = true, keyboardOptions = number, modifier = Modifier.weight(1f))
-            }
-            Text(stringResource(R.string.logbook_extra), style = MaterialTheme.typography.titleSmall)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(vm.extraText, { vm.extraText = it; vm.changed() }, label = { Text(stringResource(R.string.common_hours)) }, singleLine = true,
-                    keyboardOptions = decimal, supportingText = hint(vm.extraText, display), visualTransformation = ColonTransformation, modifier = Modifier.weight(1f))
-                OutlinedTextField(vm.extraFlightsText, { vm.extraFlightsText = it.filter(Char::isDigit); vm.changed() }, label = { Text(stringResource(R.string.common_flights)) },
-                    singleLine = true, keyboardOptions = number, modifier = Modifier.weight(1f))
-            }
-
-            Text(stringResource(R.string.logbook_before), style = MaterialTheme.typography.titleSmall)
+            // A small spreadsheet, like the sum on paper: each row's flights and hours, then the total.
+            val c = vm.calc()
+            TableRow(
+                label = { },
+                flights = { Text(stringResource(R.string.logbook_col_flights), style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth()) },
+                hours = { Text(stringResource(R.string.common_hours), style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth()) },
+            )
+            FigureRow(stringResource(R.string.logbook_row_day), vm.dayFlightsText, { vm.dayFlightsText = it; vm.changed() }, vm.dayText, { vm.dayText = it; vm.changed() })
+            FigureRow(stringResource(R.string.logbook_row_other), vm.extraFlightsText, { vm.extraFlightsText = it; vm.changed() }, vm.extraText, { vm.extraText = it; vm.changed() })
+            FigureRow(stringResource(R.string.logbook_row_last), vm.beforeFlightsText, { vm.beforeFlightsText = it; vm.changed() }, vm.beforeText, { vm.beforeText = it; vm.changed() })
+            HorizontalDivider()
+            TableRow(
+                label = { Text(stringResource(R.string.logbook_row_total), fontWeight = FontWeight.Bold) },
+                flights = { Text(c?.newFlights?.toString() ?: "", fontWeight = FontWeight.Bold, textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth()) },
+                hours = { Text(c?.let { HoursFormat.format(it.newMinutes, display) } ?: "?", fontWeight = FontWeight.Bold, textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth()) },
+            )
             Text(
                 g.logbookTotalDate?.let { stringResource(R.string.logbook_before_dated, LocalDate.parse(it).shortText()) }
                     ?: stringResource(R.string.logbook_before_none),
                 style = MaterialTheme.typography.bodySmall,
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(vm.beforeText, { vm.beforeText = it; vm.changed() }, label = { Text(stringResource(R.string.common_hours)) }, singleLine = true,
-                    keyboardOptions = decimal, supportingText = hint(vm.beforeText, display), visualTransformation = ColonTransformation, modifier = Modifier.weight(1f))
-                OutlinedTextField(vm.beforeFlightsText, { vm.beforeFlightsText = it.filter(Char::isDigit); vm.changed() },
-                    label = { Text(stringResource(R.string.common_flights_optional)) }, singleLine = true, keyboardOptions = number, modifier = Modifier.weight(1f))
-            }
 
             if (vm.isManual) {
                 Box(Modifier.fillMaxWidth()) {
@@ -222,16 +223,6 @@ fun LogbookCalculatorSheet(gliderId: String, day: LocalDate?, onDismiss: () -> U
                 }
             }
 
-            HorizontalDivider()
-            val c = vm.calc()
-            Text(
-                when {
-                    c == null -> stringResource(R.string.logbook_new_total_check)
-                    c.newFlights == null -> stringResource(R.string.logbook_new_total, HoursFormat.format(c.newMinutes, display))
-                    else -> stringResource(R.string.logbook_new_total_flights, HoursFormat.format(c.newMinutes, display), c.newFlights!!)
-                },
-                style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
-            )
             if (vm.mayAlreadyInclude) {
                 Text(
                     stringResource(
@@ -242,11 +233,8 @@ fun LogbookCalculatorSheet(gliderId: String, day: LocalDate?, onDismiss: () -> U
                 )
             }
             vm.error?.let { Text(it.text(), color = MaterialTheme.colorScheme.error) }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.common_close)) }
-                Button(onClick = vm::save, enabled = c != null, modifier = Modifier.weight(1f)) {
-                    Text(stringResource(if (vm.mayAlreadyInclude && vm.warningSeen) R.string.flight_save_anyway else R.string.logbook_save))
-                }
+            Button(onClick = vm::save, enabled = c != null, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(if (vm.mayAlreadyInclude && vm.warningSeen) R.string.flight_save_anyway else R.string.logbook_save))
             }
         }
     }
@@ -266,12 +254,37 @@ fun LogbookCalculatorSheet(gliderId: String, day: LocalDate?, onDismiss: () -> U
     }
 }
 
-/** Shows what a typed figure means, for example 123456 as = 1234:56. */
-private fun hint(text: String, display: HoursDisplay): (@Composable () -> Unit)? {
-    if (text.isBlank()) return null
-    val m = LogbookCalculator.parseHours(text) ?: return { Text(stringResource(R.string.logbook_hours_hint)) }
-    val shown = HoursFormat.format(m, display)
-    // The field already shows the colon, so the result is only spelled out when it reads differently.
-    if (ColonTransformation.display(text.trim()) == shown) return null
-    return { Text("= $shown") }
+/** One row of the table: a label, then the flights and hours columns, which line up on every row. */
+@Composable
+private fun TableRow(label: @Composable () -> Unit, flights: @Composable () -> Unit, hours: @Composable () -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.weight(1.1f)) { label() }
+        Box(Modifier.weight(0.9f)) { flights() }
+        Box(Modifier.weight(1.2f)) { hours() }
+    }
+}
+
+/**
+ * A row of figures to type. Hours take digits with the last two as minutes, H:MM or decimal hours; a figure that
+ * cannot be read is marked, and the Total row shows what the others add up to.
+ */
+@Composable
+private fun FigureRow(label: String, flights: String, onFlights: (String) -> Unit, hours: String, onHours: (String) -> Unit) {
+    TableRow(
+        label = { Text(label) },
+        flights = {
+            OutlinedTextField(
+                flights, { onFlights(it.filter(Char::isDigit)) }, singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.End), modifier = Modifier.fillMaxWidth(),
+            )
+        },
+        hours = {
+            OutlinedTextField(
+                hours, onHours, singleLine = true, isError = LogbookCalculator.parseHours(hours) == null,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), visualTransformation = ColonTransformation,
+                textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.End), modifier = Modifier.fillMaxWidth(),
+            )
+        },
+    )
 }

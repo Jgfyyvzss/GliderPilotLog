@@ -127,6 +127,20 @@ class CsvTest {
         assertTrue(text.startsWith(Csv.BOM + FlightCsv.exportColumns.joinToString(",")))
     }
 
+    @Test fun archivedColumnIsReadAndWritten() {
+        val g = GliderCsv.parse("registration,type,archived\r\nGZY,Junior,YES\r\nBLNK,Blanik,\r\nKA6,Ka 6,no\r\nX,Y,maybe\r\n", emptySet())
+        assertEquals(listOf(true, false, false), g.records.map { it.archived })
+        assertEquals(listOf("Row 5, archived: found maybe, expected yes, no or blank"), g.errors.map { it.message.english() })
+        val a = AirfieldCsv.parse("name,archived\r\nYBLA,yes\r\nYMBT,\r\n", emptySet())
+        assertEquals(listOf(true, false), a.records.map { it.archived })
+
+        val gliders = GliderCsv.export(listOf(GliderCsv.ExportRow("GZY", "Junior", null, null, archived = true)))
+        assertEquals(listOf(true), GliderCsv.parse(gliders, emptySet()).records.map { it.archived })
+        val airfields = AirfieldCsv.export(listOf(AirfieldCsv.ExportRow("YBLA", null, null, null, null, emptyList(), archived = true)))
+        assertTrue(airfields.endsWith("YBLA,,,,,,yes\r\n"))
+        assertEquals(listOf(true), AirfieldCsv.parse(airfields, emptySet()).records.map { it.archived })
+    }
+
     @Test fun gliderAndAirfieldFilesSkipExistingAndReportErrors() {
         val g = GliderCsv.parse("registration,type\r\nFQM,Hornet\r\nGZY,Junior\r\ngzy,Junior\r\nB4,\r\n", setOf("fqm"))
         assertEquals(listOf("GZY"), g.records.map { it.registration })

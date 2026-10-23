@@ -151,19 +151,16 @@ fun BackupSection(vm: BackupViewModel = backupViewModel()) {
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(stringResource(R.string.backup_title), style = MaterialTheme.typography.titleMedium)
-        ListItem(
-            headlineContent = { Text(stringResource(R.string.backup_folder)) },
-            supportingContent = {
-                Text(
-                    when {
-                        settings.backupFolderUri == null -> stringResource(R.string.backup_folder_not_set)
-                        vm.folderName == null -> stringResource(R.string.backup_folder_lost)
-                        else -> vm.folderName!!
-                    },
-                )
+        Text(stringResource(R.string.backup_folder))
+        Text(
+            when {
+                settings.backupFolderUri == null -> stringResource(R.string.backup_folder_not_set)
+                vm.folderName == null -> stringResource(R.string.backup_folder_lost)
+                else -> vm.folderName!!
             },
-            modifier = Modifier.clickable { pickFolder.launch(null) },
+            style = MaterialTheme.typography.bodySmall,
         )
+        OutlinedButton(onClick = { pickFolder.launch(null) }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.backup_choose_folder)) }
         Text(stringResource(R.string.backup_last, lastBackupText(settings.lastBackupAt)), style = MaterialTheme.typography.bodyMedium)
 
         Text(stringResource(R.string.backup_after), style = MaterialTheme.typography.bodyMedium)
@@ -183,13 +180,12 @@ fun BackupSection(vm: BackupViewModel = backupViewModel()) {
         )
 
         Button(onClick = vm::backUpNow, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.backup_now)) }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = { pickRestore.launch(jsonTypes) }, enabled = !vm.busy, modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.backup_restore))
-            }
-            OutlinedButton(onClick = { pickMerge.launch(jsonTypes) }, enabled = !vm.busy, modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.backup_merge))
-            }
+        // One per row: side by side, longer translations such as Wiederherstellen do not fit half the width.
+        OutlinedButton(onClick = { pickRestore.launch(jsonTypes) }, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.backup_restore))
+        }
+        OutlinedButton(onClick = { pickMerge.launch(jsonTypes) }, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.backup_merge))
         }
         Text(stringResource(R.string.backup_restore_merge_hint), style = MaterialTheme.typography.bodySmall)
         vm.message?.let { Text(it.text(), style = MaterialTheme.typography.bodyMedium) }
@@ -285,7 +281,7 @@ fun FirstRunScreen(onDone: () -> Unit) {
             Button(onClick = {
                 scope.launch { container.settings.setFirstRunDone(); onDone() }
             }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.first_run_fresh)) }
-            FilledTonalButton(
+            OutlinedButton(
                 onClick = { pickRestore.launch(arrayOf("application/json", "application/octet-stream", "text/plain")) },
                 enabled = !vm.busy,
                 modifier = Modifier.fillMaxWidth(),

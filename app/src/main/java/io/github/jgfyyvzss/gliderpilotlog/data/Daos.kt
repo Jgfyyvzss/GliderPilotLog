@@ -130,6 +130,8 @@ data class FlightListRow(
     @ColumnInfo(name = "airfield_name") val airfieldName: String,
     @ColumnInfo(name = "launch_type_name") val launchTypeName: String,
     @ColumnInfo(name = "launch_type_id") val launchTypeId: String,
+    /** The first characters of the notes, enough for the list row. */
+    @ColumnInfo(name = "notes_start") val notesStart: String? = null,
 )
 
 /** Enough about a flight to name it in a duplicate log number message. */
@@ -165,6 +167,12 @@ interface FlightDao {
     )
     suspend fun glidersOnDay(date: String): List<GliderEntity>
 
+    /** Live flights per glider, all roles, for the Home screen's totals by type. */
+    @Query(
+        "SELECT g.type AS type, g.weglide_aircraft_id AS weglide_aircraft_id, SUM(f.duration_minutes) AS minutes, COUNT(*) AS flights " +
+            "FROM flight f JOIN glider g ON g.id = f.glider_id WHERE f.deleted_at IS NULL GROUP BY g.id",
+    )
+    fun observeGliderTotals(): Flow<List<GliderTotalRow>>
     /** The filtered list, built by [FlightQueries.list]. */
     @RawQuery(observedEntities = [FlightEntity::class, GliderEntity::class, AirfieldEntity::class, LaunchTypeEntity::class])
     fun pagedList(query: SupportSQLiteQuery): PagingSource<Int, FlightListRow>
@@ -179,6 +187,8 @@ interface FlightDao {
 
 data class RoleTotalRow(val role: String, val minutes: Int, val flights: Int)
 
+data class GliderTotalRow(val type: String, @ColumnInfo(name = "weglide_aircraft_id") val weglideAircraftId: Long?, val minutes: Int, val flights: Int)
+
 /** Raw queries whose WHERE clause comes from the filter. */
 object FlightQueries {
     fun list(filter: FlightFilter): SupportSQLiteQuery {
@@ -186,7 +196,8 @@ object FlightQueries {
         return SimpleSQLiteQuery(
             """
             SELECT f.id, f.log_no, f.date, f.duration_minutes, f.role,
-                   g.registration, g.type AS glider_type, a.name AS airfield_name, lt.name AS launch_type_name, f.launch_type_id
+                   g.registration, g.type AS glider_type, a.name AS airfield_name, lt.name AS launch_type_name, f.launch_type_id,
+                   substr(f.notes, 1, 80) AS notes_start
             FROM flight f
             JOIN glider g ON g.id = f.glider_id
             JOIN airfield a ON a.id = f.airfield_id

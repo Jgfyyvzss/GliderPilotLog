@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="csv_intro">CSV-Dateien sind für Tabellenkalkulationen und andere Systeme gedacht. Nutze Sicherung in den Einstellungen, um dein Flugbuch zu schützen.</string>
+    <string name="csv_export">In einen Ordner exportieren</string>
+    <string name="csv_export_hint">Schreibt Flüge, Segelflugzeuge und Flugplätze als drei CSV-Dateien.</string>
+    <string name="csv_exported">Flüge, Segelflugzeuge und Flugplätze exportiert (%1$s)</string>
+    <string name="csv_import">Importieren</string>
+    <string name="csv_import_flights">Flüge importieren</string>
+    <string name="csv_import_gliders">Segelflugzeuge importieren</string>
+    <string name="csv_import_airfields">Flugplätze importieren</string>
+    <string name="csv_import_hint">Die ganze Datei wird zuerst geprüft, und es wird nichts importiert, wenn eine Zeile einen Fehler hat. Bereits vorhandene Segelflugzeuge und Flugplätze werden übersprungen, nie aktualisiert.</string>
+    <string name="csv_undo">Letzten Import rückgängig machen</string>
+    <string name="csv_not_imported">Die Datei wurde nicht importiert</string>
+    <string name="csv_confirm_gliders">%1$d Segelflugzeuge importieren?</string>
+    <string name="csv_confirm_airfields">%1$d Flugplätze importieren?</string>
+    <string name="csv_from_file">Aus %1$s.</string>
+    <string name="csv_imported_flights">%1$d Flüge importiert. Neue Datensätze: %2$d Segelflugzeuge, %3$d Flugplätze, %4$d Vereine.</string>
+    <string name="csv_added_gliders">%1$d Segelflugzeuge hinzugefügt</string>
+    <string name="csv_added_airfields">%1$d Flugplätze und %2$d neue Vereine hinzugefügt</string>
+    <string name="csv_nothing_to_undo">Es gibt keinen Import zum Rückgängigmachen</string>
+    <string name="csv_undone">Import von %1$s entfernt</string>
+    <string name="csv_undo_title">Letzten Import rückgängig machen?</string>
+    <string name="csv_undo_text">%1$d Flüge, %2$d Segelflugzeuge und %3$d Flugplätze entfernen, die durch den Import von %4$s am %5$s hinzugefügt wurden? Segelflugzeuge und Flugplätze, die noch von anderen Flügen verwendet werden, bleiben erhalten. Flüge aus diesem Import werden auch dann entfernt, wenn du sie seitdem bearbeitet hast.</string>
+    <string name="csv_remove">Entfernen</string>
+
+    <string name="csv_resolve_title">%1$d Flüge aus %2$s importieren</string>
+    <string name="csv_unmatched_gliders">Segelflugzeuge, die nicht in deiner Liste stehen</string>
+    <string name="csv_unmatched_airfields">Flugplätze, die nicht in deiner Liste stehen</string>
+    <string name="csv_create_stub">%1$s anlegen (später vervollständigen)</string>
+    <string name="csv_default_launch_type">Startart für %1$d Zeilen ohne Angabe</string>
+    <string name="csv_numbering">Die Datei hat keine Spalte log_no. Die Flüge werden in Dateireihenfolge von %1$d bis %2$d nummeriert.</string>
+    <string name="csv_default_pic">Verantwortlicher Pilot für %1$d PIC-, Fluglehrer- und Coach-Zeilen ohne Angabe</string>
+</resources>

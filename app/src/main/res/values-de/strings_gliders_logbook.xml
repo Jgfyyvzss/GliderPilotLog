@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Gliders -->
+    <string name="gliders_none_yet">Noch keine Segelflugzeuge. Tippe auf +, um eines hinzuzufügen.</string>
+    <string name="gliders_no_weglide">Kein WeGlide-Typ</string>
+    <string name="gliders_archived_hint">Archivierte Segelflugzeuge werden im Flugformular ausgeblendet.</string>
+    <string name="glider_registration">Kennzeichen</string>
+    <string name="glider_type">Typ, wie er im Flugbuch steht</string>
+    <string name="glider_type_short">Typ</string>
+    <string name="glider_total">Bordbuch-Summe, zuletzt eingetragen: %1$s, %2$s</string>
+    <string name="glider_total_with_flights">Bordbuch-Summe, zuletzt eingetragen: %1$s, %2$d Flüge, %3$s</string>
+    <string name="glider_no_total">Keine Bordbuch-Summe erfasst.</string>
+    <string name="glider_total_hint">Die letzte Summe, die du in das Bordbuch des Segelflugzeugs geschrieben hast, als Startwert für den Rechner gespeichert. Andere fliegen das Segelflugzeug möglicherweise auch, prüfe sie daher anhand des echten Bordbuchs.</string>
+    <string name="glider_calculator">Rechner</string>
+    <string name="glider_edit_total">Summe bearbeiten</string>
+    <string name="glider_total_title">Bordbuch-Summe für %1$s</string>
+    <string name="glider_total_need_hours">Gib die Stunden ein oder tippe auf Zurücksetzen</string>
+
+    <!-- Aircraft logbook calculator -->
+    <string name="logbook_title">Bordbuch: %1$s</string>
+    <string name="logbook_intro">Addiert die Flüge eines Tages zur Summe im Bordbuch des Segelflugzeugs. Deine eigenen Summen werden nicht verändert.</string>
+    <string name="logbook_flights_on">Flüge am %1$s</string>
+    <!-- The calculator table. The flights heading wraps onto two lines to keep the column narrow. -->
+    <string name="logbook_col_flights">Flüge\n(optional)</string>
+    <string name="logbook_row_day">Tag</string>
+    <string name="logbook_row_other">Andere Piloten</string>
+    <string name="logbook_row_last">Letzter Eintrag</string>
+    <string name="logbook_row_total">Summe</string>
+    <string name="logbook_before_dated">Zuletzt eingetragen für %1$s. Überschreibe sie, wenn das Bordbuch des Flugzeugs davon abweicht.</string>
+    <string name="logbook_before_none">Noch keine Summe gespeichert. Gib die letzte Summe aus dem Bordbuch des Flugzeugs ein.</string>
+    <string name="logbook_applies_to">Die neue Summe gilt für</string>
+    <string name="logbook_double_add">Die gespeicherte Summe trägt das Datum %1$s, am oder nach dem %2$s, daher ist dieser Tag möglicherweise schon enthalten. Wird ein Tag doppelt addiert, ist die Summe falsch.</string>
+    <string name="logbook_save">Neue Summe speichern</string>
+    <string name="logbook_hours_hint">Ziffern, H:MM oder Dezimalstunden</string>
+    <string name="logbook_bad_hours">Gib Stunden als Ziffern, H:MM oder Dezimalstunden ein</string>
+    <string name="logbook_bad_figures">Gib Stunden als Ziffern, H:MM oder Dezimalstunden und Flüge als ganze Zahlen ein</string>
+    <string name="logbook_need_before">Gib die Bordbuch-Summe vor diesen Flügen ein</string>
+</resources>

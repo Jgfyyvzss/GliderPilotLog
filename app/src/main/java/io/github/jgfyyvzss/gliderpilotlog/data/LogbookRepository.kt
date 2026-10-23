@@ -5,6 +5,7 @@ import androidx.room.withTransaction
 import io.github.jgfyyvzss.gliderpilotlog.core.FlightContext
 import io.github.jgfyyvzss.gliderpilotlog.core.FlightDraft
 import io.github.jgfyyvzss.gliderpilotlog.core.FlightFilter
+import io.github.jgfyyvzss.gliderpilotlog.core.GliderTotal
 import io.github.jgfyyvzss.gliderpilotlog.core.FlightRules
 import io.github.jgfyyvzss.gliderpilotlog.core.FlightValidation
 import io.github.jgfyyvzss.gliderpilotlog.core.Keys
@@ -89,6 +90,9 @@ class LogbookRepository(
     /** The glider's live flights on [date], and the gliders flown that day. */
     suspend fun flightsOnDay(gliderId: String, date: LocalDate) = flights.onDay(gliderId, date.toString())
     suspend fun glidersOnDay(date: LocalDate) = flights.glidersOnDay(date.toString())
+
+    fun observeGliderTotals(): Flow<List<GliderTotal>> =
+        flights.observeGliderTotals().map { rows -> rows.map { GliderTotal(it.type, it.weglideAircraftId, it.minutes, it.flights) } }
 
     // Airfields and clubs
 

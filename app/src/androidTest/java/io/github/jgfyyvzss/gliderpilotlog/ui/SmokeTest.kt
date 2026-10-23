@@ -70,7 +70,8 @@ class SmokeTest {
 
         // The flight is listed.
         compose.onNodeWithText("Flights").performClick()
-        compose.waitUntil(5_000) { compose.onAllNodesWithText("YMBT · Winch · PIC · 1:30").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(5_000) { compose.onAllNodesWithText("FQM Hornet · YMBT · Winch").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("1:30").assertExists()
 
         // Totals show it in PIC and Combined.
         compose.onNodeWithText("Totals").performClick()

@@ -34,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import io.github.jgfyyvzss.gliderpilotlog.R
 import io.github.jgfyyvzss.gliderpilotlog.ui.label
 import io.github.jgfyyvzss.gliderpilotlog.ui.launchTypeName
@@ -104,6 +105,7 @@ fun FlightListScreen(onOpen: (String) -> Unit, onNew: () -> Unit) {
     val items = vm.flights.collectAsLazyPagingItems()
     val filter by vm.filter.collectAsStateWithLifecycle()
     val settings by appContainer().settings.settings.collectAsStateWithLifecycle(Settings())
+
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             FilterBar()
@@ -118,12 +120,7 @@ fun FlightListScreen(onOpen: (String) -> Unit, onNew: () -> Unit) {
                     when (val item = items[index]) {
                         is FlightListItem.Day -> DayHeader(item.date) { vm.openCalculator(LocalDate.parse(item.date)) }
                         is FlightListItem.Flight -> {
-                            val row = item.row
-                            ListItem(
-                                headlineContent = { Text(row.firstLine()) },
-                                supportingContent = { Text(row.secondLine(settings.hoursDisplay)) },
-                                modifier = Modifier.clickable { onOpen(row.id) },
-                            )
+                            FlightRow(item.row, settings.hoursDisplay) { onOpen(item.row.id) }
                             HorizontalDivider()
                         }
                         null -> Unit
@@ -168,14 +165,39 @@ private fun DayHeader(isoDate: String, onLogbook: () -> Unit) {
     }
 }
 
-/** For example `340 · 17/10/26 · FQM Hornet`. */
-fun FlightListRow.firstLine(): String =
-    listOf(logNo.toString(), isoDateShort(date), "$registration $gliderType".trim()).joinToString(" · ")
-
-/** For example `YMBT · Winch · PIC · 4:31`, with role and seeded launch type in the pilot's language. */
+/**
+ * Key items stay in the same places on every row: number, date and role on the left with the duration at the right
+ * edge, then aircraft, airfield and launch type, then the note if there is one. Each line is cut rather than wrapped.
+ */
 @Composable
-fun FlightListRow.secondLine(display: HoursDisplay = HoursDisplay.HM): String {
-    val roleLabel = Role.entries.firstOrNull { it.name == role }?.label() ?: role
-    return listOf(airfieldName, launchTypeName(launchTypeId, launchTypeName), roleLabel, HoursFormat.format(durationMinutes, display))
-        .joinToString(" · ")
+private fun FlightRow(row: FlightListRow, display: HoursDisplay, onClick: () -> Unit) {
+    val note = row.notesStart?.replace(Regex("\\s+"), " ")?.trim()?.takeIf { it.isNotEmpty() }
+    Column(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 10.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(row.firstLine(), Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(HoursFormat.format(row.durationMinutes, display), Modifier.padding(start = 12.dp), style = MaterialTheme.typography.bodyLarge)
+        }
+        Text(
+            row.secondLine(),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        note?.let {
+            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
 }
+
+/** For example `320 · 1/9/26 · PIC`, with the role in the pilot's language; the duration sits at the right edge. */
+@Composable
+fun FlightListRow.firstLine(): String {
+    val roleLabel = Role.entries.firstOrNull { it.name == role }?.label() ?: role
+    return listOf(logNo.toString(), isoDateShort(date), roleLabel).joinToString(" · ")
+}
+
+/** For example `FQM Hornet · YMBT · Winch`, with a seeded launch type in the pilot's language. */
+@Composable
+fun FlightListRow.secondLine(): String =
+    listOf("$registration $gliderType".trim(), airfieldName, launchTypeName(launchTypeId, launchTypeName)).joinToString(" · ")

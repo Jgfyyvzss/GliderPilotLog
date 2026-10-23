@@ -196,7 +196,7 @@ private fun LogbookTotalSection(gliderId: String) {
         style = MaterialTheme.typography.bodySmall,
     )
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilledTonalButton(onClick = { calculator = true }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.glider_calculator)) }
+        OutlinedButton(onClick = { calculator = true }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.glider_calculator)) }
         OutlinedButton(onClick = { editing = true }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.glider_edit_total)) }
     }
 

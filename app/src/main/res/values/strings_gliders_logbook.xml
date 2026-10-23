@@ -20,19 +20,18 @@
     <string name="logbook_title">Aircraft logbook: %1$s</string>
     <string name="logbook_intro">Adds a day\'s flying to the total in the glider\'s own logbook. Your own totals are not changed.</string>
     <string name="logbook_flights_on">Flights on %1$s</string>
-    <string name="logbook_flying_to_add">Flying to add</string>
-    <string name="logbook_day_total">Day total</string>
-    <string name="logbook_extra">Extra flying not in this app</string>
-    <string name="logbook_before">Logbook total before</string>
+    <!-- The calculator table. The flights heading wraps onto two lines to keep the column narrow. -->
+    <string name="logbook_col_flights">Flights\n(optional)</string>
+    <string name="logbook_row_day">Day</string>
+    <string name="logbook_row_other">Other pilots</string>
+    <string name="logbook_row_last">Last entry</string>
+    <string name="logbook_row_total">Total</string>
+    <string name="logbook_hours_hint">Digits, H:MM or decimal hours</string>
     <string name="logbook_before_dated">Last entered for %1$s. Overwrite it if the aircraft logbook differs.</string>
     <string name="logbook_before_none">No total stored yet. Enter the last total from the aircraft logbook.</string>
     <string name="logbook_applies_to">The new total applies to</string>
-    <string name="logbook_new_total_check">New total: check the figures above</string>
-    <string name="logbook_new_total">New total: %1$s</string>
-    <string name="logbook_new_total_flights">New total: %1$s, %2$d flights</string>
     <string name="logbook_double_add">The stored total is dated %1$s, on or after %2$s, so this day may already be included. Adding a day twice corrupts the total.</string>
     <string name="logbook_save">Save new total</string>
-    <string name="logbook_hours_hint">Digits, H:MM or decimal hours</string>
     <string name="logbook_bad_hours">Enter hours as digits, H:MM or decimal hours</string>
     <string name="logbook_bad_figures">Enter hours as digits, H:MM or decimal hours, and flights as whole numbers</string>
     <string name="logbook_need_before">Enter the logbook total before this flying</string>

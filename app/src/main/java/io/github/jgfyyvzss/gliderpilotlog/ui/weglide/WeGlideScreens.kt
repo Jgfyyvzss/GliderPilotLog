@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
@@ -61,20 +62,22 @@ fun AircraftListSection() {
                 } ?: stringResource(R.string.weglide_loading),
             )
         },
-        trailingContent = {
-            TextButton(onClick = {
-                busy = true
-                message = null
-                scope.launch {
-                    message = when (val r = app.aircraft.update()) {
-                        is AircraftUpdate.Updated -> uiText(R.string.weglide_updated, r.count)
-                        is AircraftUpdate.Failed -> uiText(R.string.weglide_not_updated, r.message)
-                    }
-                    busy = false
-                }
-            }, enabled = !busy) { Text(stringResource(if (busy) R.string.weglide_updating else R.string.weglide_update)) }
-        },
     )
+    Button(
+        onClick = {
+            busy = true
+            message = null
+            scope.launch {
+                message = when (val r = app.aircraft.update()) {
+                    is AircraftUpdate.Updated -> uiText(R.string.weglide_updated, r.count)
+                    is AircraftUpdate.Failed -> uiText(R.string.weglide_not_updated, r.message)
+                }
+                busy = false
+            }
+        },
+        enabled = !busy,
+        modifier = Modifier.fillMaxWidth(),
+    ) { Text(stringResource(if (busy) R.string.weglide_updating else R.string.weglide_update)) }
     message?.let { Text(it.text(), style = MaterialTheme.typography.bodySmall) }
 }
 
@@ -125,9 +128,9 @@ fun WeGlideTypeSection(gliderId: String, onTypeChanged: (String) -> Unit) {
         },
     )
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilledTonalButton(onClick = { choosing = true }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.common_choose)) }
+        OutlinedButton(onClick = { choosing = true }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.common_choose)) }
         if (g.weglideAircraftId != null) {
-            OutlinedButton(onClick = { scope.launch { app.repository.setWeGlideAircraft(gliderId, null) } }, modifier = Modifier.weight(1f)) {
+            Button(onClick = { scope.launch { app.repository.setWeGlideAircraft(gliderId, null) } }, modifier = Modifier.weight(1f)) {
                 Text(stringResource(R.string.common_clear))
             }
         }

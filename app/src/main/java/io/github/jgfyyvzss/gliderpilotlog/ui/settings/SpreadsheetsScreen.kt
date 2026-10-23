@@ -221,19 +221,19 @@ fun SpreadsheetsScreen() {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(stringResource(R.string.csv_intro), style = MaterialTheme.typography.bodySmall)
-        Button(onClick = { exportTo.launch(null) }, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
+        OutlinedButton(onClick = { exportTo.launch(null) }, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.csv_export))
         }
         Text(stringResource(R.string.csv_export_hint), style = MaterialTheme.typography.bodySmall)
         HorizontalDivider()
         Text(stringResource(R.string.csv_import), style = MaterialTheme.typography.titleMedium)
-        FilledTonalButton(onClick = { flights.launch(csvTypes) }, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
+        OutlinedButton(onClick = { flights.launch(csvTypes) }, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.csv_import_flights))
         }
-        FilledTonalButton(onClick = { gliders.launch(csvTypes) }, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
+        OutlinedButton(onClick = { gliders.launch(csvTypes) }, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.csv_import_gliders))
         }
-        FilledTonalButton(onClick = { airfields.launch(csvTypes) }, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
+        OutlinedButton(onClick = { airfields.launch(csvTypes) }, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.csv_import_airfields))
         }
         Text(stringResource(R.string.csv_import_hint), style = MaterialTheme.typography.bodySmall)

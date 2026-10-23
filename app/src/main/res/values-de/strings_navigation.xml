@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="nav_home">Start</string>
+    <string name="nav_flights">Flüge</string>
+    <string name="nav_totals">Summen</string>
+    <string name="nav_airfields">Flugplätze</string>
+    <string name="nav_gliders">Segelflugzeuge</string>
+
+    <string name="title_settings">Einstellungen</string>
+    <string name="title_clubs">Vereine</string>
+    <string name="title_launch_types">Startarten</string>
+    <string name="title_opening_balances">Anfangsbestände</string>
+    <string name="title_spreadsheets">Tabellen (CSV)</string>
+    <string name="title_new_flight">Neuer Flug</string>
+    <string name="title_flight">Flug</string>
+    <string name="title_new_airfield">Neuer Flugplatz</string>
+    <string name="title_airfield">Flugplatz</string>
+    <string name="title_new_glider">Neues Segelflugzeug</string>
+    <string name="title_glider">Segelflugzeug</string>
+</resources>

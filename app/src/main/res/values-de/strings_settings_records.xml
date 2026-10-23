@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Airfields -->
+    <string name="airfields_none_yet">Noch keine Flugplätze. Tippe auf +, um einen hinzuzufügen.</string>
+    <string name="airfield_latitude">Breitengrad</string>
+    <string name="airfield_longitude">Längengrad</string>
+    <string name="airfield_coordinates_hint">Dezimalgrad, zum Beispiel -36.7314. Wird für den IGC-Abgleich benötigt.</string>
+    <string name="airfield_elevation">Höhe (m)</string>
+    <string name="airfield_radius">Abgleichradius (m)</string>
+    <string name="airfield_remove_club">%1$s entfernen</string>
+    <string name="airfield_add_club">Vorhandenen Verein hinzufügen</string>
+    <string name="airfield_defaults">Vorgaben für das Flugformular</string>
+    <string name="airfield_default_club">Standardverein</string>
+    <string name="airfield_default_launch_type">Standard-Startart</string>
+    <string name="airfield_bad_latitude">Der Breitengrad muss in Dezimalgrad angegeben werden</string>
+    <string name="airfield_bad_longitude">Der Längengrad muss in Dezimalgrad angegeben werden</string>
+    <string name="airfield_bad_elevation">Die Höhe muss in ganzen Metern angegeben werden</string>
+    <string name="airfield_bad_radius">Der Abgleichradius muss in ganzen Metern angegeben werden</string>
+
+    <!-- Clubs and launch types -->
+    <string name="clubs_none_yet">Noch keine Vereine. Vereine können auch über einen Flugplatz hinzugefügt werden.</string>
+    <string name="clubs_new">Neuer Verein</string>
+    <string name="clubs_rename">Verein umbenennen</string>
+    <string name="launch_types_new">Neue Startart</string>
+
+    <!-- Settings -->
+    <string name="settings_profile">Pilotenprofil</string>
+    <string name="settings_profile_name_hint">Der Standardwert für den verantwortlichen Piloten bei Flügen als PIC, Fluglehrer und Coach.</string>
+    <string name="settings_id_label">Bezeichnung</string>
+    <string name="settings_id_number">Nummer</string>
+    <string name="settings_id_add">Nummer hinzufügen</string>
+    <string name="settings_id_licence">Lizenznummer</string>
+    <string name="settings_id_membership">Mitgliedsnummer</string>
+    <string name="settings_id_arn">ARN</string>
+    <string name="settings_profile_save">Profil speichern</string>
+    <string name="settings_profile_saved">Profil gespeichert</string>
+    <string name="settings_flight_form">Flugformular</string>
+    <string name="settings_record_place">Landeort erfassen</string>
+    <string name="settings_record_place_hint">Fügt dem Flugformular einen Landeort hinzu, für Außenlandungen.</string>
+    <string name="settings_record_times">Start- und Landezeiten erfassen</string>
+    <string name="settings_record_times_hint">Fügt dem Flugformular Start- und Landezeiten hinzu.</string>
+    <string name="settings_hours_display">Stundenanzeige</string>
+    <string name="settings_hours_hm">H:MM</string>
+    <string name="settings_hours_decimal">Dezimal</string>
+    <string name="settings_instruction_pic">Fluglehrer und Coach zählen als PIC</string>
+    <string name="settings_instruction_pic_hint">Die PIC-Zeile unter Summen enthält auch Flüge als Fluglehrer und Coach.</string>
+    <string name="settings_balances_hint">Summen aus deinem Papier-Flugbuch</string>
+    <string name="settings_spreadsheets_hint">Exportieren, importieren und den letzten Import rückgängig machen</string>
+    <string name="settings_spreadsheets_button">Exportieren, Importieren, Rückgängig</string>
+    <string name="settings_weglide">WeGlide</string>
+    <string name="settings_lists">Listen</string>
+
+    <!-- Opening balances -->
+    <string name="balances_intro">Gib die Summen von der letzten Seite deines Papier-Flugbuchs ein. Sie werden zu den Summen addiert, wenn kein Filter aktiv ist.</string>
+    <string name="balances_date_hint">Datum des letzten Papiereintrags</string>
+    <string name="balances_bad_hours">%1$s: Stunden als Ziffern oder H:MM eingeben, zum Beispiel 12345 für 123:45</string>
+    <string name="balances_bad_flights">%1$s: Flüge als ganze Zahl eingeben</string>
+    <string name="balances_saved">Anfangsbestände gespeichert</string>
+</resources>

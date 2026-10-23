@@ -58,7 +58,7 @@ class CsvService(
     }
 
     suspend fun exportGliders(): String =
-        GliderCsv.export(dao.liveGliders().map { GliderCsv.ExportRow(it.registration, it.type, it.weglideAircraftId, it.weglideAircraftId?.let { id -> aircraftName(id) }) })
+        GliderCsv.export(dao.liveGliders().map { GliderCsv.ExportRow(it.registration, it.type, it.weglideAircraftId, it.weglideAircraftId?.let { id -> aircraftName(id) }, it.archived) })
 
     suspend fun exportAirfields(): String {
         val clubs = dao.liveClubs().associateBy { it.id }
@@ -68,6 +68,7 @@ class CsvService(
                 AirfieldCsv.ExportRow(
                     a.name, a.latitude, a.longitude, a.elevationM, a.matchRadiusM,
                     links[a.id].orEmpty().mapNotNull { clubs[it]?.name }.sortedBy(Keys::nameKey),
+                    a.archived,
                 )
             },
         )
@@ -180,7 +181,7 @@ class CsvService(
             dao.insertGliders(
                 imp.records.map {
                     GliderEntity(Keys.newId(), it.registration, Keys.registrationKey(it.registration), it.type,
-                        weglideAircraftId = it.weglideAircraftId, incomplete = false, importBatchId = batch, updatedAt = time)
+                        weglideAircraftId = it.weglideAircraftId, incomplete = false, archived = it.archived, importBatchId = batch, updatedAt = time)
                 },
             )
             dao.insertBatch(ImportBatchEntity(batch, time, fileName, 0))
@@ -204,7 +205,7 @@ class CsvService(
                 val id = Keys.newId()
                 airfields += AirfieldEntity(
                     id, a.name, Keys.nameKey(a.name), a.latitude, a.longitude, a.elevationM, a.matchRadiusM,
-                    incomplete = a.latitude == null, importBatchId = batch, updatedAt = time,
+                    incomplete = a.latitude == null, archived = a.archived, importBatchId = batch, updatedAt = time,
                 )
                 a.clubs.forEach { name ->
                     val key = Keys.nameKey(name)
