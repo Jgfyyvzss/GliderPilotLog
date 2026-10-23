@@ -6,6 +6,7 @@ import io.github.jgfyyvzss.gliderpilotlog.core.msg
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -28,10 +29,12 @@ object BackupCodec {
     private val reader = Json { ignoreUnknownKeys = true }
 
     /**
-     * Upgrades from each older format version to the next, applied in order. Version 1 is the first, so there
-     * are none yet. A later version adds an entry here, for example `1 to { json -> ... }`, upgrading 1 to 2.
+     * Upgrades from each older format version to the next, applied in order. Version 2 only adds fields that
+     * default to empty (no sign-offs, flights not witnessed, the Setting off), so 1 to 2 only sets the version.
      */
-    private val upgrades: Map<Int, (JsonObject) -> JsonObject> = emptyMap()
+    private val upgrades: Map<Int, (JsonObject) -> JsonObject> = mapOf(
+        1 to { json -> JsonObject(json + ("format_version" to JsonPrimitive(2))) },
+    )
 
     /** Sorts every array by id (opening balances by role, club links by id), as the stable output requires. */
     fun sorted(file: BackupFile): BackupFile = file.copy(
@@ -40,6 +43,7 @@ object BackupCodec {
         airfields = file.airfields.map { it.copy(clubIds = it.clubIds.sorted()) }.sortedBy { it.id },
         gliders = file.gliders.sortedBy { it.id },
         flights = file.flights.sortedBy { it.id },
+        witnessSignoffs = file.witnessSignoffs.sortedBy { it.id },
         openingBalances = file.openingBalances.sortedBy { it.role },
         importBatches = file.importBatches.sortedBy { it.id },
     )

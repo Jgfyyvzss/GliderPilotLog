@@ -33,7 +33,7 @@ class BackupScheduler(private val context: Context, private val db: LogbookDatab
     fun start(scope: CoroutineScope) {
         scope.launch {
             db.invalidationTracker
-                .createFlow("flight", "glider", "airfield", "airfield_club", "club", "launch_type", "opening_balance")
+                .createFlow("flight", "glider", "airfield", "airfield_club", "club", "launch_type", "opening_balance", "witness_signoff")
                 .debounce(5_000)
                 .collect {
                     if (backup.isAutoBackupDue()) {

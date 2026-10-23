@@ -43,6 +43,33 @@ class FilterAndTotalsTest {
         assertEquals(listOf<Any>(50), w.args)
     }
 
+    @Test fun witnessChoicesBecomeConditions() {
+        val live = "f.deleted_at IS NULL"
+        assertEquals("$live AND f.witness_signoff_id IS NULL", FilterSql.where(FlightFilter(witness = WitnessChoice.NOT_WITNESSED)).sql)
+
+        val changed = setOf("f2", "f1")
+        val witnessed = FilterSql.where(FlightFilter(witness = WitnessChoice.WITNESSED, changedIds = changed))
+        assertEquals("$live AND f.witness_signoff_id IS NOT NULL AND f.id NOT IN (?,?)", witnessed.sql)
+        assertEquals(listOf("f1", "f2"), witnessed.args)
+        assertEquals(
+            "with nothing changed, every witnessed flight matches",
+            "$live AND f.witness_signoff_id IS NOT NULL", FilterSql.where(FlightFilter(witness = WitnessChoice.WITNESSED)).sql,
+        )
+
+        val onlyChanged = FilterSql.where(FlightFilter(witness = WitnessChoice.CHANGED, changedIds = changed))
+        assertEquals("$live AND f.id IN (?,?)", onlyChanged.sql)
+        assertEquals(listOf("f1", "f2"), onlyChanged.args)
+        assertEquals("nothing changed matches nothing", "$live AND 0", FilterSql.where(FlightFilter(witness = WitnessChoice.CHANGED)).sql)
+    }
+
+    @Test fun theChangedFlightsDoNotMakeAFilterActive() {
+        assertFalse(FlightFilter(changedIds = setOf("f1")).isActive)
+        assertTrue(FlightFilter(witness = WitnessChoice.CHANGED).isActive)
+        assertTrue(FlightFilter(witness = WitnessChoice.CHANGED).needsChangedIds)
+        assertTrue(FlightFilter(witness = WitnessChoice.WITNESSED).needsChangedIds)
+        assertFalse(FlightFilter(witness = WitnessChoice.NOT_WITNESSED).needsChangedIds)
+    }
+
     private val flights = mapOf(
         Role.PIC to RoleTotal(600, 10),
         Role.STUDENT to RoleTotal(120, 4),

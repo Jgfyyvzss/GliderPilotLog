@@ -151,6 +151,11 @@ fun SettingsScreen(onClubs: () -> Unit, onLaunchTypes: () -> Unit, onOpeningBala
                 stringResource(R.string.settings_record_times_hint),
                 s.recordTimes,
             ) { on -> scope.launch { container.settings.setRecordTimes(on) } }
+            SwitchRow(
+                stringResource(R.string.settings_witness),
+                stringResource(R.string.settings_witness_hint),
+                s.witnessSignoff,
+            ) { on -> scope.launch { container.settings.setWitnessSignoff(on) } }
         }
 
         HorizontalDivider()

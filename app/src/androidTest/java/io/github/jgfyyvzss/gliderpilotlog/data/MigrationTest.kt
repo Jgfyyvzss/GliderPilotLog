@@ -73,6 +73,7 @@ class MigrationTest {
     @Test fun partialIndexesAreRecreatedWhenRoomOpensTheMigratedDatabase() = runTest {
         createVersion1()
         helper.runMigrationsAndValidate(dbName, 2, true, MIGRATION_1_2).close()
+        helper.runMigrationsAndValidate(dbName, 3, true, MIGRATION_2_3).close()
         val room = openWithRoom()
         try {
             val db = room.openHelper.writableDatabase
@@ -93,6 +94,39 @@ class MigrationTest {
         }
     }
 
+    @Test fun migrate2To3AddsWitnessSignoffAndKeepsFlights() = runTest {
+        createVersion1()
+        helper.runMigrationsAndValidate(dbName, 2, true, MIGRATION_1_2).close()
+        val db = helper.runMigrationsAndValidate(dbName, 3, true, MIGRATION_2_3)
+        db.query("SELECT log_no, witness_signoff_id, witness_seal FROM flight WHERE id = 'f1'").use {
+            it.moveToFirst()
+            assertEquals(340, it.getInt(0))
+            assertNull(it.getString(1))
+            assertNull(it.getString(2))
+        }
+        db.query("SELECT COUNT(*) FROM witness_signoff").use {
+            it.moveToFirst()
+            assertEquals(0, it.getInt(0))
+        }
+        db.close()
+
+        // Room opens it, recreates the partial indexes, and the new foreign key holds.
+        val room = openWithRoom()
+        try {
+            room.openHelper.writableDatabase.query("SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name LIKE 'live_%'").use {
+                it.moveToFirst()
+                assertEquals(SchemaSql.partialIndexNames.size, it.getInt(0))
+            }
+            try {
+                room.openHelper.writableDatabase.execSQL("UPDATE flight SET witness_signoff_id = 'missing' WHERE id = 'f1'")
+                fail("expected a foreign key failure")
+            } catch (e: android.database.sqlite.SQLiteConstraintException) {
+            }
+        } finally {
+            room.close()
+        }
+    }
+
     private fun openWithRoom(): LogbookDatabase =
         Room.databaseBuilder(InstrumentationRegistry.getInstrumentation().targetContext, LogbookDatabase::class.java, dbName)
             .addMigrations(*ALL_MIGRATIONS)
@@ -102,6 +136,7 @@ class MigrationTest {
     @Test fun migratedDatabaseOpensWithRoomAndEnforcesNewForeignKeys() = runTest {
         createVersion1()
         helper.runMigrationsAndValidate(dbName, 2, true, MIGRATION_1_2).close()
+        helper.runMigrationsAndValidate(dbName, 3, true, MIGRATION_2_3).close()
 
         val room = openWithRoom()
         try {

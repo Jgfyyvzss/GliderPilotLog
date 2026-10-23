@@ -21,6 +21,7 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -58,6 +59,7 @@ import io.github.jgfyyvzss.gliderpilotlog.ui.launchTypeName
 import io.github.jgfyyvzss.gliderpilotlog.ui.shortText
 import io.github.jgfyyvzss.gliderpilotlog.ui.text
 import io.github.jgfyyvzss.gliderpilotlog.ui.vmFactory
+import io.github.jgfyyvzss.gliderpilotlog.ui.witness.WitnessCard
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -66,7 +68,7 @@ import kotlin.math.roundToInt
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun FlightEditScreen(id: String?, igcSegment: Int? = null, onDone: () -> Unit) {
+fun FlightEditScreen(id: String?, igcSegment: Int? = null, onDone: () -> Unit, onWitness: (String) -> Unit = {}) {
     val app = appContainer()
     val vm: FlightEditViewModel = viewModel(
         factory = vmFactory { FlightEditViewModel(it.repository, it.settings, id, igcSegment?.let { i -> it.igcImport.segment(i) }) },
@@ -242,6 +244,12 @@ fun FlightEditScreen(id: String?, igcSegment: Int? = null, onDone: () -> Unit) {
             modifier = Modifier.fillMaxWidth(),
         )
 
+        if (settings.witnessSignoff && id != null) {
+            HorizontalDivider()
+            WitnessCard(id, vm.savedDate, onWitness = { onWitness(id) })
+            HorizontalDivider()
+        }
+
         vm.warnings.forEach { Text(it.text(), color = MaterialTheme.colorScheme.tertiary) }
         Button(onClick = { vm.save() }, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(if (vm.warnings.isNotEmpty() && e.isEmpty()) R.string.flight_save_anyway else R.string.common_save))
@@ -280,6 +288,16 @@ fun FlightEditScreen(id: String?, igcSegment: Int? = null, onDone: () -> Unit) {
         AirfieldAtLaunchDialog(fix, onDismiss = vm::dismissAirfieldOffer) { name, report ->
             vm.addAirfieldAtLaunch(name) { error -> if (error != null) report(error) }
         }
+    }
+
+    vm.witnessWarning?.let { witnessName ->
+        AlertDialog(
+            onDismissRequest = vm::dismissWitnessWarning,
+            title = { Text(stringResource(R.string.witness_edit_title)) },
+            text = { Text(stringResource(R.string.witness_edit_text, witnessName)) },
+            confirmButton = { TextButton(onClick = vm::confirmWitnessChange) { Text(stringResource(R.string.witness_edit_confirm)) } },
+            dismissButton = { TextButton(onClick = vm::dismissWitnessWarning) { Text(stringResource(R.string.common_cancel)) } },
+        )
     }
 
     if (confirmDelete) {

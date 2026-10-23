@@ -29,4 +29,23 @@ val MIGRATION_1_2 = logbookMigration(1, 2) { db ->
     db.execSQL("CREATE INDEX IF NOT EXISTS index_airfield_default_launch_type_id ON airfield(default_launch_type_id)")
 }
 
-val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2)
+/**
+ * Version 3 adds witness sign-off (docs/Witness_Sign-Off.md): the `witness_signoff` table and two nullable flight
+ * columns pointing to it. The SQL matches what Room generates for [WitnessSignoffEntity], so validation passes.
+ */
+val MIGRATION_2_3 = logbookMigration(2, 3) { db ->
+    db.execSQL(
+        "CREATE TABLE IF NOT EXISTS `witness_signoff` (`id` TEXT NOT NULL, `witness_name` TEXT NOT NULL, " +
+            "`witness_identifier` TEXT, `signed_at` INTEGER NOT NULL, `photo` BLOB, `photo_sha256` TEXT, " +
+            "`photo_removed` INTEGER NOT NULL, `seal_version` INTEGER NOT NULL, `consent_confirmed` INTEGER NOT NULL, " +
+            "`updated_at` INTEGER NOT NULL, `deleted_at` INTEGER, PRIMARY KEY(`id`))",
+    )
+    db.execSQL(
+        "ALTER TABLE flight ADD COLUMN witness_signoff_id TEXT " +
+            "REFERENCES witness_signoff(id) ON UPDATE NO ACTION ON DELETE RESTRICT",
+    )
+    db.execSQL("ALTER TABLE flight ADD COLUMN witness_seal TEXT")
+    db.execSQL("CREATE INDEX IF NOT EXISTS index_flight_witness_signoff_id ON flight(witness_signoff_id)")
+}
+
+val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3)

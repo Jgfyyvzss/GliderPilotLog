@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
     <cache-path name="pdf" path="pdf/" />
+    <!-- The camera app writes a witness photo here; it is shrunk into the database and deleted at once. -->
+    <cache-path name="witness" path="witness/" />
 </paths>

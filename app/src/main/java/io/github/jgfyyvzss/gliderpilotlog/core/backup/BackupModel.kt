@@ -8,7 +8,8 @@ import kotlinx.serialization.Serializable
 // Every field has a default, so a file from an older format version still decodes after its upgrade step.
 
 const val BACKUP_FORMAT = "glider-logbook-backup"
-const val BACKUP_FORMAT_VERSION = 1
+/** Version 2 adds witness sign-offs (docs/Witness_Sign-Off.md). An app that only knows version 1 refuses the file. */
+const val BACKUP_FORMAT_VERSION = 2
 
 @Serializable
 data class BackupFile(
@@ -16,11 +17,14 @@ data class BackupFile(
     @SerialName("format_version") val formatVersion: Int = BACKUP_FORMAT_VERSION,
     @SerialName("exported_at") val exportedAt: String = "",
     @SerialName("app_version") val appVersion: String = "",
+    /** True when the file carries witness photos, so a file holding faces is recognisable before it is opened. */
+    @SerialName("contains_photos") val containsPhotos: Boolean = false,
     @SerialName("launch_types") val launchTypes: List<BackupLaunchType> = emptyList(),
     val clubs: List<BackupClub> = emptyList(),
     val airfields: List<BackupAirfield> = emptyList(),
     val gliders: List<BackupGlider> = emptyList(),
     val flights: List<BackupFlight> = emptyList(),
+    @SerialName("witness_signoffs") val witnessSignoffs: List<BackupWitnessSignoff> = emptyList(),
     @SerialName("opening_balances") val openingBalances: List<BackupOpeningBalance> = emptyList(),
     @SerialName("import_batches") val importBatches: List<BackupImportBatch> = emptyList(),
     val settings: BackupSettings = BackupSettings(),
@@ -104,6 +108,25 @@ data class BackupFlight(
     @SerialName("import_batch_id") val importBatchId: String? = null,
     @SerialName("updated_at") val updatedAt: String,
     @SerialName("deleted_at") val deletedAt: String? = null,
+    /** Both null, or both set: the sign-off and this flight's seal. */
+    @SerialName("witness_signoff_id") val witnessSignoffId: String? = null,
+    @SerialName("witness_seal") val witnessSeal: String? = null,
+)
+
+/** One witness sign-off. [photo] is the stored JPEG in base64, or null when removed or left out of the export. */
+@Serializable
+data class BackupWitnessSignoff(
+    val id: String,
+    @SerialName("witness_name") val witnessName: String,
+    @SerialName("witness_identifier") val witnessIdentifier: String? = null,
+    @SerialName("signed_at") val signedAt: String,
+    val photo: String? = null,
+    @SerialName("photo_sha256") val photoSha256: String? = null,
+    @SerialName("photo_removed") val photoRemoved: Boolean = false,
+    @SerialName("seal_version") val sealVersion: Int,
+    @SerialName("consent_confirmed") val consentConfirmed: Boolean,
+    @SerialName("updated_at") val updatedAt: String,
+    @SerialName("deleted_at") val deletedAt: String? = null,
 )
 
 @Serializable
@@ -134,6 +157,7 @@ data class BackupSettings(
     @SerialName("backup_after_days") val backupAfterDays: Int = BackupSchedule.DEFAULT_AFTER_DAYS,
     @SerialName("pilot_name") val pilotName: String = "",
     @SerialName("pilot_identifiers") val pilotIdentifiers: List<BackupIdentifier> = emptyList(),
+    @SerialName("witness_signoff") val witnessSignoff: Boolean = false,
 )
 
 @Serializable

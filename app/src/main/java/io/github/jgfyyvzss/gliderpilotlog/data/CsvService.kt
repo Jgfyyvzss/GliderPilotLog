@@ -10,6 +10,9 @@ import io.github.jgfyyvzss.gliderpilotlog.core.csv.KnownNames
 import io.github.jgfyyvzss.gliderpilotlog.core.csv.ParsedAirfield
 import io.github.jgfyyvzss.gliderpilotlog.core.csv.ParsedGlider
 import io.github.jgfyyvzss.gliderpilotlog.core.csv.RecordImport
+import io.github.jgfyyvzss.gliderpilotlog.core.witness.SealStatus
+import java.time.Instant
+import java.time.ZoneId
 
 /** How the confirmation screen resolved what the flights file left open. */
 data class FlightImportChoices(
@@ -39,7 +42,9 @@ class CsvService(
 
     // Export
 
-    suspend fun exportFlights(): String {
+    /** With [witness] (the Setting is on), the witness columns are filled for flights whose seal still matches. */
+    suspend fun exportFlights(witness: Boolean = false): String {
+        val witnessed = if (witness) witnessCells() else emptyMap()
         val gliders = dao.liveGliders().associateBy { it.id }
         val airfields = dao.liveAirfields().associateBy { it.id }
         val clubs = dao.liveClubs().associateBy { it.id }
@@ -52,9 +57,22 @@ class CsvService(
                     launchType = types[f.launchTypeId]?.name ?: "", role = f.role, pic = f.picName,
                     durationMinutes = f.durationMinutes, launchTime = f.launchTime, landingTime = f.landingTime,
                     landingAirfield = f.landingAirfieldId?.let { airfields[it]?.name }, landingPlace = f.landingPlace, notes = f.notes,
+                    witnessedBy = witnessed[f.id]?.first, witnessedOn = witnessed[f.id]?.second,
                 )
             },
+            witness = witness,
         )
+    }
+
+    /** Witness and signing date (YYYY-MM-DD on this phone) by flight ID, for flights still matching their seal. */
+    private suspend fun witnessCells(): Map<String, Pair<String, String>> {
+        val statuses = WitnessRepository(db, now).statuses()
+        val signoffs = db.witnessDao().live().associateBy { it.id }
+        val zone = ZoneId.systemDefault()
+        return db.witnessDao().witnessedFlights().mapNotNull { f ->
+            val s = f.witnessSignoffId?.let { signoffs[it] }?.takeIf { statuses[f.id] == SealStatus.WITNESSED } ?: return@mapNotNull null
+            f.id to (FlightCsv.witnessedBy(s.witnessName, s.witnessIdentifier) to Instant.ofEpochMilli(s.signedAt).atZone(zone).toLocalDate().toString())
+        }.toMap()
     }
 
     suspend fun exportGliders(): String =
@@ -239,5 +257,7 @@ class CsvService(
         dao.deleteUnusedGliders(batchId, time)
         dao.deleteUnusedAirfields(batchId, time)
         dao.deleteBatch(batchId)
+        // Imported flights start unwitnessed, but one may have been witnessed since.
+        db.witnessDao().deleteUnreferenced(time)
     }
 }

@@ -60,6 +60,8 @@ import io.github.jgfyyvzss.gliderpilotlog.ui.isoDateShort
 import io.github.jgfyyvzss.gliderpilotlog.ui.vmFactory
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flatMapLatest
+import io.github.jgfyyvzss.gliderpilotlog.core.witness.SealStatus
+import io.github.jgfyyvzss.gliderpilotlog.data.WitnessRepository
 
 /** A list entry: a day header, or a flight. */
 sealed interface FlightListItem {
@@ -67,12 +69,15 @@ sealed interface FlightListItem {
     data class Flight(val row: FlightListRow) : FlightListItem
 }
 
-class FlightListViewModel(private val repo: LogbookRepository, filterStore: FilterStore) : ViewModel() {
+class FlightListViewModel(private val repo: LogbookRepository, filterStore: FilterStore, witness: WitnessRepository) : ViewModel() {
     val filter = filterStore.filter
+
+    /** Each witnessed flight's seal status, for the Witnessed and Changed marks. */
+    val statuses = witness.observeStatuses()
 
     /** Flights with a header before the first flight of each day. */
     @OptIn(ExperimentalCoroutinesApi::class)
-    val flights = filterStore.filter.flatMapLatest { f ->
+    val flights = filterStore.filter.flatMapLatest { repo.observeResolved(it) }.flatMapLatest { f ->
         Pager(PagingConfig(pageSize = 60, enablePlaceholders = false)) { repo.pagedFlights(f) }.flow.map { page ->
             page.map<FlightListRow, FlightListItem> { FlightListItem.Flight(it) }.insertSeparators { before, after ->
                 val a = (after as? FlightListItem.Flight)?.row ?: return@insertSeparators null
@@ -100,11 +105,12 @@ class FlightListViewModel(private val repo: LogbookRepository, filterStore: Filt
 
 /** Newest first by date then log number, filtered by the shared filter, with an aircraft logbook button per day. */
 @Composable
-fun FlightListScreen(onOpen: (String) -> Unit, onNew: () -> Unit) {
-    val vm: FlightListViewModel = viewModel(factory = vmFactory { FlightListViewModel(it.repository, it.filter) })
+fun FlightListScreen(onOpen: (String) -> Unit, onNew: () -> Unit, onWitnessDay: (String) -> Unit) {
+    val vm: FlightListViewModel = viewModel(factory = vmFactory { FlightListViewModel(it.repository, it.filter, it.witness) })
     val items = vm.flights.collectAsLazyPagingItems()
     val filter by vm.filter.collectAsStateWithLifecycle()
     val settings by appContainer().settings.settings.collectAsStateWithLifecycle(Settings())
+    val statuses by vm.statuses.collectAsStateWithLifecycle(emptyMap())
 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
@@ -118,9 +124,14 @@ fun FlightListScreen(onOpen: (String) -> Unit, onNew: () -> Unit) {
                     key = items.itemKey { if (it is FlightListItem.Day) "day-${it.date}" else (it as FlightListItem.Flight).row.id },
                 ) { index ->
                     when (val item = items[index]) {
-                        is FlightListItem.Day -> DayHeader(item.date) { vm.openCalculator(LocalDate.parse(item.date)) }
+                        is FlightListItem.Day -> DayHeader(
+                            item.date,
+                            onLogbook = { vm.openCalculator(LocalDate.parse(item.date)) },
+                            onWitness = if (settings.witnessSignoff) ({ onWitnessDay(item.date) }) else null,
+                        )
                         is FlightListItem.Flight -> {
-                            FlightRow(item.row, settings.hoursDisplay) { onOpen(item.row.id) }
+                            val status = if (settings.witnessSignoff) statuses[item.row.id] else null
+                            FlightRow(item.row, settings.hoursDisplay, status) { onOpen(item.row.id) }
                             HorizontalDivider()
                         }
                         null -> Unit
@@ -155,14 +166,26 @@ fun FlightListScreen(onOpen: (String) -> Unit, onNew: () -> Unit) {
 }
 
 @Composable
-private fun DayHeader(isoDate: String, onLogbook: () -> Unit) {
+private fun DayHeader(isoDate: String, onLogbook: () -> Unit, onWitness: (() -> Unit)?) {
     Row(
         Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer).padding(start = 16.dp, end = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(isoDateShort(isoDate), Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
+        onWitness?.let { TextButton(onClick = it) { Text(stringResource(R.string.witness_action)) } }
         TextButton(onClick = onLogbook) { Text(stringResource(R.string.flights_aircraft_logbook)) }
     }
+}
+
+/** A small Witnessed, Changed or Cannot verify mark; nothing for a flight that is not witnessed. */
+@Composable
+fun WitnessMark(status: SealStatus?, modifier: Modifier = Modifier) {
+    val (text, color) = when (status ?: return) {
+        SealStatus.WITNESSED -> stringResource(R.string.witness_mark_witnessed) to MaterialTheme.colorScheme.primary
+        SealStatus.CHANGED -> stringResource(R.string.witness_mark_changed) to MaterialTheme.colorScheme.error
+        SealStatus.CANNOT_VERIFY -> stringResource(R.string.witness_mark_cannot_verify) to MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    Text(text, modifier, style = MaterialTheme.typography.labelMedium, color = color, maxLines = 1)
 }
 
 /**
@@ -170,20 +193,24 @@ private fun DayHeader(isoDate: String, onLogbook: () -> Unit) {
  * edge, then aircraft, airfield and launch type, then the note if there is one. Each line is cut rather than wrapped.
  */
 @Composable
-private fun FlightRow(row: FlightListRow, display: HoursDisplay, onClick: () -> Unit) {
+private fun FlightRow(row: FlightListRow, display: HoursDisplay, status: SealStatus?, onClick: () -> Unit) {
     val note = row.notesStart?.replace(Regex("\\s+"), " ")?.trim()?.takeIf { it.isNotEmpty() }
     Column(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(row.firstLine(), Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(HoursFormat.format(row.durationMinutes, display), Modifier.padding(start = 12.dp), style = MaterialTheme.typography.bodyLarge)
         }
-        Text(
-            row.secondLine(),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                row.secondLine(),
+                Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            WitnessMark(status, Modifier.padding(start = 12.dp))
+        }
         note?.let {
             Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }

@@ -131,6 +131,14 @@
     <string name="msg_bk_balance_duplicate">Der Anfangsbestand für %1$s kommt mehrfach vor</string>
     <string name="msg_bk_log_no_collision">Log-Nr. %1$d wird von zwei verschiedenen Flügen verwendet: %2$s und %3$s</string>
     <string name="msg_bk_duplicate_key">%1$s kommt mehrfach mit unterschiedlichen IDs vor</string>
+    <string name="msg_bk_table_witness_signoffs">Zeugenbestätigungen</string>
+    <string name="msg_bk_witness">Zeugenbestätigung von %1$s</string>
+    <string name="msg_bk_witness_no_consent">%1$s hat kein bestätigtes Einverständnis</string>
+    <string name="msg_bk_witness_dangling">%1$s verweist auf eine Zeugenbestätigung, die nicht in der Datei ist; der Zeugenvermerk wurde entfernt</string>
+    <string name="msg_bk_photo_not_base64">%1$s: Das Foto ist unlesbar und wurde weggelassen</string>
+    <string name="msg_bk_photo_not_jpeg">%1$s: Das Foto ist kein JPEG und wurde weggelassen</string>
+    <string name="msg_bk_photo_too_large">%1$s: Das Foto ist größer als 100 KB und wurde weggelassen</string>
+    <string name="msg_bk_photo_hash">%1$s: Das Foto passt nicht zu seinem Hash und wurde weggelassen</string>
 
     <!-- WeGlide -->
     <string name="msg_weglide_status">WeGlide antwortete %1$d: %2$s</string>
@@ -146,4 +154,9 @@
     <string name="msg_lxnav_no_logbook">Der Logger hat seine Flugliste nicht gesendet</string>
     <string name="msg_lxnav_gave_up">Der Download wurde bei Zeile %1$d abgebrochen. Versuche es erneut, um von dort fortzufahren.</string>
     <string name="msg_lxnav_size_mismatch">Die heruntergeladene Datei hat %1$d Bytes, der Logger listet aber %2$d, daher wurde sie verworfen</string>
+    <string name="msg_witness_name_required">Gib den Namen des Zeugen ein</string>
+    <string name="msg_witness_no_flights">Wähle mindestens einen Flug zum Bezeugen aus</string>
+    <string name="msg_witness_is_pilot">Der Zeuge kann nicht du selbst sein: Name oder Nummer stimmen mit deinem Profil überein</string>
+    <string name="msg_witness_not_pic">Verantwortlicher Pilot dieser Schulungsflüge ist %1$s, nicht der Zeuge</string>
+    <string name="msg_witness_photo_required">Bitte ein Foto des Zeugen aufnehmen. Es belegt, wer die Flüge bezeugt hat.</string>
 </resources>

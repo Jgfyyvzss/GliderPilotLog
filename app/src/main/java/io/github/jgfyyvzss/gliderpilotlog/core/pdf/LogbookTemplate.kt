@@ -128,6 +128,11 @@ enum class Field {
     /** Shown only when the Record landing place Setting is on. */
     @SerialName("landing_place") LANDING_PLACE,
     @SerialName("notes") NOTES,
+    /**
+     * The witness's name and number, for a flight whose witness seal still matches and only while the Witness
+     * sign-off Setting is on; otherwise empty, so it can be signed by hand like a [BLANK] signature column.
+     */
+    @SerialName("witness") WITNESS,
     /** An empty column, such as a signature column. */
     @SerialName("blank") BLANK,
     /** Space with no lines, such as the fold between the two pages of a spread. */

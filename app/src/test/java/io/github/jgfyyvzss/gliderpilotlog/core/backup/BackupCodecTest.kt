@@ -19,8 +19,8 @@ class BackupCodecTest {
     @Test fun arraysAreSortedAndKeysInFixedOrder() {
         val text = BackupCodec.encode(BackupTestData.file())
         assertEquals(listOf("f0", "f1", "f2"), ok(text).flights.map { it.id })
-        assertTrue(text.startsWith("{\n  \"format\": \"glider-logbook-backup\",\n  \"format_version\": 1,\n  \"exported_at\""))
-        val order = listOf("\"launch_types\"", "\"clubs\"", "\"airfields\"", "\"gliders\"", "\"flights\"", "\"opening_balances\"", "\"import_batches\"", "\"settings\"")
+        assertTrue(text.startsWith("{\n  \"format\": \"glider-logbook-backup\",\n  \"format_version\": 2,\n  \"exported_at\""))
+        val order = listOf("\"launch_types\"", "\"clubs\"", "\"airfields\"", "\"gliders\"", "\"flights\"", "\"witness_signoffs\"", "\"opening_balances\"", "\"import_batches\"", "\"settings\"")
         assertEquals(order, order.sortedBy { text.indexOf(it) })
         assertTrue("nulls are written", text.contains("\"deleted_at\": null"))
         assertTrue(text.endsWith("}\n"))
@@ -37,7 +37,7 @@ class BackupCodecTest {
         assertTrue(refused("not json").contains("not valid JSON"))
         assertTrue(refused("""{"format":"something-else","format_version":1}""").contains("not a logbook backup"))
         assertTrue(refused("""{"format":"glider-logbook-backup"}""").contains("no format version"))
-        assertTrue(refused("""{"format":"glider-logbook-backup","format_version":2}""").contains("newer version"))
+        assertTrue(refused("""{"format":"glider-logbook-backup","format_version":3}""").contains("newer version"))
     }
 
     @Test fun ignoresUnknownFieldsAndFillsDefaults() {
@@ -45,6 +45,16 @@ class BackupCodecTest {
         assertEquals("Sam", file.settings.pilotName)
         assertEquals(BackupSchedule.DEFAULT_AFTER_CHANGES, file.settings.backupAfterChanges)
         assertTrue(file.flights.isEmpty())
+    }
+
+    @Test fun aVersion1FileUpgradesWithNoWitnessData() {
+        val v1 = BackupCodec.encode(BackupTestData.file()).replace("\"format_version\": 2", "\"format_version\": 1")
+        val file = ok(v1)
+        assertEquals(BACKUP_FORMAT_VERSION, file.formatVersion)
+        assertTrue(file.witnessSignoffs.isEmpty())
+        assertTrue(file.flights.all { it.witnessSignoffId == null && it.witnessSeal == null })
+        assertEquals(false, file.settings.witnessSignoff)
+        assertEquals(BackupTestData.file().flights.size, file.flights.size)
     }
 
     @Test fun exportTimeIsIgnoredWhenComparing() {

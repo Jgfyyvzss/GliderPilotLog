@@ -55,6 +55,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.jgfyyvzss.gliderpilotlog.core.ClockTime
 import io.github.jgfyyvzss.gliderpilotlog.core.FlightFilter
 import io.github.jgfyyvzss.gliderpilotlog.core.Role
+import io.github.jgfyyvzss.gliderpilotlog.core.WitnessChoice
 import io.github.jgfyyvzss.gliderpilotlog.data.AirfieldEntity
 import io.github.jgfyyvzss.gliderpilotlog.data.ClubEntity
 import io.github.jgfyyvzss.gliderpilotlog.data.GliderEntity
@@ -105,6 +106,7 @@ fun FilterBar(modifier: Modifier = Modifier) {
         FilterSheet(
             initial = filter,
             showLaunchTimes = settings.recordTimes || filter.launchFrom != null || filter.launchTo != null,
+            showWitness = settings.witnessSignoff || filter.witness != WitnessChoice.ANY,
             gliderOptions = gliders.map { PickerOption(it.id, it.pickerLabel()) },
             airfieldOptions = airfields.map { PickerOption(it.id, it.name) },
             clubOptions = clubs.map { PickerOption(it.id, it.name) },
@@ -142,6 +144,7 @@ fun filterChips(filter: FlightFilter, gliders: List<GliderEntity>, airfields: Li
         if (filter.launchFrom != null || filter.launchTo != null) {
             add(stringResource(R.string.filter_chip_launch, filter.launchFrom?.toString() ?: "", filter.launchTo?.toString() ?: "") to filter.copy(launchFrom = null, launchTo = null))
         }
+        if (filter.witness != WitnessChoice.ANY) add(witnessChoiceLabel(filter.witness) to filter.copy(witness = WitnessChoice.ANY))
     }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -149,6 +152,7 @@ fun filterChips(filter: FlightFilter, gliders: List<GliderEntity>, airfields: Li
 private fun FilterSheet(
     initial: FlightFilter,
     showLaunchTimes: Boolean,
+    showWitness: Boolean,
     gliderOptions: List<PickerOption>,
     airfieldOptions: List<PickerOption>,
     clubOptions: List<PickerOption>,
@@ -203,6 +207,18 @@ private fun FilterSheet(
                         placeholder = { Text("10:00") }, singleLine = true, keyboardOptions = numeric, visualTransformation = ColonTransformation, modifier = Modifier.weight(1f))
                     OutlinedTextField(launchTo, { launchTo = it; error = null }, label = { Text(stringResource(R.string.filter_launch_to)) },
                         placeholder = { Text("12:00") }, singleLine = true, keyboardOptions = numeric, visualTransformation = ColonTransformation, modifier = Modifier.weight(1f))
+                }
+            }
+
+            if (showWitness) {
+                Text(stringResource(R.string.witness_filter), style = MaterialTheme.typography.titleSmall)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    WitnessChoice.entries.forEach { w ->
+                        FilterChip(
+                            draft.witness == w, { draft = draft.copy(witness = w) },
+                            label = { Text(if (w == WitnessChoice.ANY) stringResource(R.string.common_any) else witnessChoiceLabel(w)) },
+                        )
+                    }
                 }
             }
 
@@ -288,6 +304,14 @@ private fun MultiPickerField(label: String, selected: Set<String>, options: List
             dismissButton = { TextButton(onClick = { onChange(emptySet()); open = false }) { Text(stringResource(R.string.common_any)) } },
         )
     }
+}
+
+@Composable
+private fun witnessChoiceLabel(w: WitnessChoice): String = when (w) {
+    WitnessChoice.ANY -> stringResource(R.string.common_any)
+    WitnessChoice.WITNESSED -> stringResource(R.string.witness_filter_witnessed)
+    WitnessChoice.NOT_WITNESSED -> stringResource(R.string.witness_filter_not)
+    WitnessChoice.CHANGED -> stringResource(R.string.witness_filter_changed)
 }
 
 private object BAD

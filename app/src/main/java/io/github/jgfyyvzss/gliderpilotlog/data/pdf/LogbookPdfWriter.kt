@@ -45,6 +45,8 @@ class PdfTexts(
     val role: (Role) -> String,
     val launchType: (id: String, storedName: String) -> String,
     val date: (LocalDate) -> String,
+    /** The witness's name and, when given, number, as the Witness column prints them. */
+    val witness: (name: String, identifier: String?) -> String,
 )
 
 /**
@@ -232,6 +234,7 @@ class LogbookPdfWriter(private val context: Context) {
         Field.LANDING_TIME -> f.landingTime.orEmpty()
         Field.LANDING_PLACE -> f.landingPlace.orEmpty()
         Field.NOTES -> f.notes?.replace(Regex("\\s+"), " ")?.trim().orEmpty()
+        Field.WITNESS -> f.witnessName?.let { texts.witness(it, f.witnessIdentifier) }.orEmpty()
         Field.BLANK, Field.GAP -> ""
     }
 

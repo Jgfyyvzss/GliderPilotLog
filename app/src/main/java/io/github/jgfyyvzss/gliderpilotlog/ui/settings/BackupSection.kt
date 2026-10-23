@@ -22,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -45,6 +46,7 @@ import io.github.jgfyyvzss.gliderpilotlog.R
 import io.github.jgfyyvzss.gliderpilotlog.SoarlogsApp
 import io.github.jgfyyvzss.gliderpilotlog.core.MsgKey
 import io.github.jgfyyvzss.gliderpilotlog.core.backup.BackupTime
+import io.github.jgfyyvzss.gliderpilotlog.core.backup.WitnessSummary
 import io.github.jgfyyvzss.gliderpilotlog.core.msg
 import io.github.jgfyyvzss.gliderpilotlog.data.BackupOutcome
 import io.github.jgfyyvzss.gliderpilotlog.data.Prepared
@@ -85,6 +87,8 @@ class BackupViewModel(private val app: SoarlogsApp) : ViewModel() {
     }
 
     fun setSchedule(afterChanges: Int, afterDays: Int) = viewModelScope.launch { app.settings.setBackupSchedule(afterChanges, afterDays) }
+
+    fun setWitnessPhotos(on: Boolean) = viewModelScope.launch { app.settings.setBackupWitnessPhotos(on) }
 
     fun backUpNow() = run {
         busy = true
@@ -179,6 +183,16 @@ fun BackupSection(vm: BackupViewModel = backupViewModel()) {
             style = MaterialTheme.typography.bodySmall,
         )
 
+        if (settings.witnessSignoff) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.backup_witness_photos))
+                    Text(stringResource(R.string.backup_witness_photos_hint), style = MaterialTheme.typography.bodySmall)
+                }
+                Switch(checked = settings.backupWitnessPhotos, onCheckedChange = { vm.setWitnessPhotos(it) })
+            }
+        }
+
         Button(onClick = vm::backUpNow, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.backup_now)) }
         // One per row: side by side, longer translations such as Wiederherstellen do not fit half the width.
         OutlinedButton(onClick = { pickRestore.launch(jsonTypes) }, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
@@ -230,15 +244,17 @@ fun PreparedDialog(vm: BackupViewModel) {
             title = { Text(stringResource(R.string.backup_restore_title)) },
             text = {
                 val c = p.contents
-                Text(
-                    stringResource(
-                        R.string.backup_restore_text, isoTimeText(c.exportedAt),
-                        pluralStringResource(R.plurals.count_flights, c.flights, c.flights),
-                        pluralStringResource(R.plurals.count_gliders, c.gliders, c.gliders),
-                        pluralStringResource(R.plurals.count_airfields, c.airfields, c.airfields),
-                        pluralStringResource(R.plurals.count_clubs, c.clubs, c.clubs),
-                    ),
-                )
+                WithWitness(p.witness) {
+                    Text(
+                        stringResource(
+                            R.string.backup_restore_text, isoTimeText(c.exportedAt),
+                            pluralStringResource(R.plurals.count_flights, c.flights, c.flights),
+                            pluralStringResource(R.plurals.count_gliders, c.gliders, c.gliders),
+                            pluralStringResource(R.plurals.count_airfields, c.airfields, c.airfields),
+                            pluralStringResource(R.plurals.count_clubs, c.clubs, c.clubs),
+                        ),
+                    )
+                }
             },
             confirmButton = { TextButton(onClick = vm::confirm) { Text(stringResource(R.string.backup_restore)) } },
             dismissButton = { TextButton(onClick = vm::dismiss) { Text(stringResource(R.string.common_cancel)) } },
@@ -247,17 +263,33 @@ fun PreparedDialog(vm: BackupViewModel) {
             onDismissRequest = vm::dismiss,
             title = { Text(stringResource(R.string.backup_merge_title)) },
             text = {
-                Text(
-                    stringResource(
-                        R.string.backup_merge_text, isoTimeText(p.contents.exportedAt),
-                        pluralStringResource(R.plurals.count_flights, p.contents.flights, p.contents.flights),
-                        p.summary.added, p.summary.updated, p.summary.unchanged,
-                    ),
-                )
+                WithWitness(p.witness) {
+                    Text(
+                        stringResource(
+                            R.string.backup_merge_text, isoTimeText(p.contents.exportedAt),
+                            pluralStringResource(R.plurals.count_flights, p.contents.flights, p.contents.flights),
+                            p.summary.added, p.summary.updated, p.summary.unchanged,
+                        ),
+                    )
+                }
             },
             confirmButton = { TextButton(onClick = vm::confirm) { Text(stringResource(R.string.backup_merge)) } },
             dismissButton = { TextButton(onClick = vm::dismiss) { Text(stringResource(R.string.common_cancel)) } },
         )
+    }
+}
+
+/** A dialog's text followed by the witness seal summary and anything repaired, when the file has witness data. */
+@Composable
+private fun WithWitness(w: WitnessSummary, content: @Composable () -> Unit) {
+    if (w.isEmpty) return content()
+    LazyColumn(Modifier.heightIn(max = 360.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        item { content() }
+        if (w.verified + w.changed + w.cannotVerify > 0) {
+            item { Text(stringResource(R.string.backup_witness_summary, w.verified, w.changed, w.cannotVerify)) }
+        }
+        items(w.notes.take(200)) { Text(it.text(), style = MaterialTheme.typography.bodySmall) }
+        if (w.notes.size > 200) item { Text(stringResource(R.string.backup_more_problems, w.notes.size - 200)) }
     }
 }
 

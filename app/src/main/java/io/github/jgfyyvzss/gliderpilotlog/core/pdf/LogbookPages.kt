@@ -22,6 +22,9 @@ data class PdfFlight(
     /** A landing airfield's name or a landing place; null when the flight ended where it began. */
     val landingPlace: String?,
     val notes: String?,
+    /** The witness, when the flight is witnessed, its seal still matches and the Witness sign-off Setting is on. */
+    val witnessName: String? = null,
+    val witnessIdentifier: String? = null,
 )
 
 /** The Settings and figures that shape an export. */

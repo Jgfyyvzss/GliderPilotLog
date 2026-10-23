@@ -2,11 +2,13 @@
 A pilot flight logbook for gliding.
 
 ## Why:
-I have been using a Memento database to record my flights. It works very well but it uses a cloud service to sync data and the export option is adequate, but not great. The free version has limitations on filtering that were a minor nuisance. I don't see the need to pay for something just to keep a simple record of flights.
-
+I have been using a Memento database to record my flights. It works very well but it uses a cloud service to sync data and the export option is adequate, but not great. The free version has limitations on filtering that were a minor nuisance.  
 I enter my flights into Memento when I finish flying, then transfer to my paper logbook sometime later. 
 
 I wouldn't mind dropping the paper logbook if my digital one is compliant with local rules and sufficiently robust.
+
+I don't see the need to pay for something just to keep a simple record of flights.  
+Using a hosted service or an app that doesn't make it easy to move my data elsewhere is not on my agenda at all!
 
 Yes, this is all about me. But if it's useful to you, all the better.
 
@@ -17,7 +19,8 @@ Yes, this is all about me. But if it's useful to you, all the better.
   * Full backup and restore via text based JSON ensures you can always reinstall the app and get back to where you were.
   * All log data can be exported to CSV for easy transfer to spreadsheets or other systems.
   * Backup can be manual or scheduled by time or number of new records.
-  * Backup can be to any available location, including Drive, Dropbox etc.
+  * Backups can be saved to any available location, including Drive, Dropbox etc.
+  * Inbuilt ability to write your logbook to PDF styled to match your paper logbook. Templates can be created to match most standard books.
 * Provides dropdown lists for Gliders, Airfields and Clubs, with configurable defaults per airfield.
 * Can be configured to record just flight time or launch, landing & flight time. Useful for compliance with some jurisdiction rules.
 * Can be configured to save Landing place. Useful for compliance with some jurisdiction rules.
@@ -26,10 +29,12 @@ Yes, this is all about me. But if it's useful to you, all the better.
 * Send the selected IGC file to WeGlide.
 * Select an IGC file from an LXNav bluetooth enabled device (Nano, S100 etc)
 * Time calculator to make filling in aircraft logbook easier. Provides last known AC logbook total + current day total. Last known total can be updated from the paper logbook to give the correct running total. For single user private gliders this will probably stay in sync with the glider logbook. For club and syndicate gliders you simply enter the last figure from the logbook and the app provides the new running total.
-* Configurable filtering and sorting. Want to know how many hours you've flown a specific glider from a specific airfield? Need to report your past year's instructing hours? 
+* Configurable filtering and sorting. Want to know how many hours you've flown a specific glider from a specific airfield? Need to report your past year's instructing hours?
+* International language support. German available now, others can be easily created.
+* Reasonably secure witness system. Witness simply takes a selfy and fills in their member/pilot/instructor number. The app encodes that and signs the record cryptographically. If the record is later edited it remains but is clearly flagged as edited since witnessed. From what I've seen this should be quite compliant in most jursidictions. Up to you to determine if it is in yours.
 
 ## What it doesn't do:
-* Store, display or analyse IGC files. IGC files are parsed for flight launch and landing data then dropped or passed on to WeGlide.
+* Store, display or analyse IGC files. IGC files are parsed for flight launch and landing data then dropped or passed on to WeGlide. The files are retained for 7 days to allow for delays updating your logbook, but then automatically deleted. If you want to save them you need to copy them somewhere.
 * In-flight logging. This is a logbook replacement, not a logger.
 * Send your data anywhere off your device without you telling it to. No central database, no cloud storage, no third-party processing. WeGlide is the exception and only if you specifically tell it to.
 

@@ -146,7 +146,7 @@ class PdfExportViewModel(
                     state = PdfState.Failed(uiText(R.string.pdf_failed))
                     return@launch
                 }
-                out.use { writer.write(layout, repo.pdfFlights(f), count, s.hoursDisplay, texts, it) { done, of -> state = PdfState.Working(done, of) } }
+                out.use { writer.write(layout, repo.pdfFlights(f, withWitness = s.witnessSignoff), count, s.hoursDisplay, texts, it) { done, of -> state = PdfState.Working(done, of) } }
                 state = if (open != null) PdfState.Saved else PdfState.ReadyToShare(shareFile)
             } catch (e: CancellationException) {
                 state = PdfState.Idle
@@ -275,6 +275,7 @@ private fun pdfTexts(s: Settings, filterSummary: String?): PdfTexts {
         Field.LAUNCH_TYPE to R.string.flight_launch_type, Field.ROLE to R.string.totals_role, Field.PIC to R.string.flight_pic,
         Field.DURATION to R.string.flight_duration, Field.TIME to R.string.flight_duration, Field.LAUNCH_TIME to R.string.flight_launch,
         Field.LANDING_TIME to R.string.flight_landing, Field.LANDING_PLACE to R.string.flight_landing_place, Field.NOTES to R.string.flight_notes,
+        Field.WITNESS to R.string.witness_filter,
     ).mapValues { (_, id) -> listOf(r.getString(id)) }
     val launchNames = mapOf(
         "aero" to stringResource(R.string.launch_type_aero), "winch" to stringResource(R.string.launch_type_winch),
@@ -299,6 +300,7 @@ private fun pdfTexts(s: Settings, filterSummary: String?): PdfTexts {
         role = { role -> r.getString(role.labelRes()) },
         launchType = { id, stored -> seededLaunchName(id, stored, launchNames) },
         date = { d -> d.shortText() },
+        witness = { name, number -> if (number.isNullOrBlank()) name else r.getString(R.string.witness_pick, name, number) },
     )
 }
 

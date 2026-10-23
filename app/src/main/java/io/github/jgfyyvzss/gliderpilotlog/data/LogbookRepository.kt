@@ -15,10 +15,17 @@ import io.github.jgfyyvzss.gliderpilotlog.core.MsgKey
 import io.github.jgfyyvzss.gliderpilotlog.core.msg
 import io.github.jgfyyvzss.gliderpilotlog.core.Role
 import io.github.jgfyyvzss.gliderpilotlog.core.RoleTotal
+import io.github.jgfyyvzss.gliderpilotlog.core.ValidFlight
+import io.github.jgfyyvzss.gliderpilotlog.core.witness.SealStatus
+import io.github.jgfyyvzss.gliderpilotlog.core.witness.WitnessSeal
 import io.github.jgfyyvzss.gliderpilotlog.core.weglide.WeGlideAircraft
 import java.time.LocalDate
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 /** The outcome of saving a record. */
@@ -93,19 +100,46 @@ class LogbookRepository(
     suspend fun flightsOnDay(gliderId: String, date: LocalDate) = flights.onDay(gliderId, date.toString())
     suspend fun glidersOnDay(date: LocalDate) = flights.glidersOnDay(date.toString())
 
-    suspend fun countFlights(filter: FlightFilter): Int = flights.count(FlightQueries.count(filter))
+    /**
+     * Fills in the flights changed since witnessed when the filter's Witness choice needs them; SQL cannot work
+     * out a seal, so every filtered query goes through this first.
+     */
+    suspend fun resolve(filter: FlightFilter): FlightFilter =
+        if (filter.needsChangedIds) filter.copy(changedIds = WitnessRepository(db).changedIds()) else filter
 
-    /** Filtered flights for the logbook PDF, oldest first, read [batch] at a time so a long logbook is never all in memory. */
-    fun pdfFlights(filter: FlightFilter, batch: Int = 500): Flow<PdfFlight> = flow {
+    /** The same, kept current as flights and sign-offs change, for the Flights list and Totals. */
+    fun observeResolved(filter: FlightFilter): Flow<FlightFilter> =
+        if (!filter.needsChangedIds) flowOf(filter)
+        else WitnessRepository(db).observeStatuses()
+            .map { s -> filter.copy(changedIds = s.filterValues { it == SealStatus.CHANGED }.keys) }
+            .distinctUntilChanged()
+
+    suspend fun countFlights(filter: FlightFilter): Int = flights.count(FlightQueries.count(resolve(filter)))
+
+    /**
+     * Filtered flights for the logbook PDF, oldest first, read [batch] at a time so a long logbook is never all in
+     * memory. With [withWitness], a flight whose seal still matches carries its witness for the Witness column.
+     */
+    fun pdfFlights(filter: FlightFilter, batch: Int = 500, withWitness: Boolean = false): Flow<PdfFlight> = flow {
+        val resolved = resolve(filter)
+        val witnesses = if (!withWitness) emptyMap() else {
+            val statuses = WitnessRepository(db).statuses()
+            val signoffs = db.witnessDao().live().associateBy { it.id }
+            db.witnessDao().witnessedFlights()
+                .filter { statuses[it.id] == SealStatus.WITNESSED }
+                .mapNotNull { f -> f.witnessSignoffId?.let { signoffs[it] }?.let { f.id to it } }
+                .toMap()
+        }
         var offset = 0
         while (true) {
-            val rows = flights.pdfBatch(FlightQueries.pdfBatch(filter, batch, offset))
+            val rows = flights.pdfBatch(FlightQueries.pdfBatch(resolved, batch, offset))
             rows.forEach { r ->
                 emit(
                     PdfFlight(
                         r.logNo, LocalDate.parse(r.date), r.registration, r.gliderType, r.airfieldName, r.clubName,
                         r.launchTypeId, r.launchTypeName, Role.entries.firstOrNull { it.name == r.role } ?: Role.PIC, r.picName,
                         r.durationMinutes, r.launchTime, r.landingTime, r.landingAirfieldName ?: r.landingPlace, r.notes,
+                        witnesses[r.id]?.witnessName, witnesses[r.id]?.witnessIdentifier,
                     ),
                 )
             }
@@ -206,8 +240,9 @@ class LogbookRepository(
         flights.pagedList(FlightQueries.list(filter))
 
     /** Minutes and flights per role for the live flights matching [filter]. */
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun observeTotalsByRole(filter: FlightFilter): Flow<Map<Role, RoleTotal>> =
-        flights.totalsByRole(FlightQueries.totalsByRole(filter)).map { rows ->
+        observeResolved(filter).flatMapLatest { flights.totalsByRole(FlightQueries.totalsByRole(it)) }.map { rows ->
             rows.mapNotNull { r -> Role.entries.firstOrNull { it.name == r.role }?.let { it to RoleTotal(r.minutes, r.flights) } }.toMap()
         }
 
@@ -242,9 +277,30 @@ class LogbookRepository(
         db.withTransaction {
             val result = validateFlight(id, draft)
             if (result !is FlightValidation.Valid) return@withTransaction result to null
-            val f = result.flight
             val existing = id?.let { flights.get(it) }
-            val row = FlightEntity(
+            val row = rowFor(result.flight, existing, source)
+            if (existing == null) flights.insert(row) else flights.update(row)
+            result to row.id
+        }
+
+    /**
+     * The witness name when saving [draft] over a flight that still matches its seal would change a signed field,
+     * so the form can ask first; null when nothing signed changes or the flight is not witnessed.
+     */
+    suspend fun witnessAffectedBy(id: String, draft: FlightDraft): String? {
+        val existing = flights.get(id) ?: return null
+        val signoff = existing.witnessSignoffId?.let { db.witnessDao().get(it) } ?: return null
+        val seal = existing.witnessSeal ?: return null
+        if (WitnessSeal.check(WitnessRepository.sealInput(existing, signoff), seal, signoff.sealVersion) != SealStatus.WITNESSED) return null
+        val valid = validateFlight(id, draft) as? FlightValidation.Valid ?: return null
+        val after = rowFor(valid.flight, existing, FlightSource.MANUAL)
+        val unchanged = WitnessSeal.check(WitnessRepository.sealInput(after, signoff), seal, signoff.sealVersion) == SealStatus.WITNESSED
+        return if (unchanged) null else signoff.witnessName
+    }
+
+    /** The row a validated flight is saved as; an edit keeps the source, batch and witness mark. */
+    private fun rowFor(f: ValidFlight, existing: FlightEntity?, source: FlightSource) =
+            FlightEntity(
                 id = existing?.id ?: Keys.newId(),
                 logNo = f.logNo,
                 date = f.date.toString(),
@@ -263,16 +319,23 @@ class LogbookRepository(
                 source = existing?.source ?: source.name,
                 importBatchId = existing?.importBatchId,
                 updatedAt = now(),
+                // An edit keeps the witness mark; if a signed field changed, the seal no longer matches and the
+                // flight shows Changed since witnessed.
+                witnessSignoffId = existing?.witnessSignoffId,
+                witnessSeal = existing?.witnessSeal,
             )
-            if (existing == null) flights.insert(row) else flights.update(row)
-            result to row.id
-        }
 
-    /** Deletes a flight by leaving a tombstone, which frees its log number. */
+    /**
+     * Deletes a flight by leaving a tombstone, which frees its log number. A witness sign-off that no live flight
+     * refers to any more is deleted with it, photo and all.
+     */
     suspend fun deleteFlight(id: String) {
-        val existing = flights.get(id) ?: return
-        val time = now()
-        flights.update(existing.copy(updatedAt = time, deletedAt = time))
+        db.withTransaction {
+            val existing = flights.get(id) ?: return@withTransaction
+            val time = now()
+            flights.update(existing.copy(updatedAt = time, deletedAt = time))
+            db.witnessDao().deleteUnreferenced(time)
+        }
     }
 
     /** "the flight on 17/10/26 in FQM", with the date shown in the pilot's format by the UI. */

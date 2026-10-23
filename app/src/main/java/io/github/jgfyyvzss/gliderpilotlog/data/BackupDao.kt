@@ -15,6 +15,7 @@ interface BackupDao {
     @Query("SELECT * FROM flight") fun allFlights(): List<FlightEntity>
     @Query("SELECT * FROM opening_balance") fun allOpeningBalances(): List<OpeningBalanceEntity>
     @Query("SELECT * FROM import_batch") fun allImportBatches(): List<ImportBatchEntity>
+    @Query("SELECT * FROM witness_signoff") fun allWitnessSignoffs(): List<WitnessSignoffEntity>
 
     /** Rows of any kind, live or deleted, that the user created. Seeded launch types and balances do not count. */
     @Query("SELECT (SELECT COUNT(*) FROM flight) + (SELECT COUNT(*) FROM glider) + (SELECT COUNT(*) FROM airfield) + (SELECT COUNT(*) FROM club)")
@@ -29,6 +30,7 @@ interface BackupDao {
              + (SELECT COUNT(*) FROM club WHERE updated_at > :since)
              + (SELECT COUNT(*) FROM launch_type WHERE updated_at > :since)
              + (SELECT COUNT(*) FROM opening_balance WHERE updated_at > :since)
+             + (SELECT COUNT(*) FROM witness_signoff WHERE updated_at > :since)
         """,
     )
     fun changesSince(since: Long): Int
@@ -41,6 +43,14 @@ interface BackupDao {
     @Query("DELETE FROM launch_type") fun deleteLaunchTypes()
     @Query("DELETE FROM opening_balance") fun deleteOpeningBalances()
     @Query("DELETE FROM import_batch") fun deleteImportBatches()
+    @Query("DELETE FROM witness_signoff") fun deleteWitnessSignoffs()
+
+    /** Deletes, as tombstones without photos, live sign-offs that no live flight refers to, as WitnessDao does. */
+    @Query(
+        "UPDATE witness_signoff SET photo = NULL, updated_at = :time, deleted_at = :time WHERE deleted_at IS NULL AND id NOT IN " +
+            "(SELECT witness_signoff_id FROM flight WHERE deleted_at IS NULL AND witness_signoff_id IS NOT NULL)",
+    )
+    fun deleteUnreferencedSignoffs(time: Long): Int
 
     @Insert fun insertLaunchTypes(rows: List<LaunchTypeEntity>)
     @Insert fun insertClubs(rows: List<ClubEntity>)
@@ -50,4 +60,5 @@ interface BackupDao {
     @Insert fun insertFlights(rows: List<FlightEntity>)
     @Insert fun insertOpeningBalances(rows: List<OpeningBalanceEntity>)
     @Insert fun insertImportBatches(rows: List<ImportBatchEntity>)
+    @Insert fun insertWitnessSignoffs(rows: List<WitnessSignoffEntity>)
 }

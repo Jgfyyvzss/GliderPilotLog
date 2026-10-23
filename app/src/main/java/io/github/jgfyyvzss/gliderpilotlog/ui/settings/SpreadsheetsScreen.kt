@@ -111,7 +111,8 @@ class SpreadsheetsViewModel(private val app: SoarlogsApp) : ViewModel() {
         val stamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmm"))
         val r = app.contentResolver
         // File names stay in English, like the column names inside them.
-        Documents.writeToFolder(r, tree, "soarlogs-flights-$stamp.csv", "text/csv", csv.exportFlights())
+        val witness = app.settings.settings.first().witnessSignoff
+        Documents.writeToFolder(r, tree, "soarlogs-flights-$stamp.csv", "text/csv", csv.exportFlights(witness))
         Documents.writeToFolder(r, tree, "soarlogs-gliders-$stamp.csv", "text/csv", csv.exportGliders())
         Documents.writeToFolder(r, tree, "soarlogs-airfields-$stamp.csv", "text/csv", csv.exportAirfields())
         message = uiText(R.string.csv_exported, stamp)

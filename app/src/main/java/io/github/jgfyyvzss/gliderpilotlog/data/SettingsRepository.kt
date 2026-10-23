@@ -34,7 +34,11 @@ data class Settings(
     val backupAfterChanges: Int = BackupSchedule.DEFAULT_AFTER_CHANGES,
     /** Back up automatically after this many days with changes; 0 is off. */
     val backupAfterDays: Int = BackupSchedule.DEFAULT_AFTER_DAYS,
+    /** Shows the witness sign-off screens; off hides them and keeps any data. Backed up from format version 2. */
+    val witnessSignoff: Boolean = false,
     // Specific to this device, never backed up.
+    /** Whether backups to the pilot's folder carry the witness photos. On by default. */
+    val backupWitnessPhotos: Boolean = true,
     val backupFolderUri: String? = null,
     val lastBackupAt: Long? = null,
     val firstRunDone: Boolean = false,
@@ -48,6 +52,7 @@ data class Settings(
         backupAfterDays = backupAfterDays,
         pilotName = pilotName,
         pilotIdentifiers = pilotIdentifiers.map { BackupIdentifier(it.label, it.value) },
+        witnessSignoff = witnessSignoff,
     )
 }
 
@@ -67,6 +72,8 @@ class SettingsRepository(context: Context) {
         val instructionCountsAsPic = booleanPreferencesKey("instruction_counts_as_pic")
         val backupAfterChanges = intPreferencesKey("backup_after_changes")
         val backupAfterDays = intPreferencesKey("backup_after_days")
+        val witnessSignoff = booleanPreferencesKey("witness_signoff")
+        val backupWitnessPhotos = booleanPreferencesKey("backup_witness_photos")
         val backupFolderUri = stringPreferencesKey("backup_folder_uri")
         val lastBackupAt = longPreferencesKey("last_backup_at")
         val firstRunDone = booleanPreferencesKey("first_run_done")
@@ -85,6 +92,8 @@ class SettingsRepository(context: Context) {
         instructionCountsAsPic = this[K.instructionCountsAsPic] ?: false,
         backupAfterChanges = this[K.backupAfterChanges] ?: BackupSchedule.DEFAULT_AFTER_CHANGES,
         backupAfterDays = this[K.backupAfterDays] ?: BackupSchedule.DEFAULT_AFTER_DAYS,
+        witnessSignoff = this[K.witnessSignoff] ?: false,
+        backupWitnessPhotos = this[K.backupWitnessPhotos] ?: true,
         backupFolderUri = this[K.backupFolderUri],
         lastBackupAt = this[K.lastBackupAt],
         firstRunDone = this[K.firstRunDone] ?: false,
@@ -120,6 +129,14 @@ class SettingsRepository(context: Context) {
         store.edit { it[K.instructionCountsAsPic] = on }
     }
 
+    suspend fun setWitnessSignoff(on: Boolean) {
+        store.edit { it[K.witnessSignoff] = on }
+    }
+
+    suspend fun setBackupWitnessPhotos(on: Boolean) {
+        store.edit { it[K.backupWitnessPhotos] = on }
+    }
+
     suspend fun setBackupSchedule(afterChanges: Int, afterDays: Int) {
         store.edit {
             it[K.backupAfterChanges] = afterChanges.coerceAtLeast(0)
@@ -150,6 +167,7 @@ class SettingsRepository(context: Context) {
             it[K.backupAfterDays] = s.backupAfterDays.coerceAtLeast(0)
             it[K.pilotName] = s.pilotName.trim()
             it[K.pilotIdentifiers] = encodeIdentifiers(s.pilotIdentifiers.map { id -> PilotIdentifier(id.label, id.value) })
+            it[K.witnessSignoff] = s.witnessSignoff
         }
     }
 }

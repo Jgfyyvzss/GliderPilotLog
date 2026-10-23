@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Witness sign-off (docs/Witness_Sign-Off.md) -->
+    <string name="settings_witness">Witness sign-off</string>
+    <string name="settings_witness_hint">A witness, such as an instructor, confirms flights with their name and a photo. Turning this off hides the witness screens and keeps what is stored.</string>
+
+    <!-- Flights list: marks and filter -->
+    <string name="witness_action">Witness</string>
+    <string name="witness_mark_witnessed">Witnessed</string>
+    <string name="witness_mark_changed">Changed</string>
+    <string name="witness_mark_cannot_verify">Cannot verify</string>
+    <string name="witness_filter">Witness</string>
+    <string name="witness_filter_witnessed">Witnessed</string>
+    <string name="witness_filter_not">Not witnessed</string>
+    <string name="witness_filter_changed">Changed since witnessed</string>
+
+    <!-- Sign-off screen -->
+    <string name="title_witness">Witness sign-off</string>
+    <string name="witness_flights">Flights to witness</string>
+    <string name="witness_no_flights_here">There are no flights to witness here.</string>
+    <!-- Log number, glider, duration and role of one flight -->
+    <string name="witness_flight_line">No. %1$d · %2$s · %3$s · %4$s</string>
+    <string name="witness_already_by">Already witnessed by %1$s</string>
+    <string name="witness_name">Witness name</string>
+    <string name="witness_number">Licence or membership number (optional)</string>
+    <!-- An earlier witness's name and number -->
+    <string name="witness_pick">%1$s (%2$s)</string>
+    <string name="witness_previous">Earlier witnesses</string>
+    <string name="witness_stored_title">What is stored</string>
+    <string name="witness_stored_text">Your name, the number if given, the time of signing and a small photo of your face are kept with these flights in this logbook on this phone and in its backups. They show who witnessed the flights, and let the app notice a later change.</string>
+    <string name="witness_take_photo">Take photo</string>
+    <string name="witness_retake_photo">Take again</string>
+    <string name="witness_photo">Witness photo</string>
+    <string name="witness_photo_failed">The photo could not be read. Try again.</string>
+    <string name="witness_no_camera">No camera app was found on this phone.</string>
+    <string name="witness_consent">I witnessed these flights and agree that my name, number and photo are stored with them in this logbook.</string>
+    <string name="witness_save">Save sign-off</string>
+    <string name="witness_refused_consent">Tick the consent line first.</string>
+    <string name="witness_refused_photo">The photo is too large. Take it again.</string>
+
+    <!-- Witness card on the flight form -->
+    <string name="witness_card_none">Not witnessed.</string>
+    <string name="witness_card_by">Witnessed by %1$s</string>
+    <string name="witness_card_by_number">Witnessed by %1$s (%2$s)</string>
+    <string name="witness_card_signed">Signed %1$s</string>
+    <plurals name="witness_card_signed_after">
+        <item quantity="one">Signed %1$s, %2$d day after the flight</item>
+        <item quantity="other">Signed %1$s, %2$d days after the flight</item>
+    </plurals>
+    <string name="witness_card_photo_removed">Photo removed</string>
+    <string name="witness_again">Witness again</string>
+    <string name="witness_remove_photo">Remove photo</string>
+    <string name="witness_remove_photo_text">Delete the witness photo? The name, number and seal stay, on every flight this sign-off covers.</string>
+    <string name="witness_remove_mark">Remove witness mark</string>
+    <string name="witness_remove_mark_text">Remove the witness from this flight? A sign-off that no other flight uses is deleted with its photo.</string>
+    <string name="witness_remove">Remove</string>
+    <string name="witness_edit_title">Witnessed flight</string>
+    <string name="witness_edit_text">This flight was witnessed by %1$s. Changing it will mark it as changed since witnessed.</string>
+    <string name="witness_edit_confirm">Change it</string>
+</resources>
