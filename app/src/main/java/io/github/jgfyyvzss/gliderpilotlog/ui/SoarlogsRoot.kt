@@ -52,6 +52,7 @@ import io.github.jgfyyvzss.gliderpilotlog.ui.settings.ClubsScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.settings.FirstRunScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.settings.LaunchTypesScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.settings.OpeningBalancesScreen
+import io.github.jgfyyvzss.gliderpilotlog.ui.settings.PdfExportScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.settings.SettingsScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.settings.SpreadsheetsScreen
 import io.github.jgfyyvzss.gliderpilotlog.ui.totals.TotalsScreen
@@ -63,6 +64,7 @@ import kotlinx.serialization.Serializable
 @Serializable object TotalsRoute
 @Serializable object OpeningBalancesRoute
 @Serializable object SpreadsheetsRoute
+@Serializable object PdfRoute
 @Serializable object AirfieldsRoute
 @Serializable object GlidersRoute
 @Serializable object SettingsRoute
@@ -121,6 +123,7 @@ private fun MainScreens() {
         destination?.hasRoute(LaunchTypesRoute::class) == true -> R.string.title_launch_types
         destination?.hasRoute(OpeningBalancesRoute::class) == true -> R.string.title_opening_balances
         destination?.hasRoute(SpreadsheetsRoute::class) == true -> R.string.title_spreadsheets
+        destination?.hasRoute(PdfRoute::class) == true -> R.string.settings_pdf
         destination?.hasRoute(IgcImportRoute::class) == true -> R.string.home_from_igc
         destination?.hasRoute(LoggerRoute::class) == true -> R.string.home_from_logger
         destination?.hasRoute(UploadRoute::class) == true -> R.string.home_upload
@@ -212,12 +215,14 @@ private fun MainScreens() {
                     onLaunchTypes = { nav.navigate(LaunchTypesRoute) },
                     onOpeningBalances = { nav.navigate(OpeningBalancesRoute) },
                     onSpreadsheets = { nav.navigate(SpreadsheetsRoute) },
+                    onPdf = { nav.navigate(PdfRoute) },
                 )
             }
             composable<ClubsRoute> { ClubsScreen() }
             composable<LaunchTypesRoute> { LaunchTypesScreen() }
             composable<OpeningBalancesRoute> { OpeningBalancesScreen() }
             composable<SpreadsheetsRoute> { SpreadsheetsScreen() }
+            composable<PdfRoute> { PdfExportScreen() }
         }
     }
 }

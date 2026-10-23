@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Logbook PDF: Settings and the export screen -->
+    <string name="settings_pdf">Logbook PDF</string>
+    <string name="settings_pdf_hint">Print your logbook as a PDF, using the filter set on the Flights screen.</string>
+    <string name="settings_pdf_button">Create PDF</string>
+    <string name="pdf_intro">The PDF lists the flights oldest first, with page totals, totals brought forward and carried forward.</string>
+    <plurals name="pdf_flights_unfiltered">
+        <item quantity="one">%1$d flight, no filter: page 1 brings forward your opening balances.</item>
+        <item quantity="other">%1$d flights, no filter: page 1 brings forward your opening balances.</item>
+    </plurals>
+    <plurals name="pdf_flights_filtered">
+        <item quantity="one">%1$d flight matching the filter: %2$s. Totals start from zero.</item>
+        <item quantity="other">%1$d flights matching the filter: %2$s. Totals start from zero.</item>
+    </plurals>
+    <string name="pdf_filter_hint">To print fewer flights, set a filter on the Flights screen first.</string>
+    <string name="pdf_template">Template</string>
+    <string name="pdf_template_simple">Simple list</string>
+    <string name="pdf_template_compact">Compact</string>
+    <string name="pdf_template_gfa">GFA-style</string>
+    <string name="pdf_import_template">Import template</string>
+    <string name="pdf_remove_template">Remove</string>
+    <string name="pdf_template_imported">Template imported: %1$s</string>
+    <string name="pdf_save">Save to file</string>
+    <string name="pdf_share">Share</string>
+    <string name="pdf_working">Page %1$d of %2$d</string>
+    <string name="pdf_saved">PDF saved.</string>
+    <string name="pdf_failed">The PDF could not be written.</string>
+    <string name="pdf_no_flights">No flights to print.</string>
+
+    <!-- Printed in the PDF -->
+    <string name="pdf_title">Pilot logbook</string>
+    <string name="pdf_col_registration">Reg.</string>
+    <string name="pdf_col_glider_type">Type</string>
+    <string name="pdf_col_place">Place</string>
+    <!-- Sub-column headings for hours and minutes -->
+    <string name="pdf_hours">Hrs</string>
+    <string name="pdf_minutes">Min</string>
+    <string name="pdf_brought_forward">Brought forward</string>
+    <string name="pdf_page_total">Page total</string>
+    <string name="pdf_carried_forward">Carried forward</string>
+    <string name="pdf_filtered_note">filtered: totals cover these flights only</string>
+    <string name="pdf_page_of">Page %1$d of %2$d</string>
+    <!-- The date the PDF was made -->
+    <string name="pdf_generated">soarlogs, %1$s</string>
+</resources>

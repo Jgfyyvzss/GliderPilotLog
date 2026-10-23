@@ -177,6 +177,14 @@ interface FlightDao {
     @RawQuery(observedEntities = [FlightEntity::class, GliderEntity::class, AirfieldEntity::class, LaunchTypeEntity::class])
     fun pagedList(query: SupportSQLiteQuery): PagingSource<Int, FlightListRow>
 
+    /** A batch of filtered flights for the logbook PDF, oldest first, built by [FlightQueries.pdfBatch]. */
+    @RawQuery
+    suspend fun pdfBatch(query: SupportSQLiteQuery): List<PdfFlightRow>
+
+    /** How many flights match a filter, built by [FlightQueries.count]. */
+    @RawQuery
+    suspend fun count(query: SupportSQLiteQuery): Int
+
     /** Minutes and flights per role for the filtered flights, built by [FlightQueries.totalsByRole]. */
     @RawQuery(observedEntities = [FlightEntity::class])
     fun totalsByRole(query: SupportSQLiteQuery): Flow<List<RoleTotalRow>>
@@ -186,6 +194,26 @@ interface FlightDao {
 }
 
 data class RoleTotalRow(val role: String, val minutes: Int, val flights: Int)
+
+/** A flight with every name the logbook PDF prints. */
+data class PdfFlightRow(
+    @ColumnInfo(name = "log_no") val logNo: Int,
+    val date: String,
+    val registration: String,
+    @ColumnInfo(name = "glider_type") val gliderType: String,
+    @ColumnInfo(name = "airfield_name") val airfieldName: String,
+    @ColumnInfo(name = "club_name") val clubName: String?,
+    @ColumnInfo(name = "launch_type_id") val launchTypeId: String,
+    @ColumnInfo(name = "launch_type_name") val launchTypeName: String,
+    val role: String,
+    @ColumnInfo(name = "pic_name") val picName: String,
+    @ColumnInfo(name = "duration_minutes") val durationMinutes: Int,
+    @ColumnInfo(name = "launch_time") val launchTime: String?,
+    @ColumnInfo(name = "landing_time") val landingTime: String?,
+    @ColumnInfo(name = "landing_airfield_name") val landingAirfieldName: String?,
+    @ColumnInfo(name = "landing_place") val landingPlace: String?,
+    val notes: String?,
+)
 
 data class GliderTotalRow(val type: String, @ColumnInfo(name = "weglide_aircraft_id") val weglideAircraftId: Long?, val minutes: Int, val flights: Int)
 
@@ -207,6 +235,33 @@ object FlightQueries {
             """.trimIndent(),
             where.args.toTypedArray(),
         )
+    }
+
+    /** One batch for the logbook PDF: oldest first, like a paper logbook, with the same filter as the list. */
+    fun pdfBatch(filter: FlightFilter, limit: Int, offset: Int): SupportSQLiteQuery {
+        val where = FilterSql.where(filter)
+        return SimpleSQLiteQuery(
+            """
+            SELECT f.log_no, f.date, g.registration, g.type AS glider_type, a.name AS airfield_name, c.name AS club_name,
+                   f.launch_type_id, lt.name AS launch_type_name, f.role, f.pic_name, f.duration_minutes,
+                   f.launch_time, f.landing_time, la.name AS landing_airfield_name, f.landing_place, f.notes
+            FROM flight f
+            JOIN glider g ON g.id = f.glider_id
+            JOIN airfield a ON a.id = f.airfield_id
+            JOIN launch_type lt ON lt.id = f.launch_type_id
+            LEFT JOIN club c ON c.id = f.club_id
+            LEFT JOIN airfield la ON la.id = f.landing_airfield_id
+            WHERE ${where.sql}
+            ORDER BY f.date ASC, f.log_no ASC
+            LIMIT ? OFFSET ?
+            """.trimIndent(),
+            (where.args + limit + offset).toTypedArray(),
+        )
+    }
+
+    fun count(filter: FlightFilter): SupportSQLiteQuery {
+        val where = FilterSql.where(filter)
+        return SimpleSQLiteQuery("SELECT COUNT(*) FROM flight f WHERE ${where.sql}", where.args.toTypedArray())
     }
 
     fun totalsByRole(filter: FlightFilter): SupportSQLiteQuery {

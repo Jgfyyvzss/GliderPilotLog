@@ -1,0 +1,19 @@
+{
+  "format": "soarlogs-pdf-template",
+  "version": 1,
+  "name": "Compact",
+  "page": { "size": "A4", "orientation": "portrait" },
+  "margins_mm": { "top": 10, "bottom": 10, "left": 10, "right": 10 },
+  "font_size": 7,
+  "rows_per_page": 55,
+  "header": { "show_pilot": true },
+  "columns": [
+    { "field": "log_no", "width": 0.8, "align": "end" },
+    { "field": "date", "width": 1.2 },
+    { "field": "registration", "width": 1.0 },
+    { "field": "airfield", "width": 1.4 },
+    { "field": "launch_type", "width": 1.0 },
+    { "field": "role", "width": 1.1 },
+    { "field": "duration", "width": 1.0, "align": "end" }
+  ]
+}

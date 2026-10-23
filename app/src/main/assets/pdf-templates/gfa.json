@@ -1,0 +1,27 @@
+{
+  "format": "soarlogs-pdf-template",
+  "version": 1,
+  "name": "GFA-style",
+  "page": { "size": "A4", "orientation": "landscape" },
+  "margins_mm": { "top": 8, "bottom": 8, "left": 8, "right": 8 },
+  "font_size": 8,
+  "rows_per_page": 20,
+  "header": { "title": "", "show_pilot": true },
+  "labels": {
+    "brought_forward": "Totals brought forward",
+    "page": "Total for page",
+    "carried_forward": "Grand totals to date"
+  },
+  "columns": [
+    { "field": "log_no", "width": 0.9, "align": "end", "title": ["Serial", "No. of", "Flight"] },
+    { "field": "date", "width": 1.1, "title": ["Date"] },
+    { "field": "glider", "width": 1.8, "title": ["Glider", "Type/Rego"] },
+    { "field": "place", "width": 1.4, "title": ["Place"] },
+    { "field": "launch_type", "width": 1.0, "title": ["Launch", "Type"] },
+    { "field": "time", "width": 1.4, "title": ["Dual/Inst."], "roles": ["STUDENT"], "instruction": "when_not_pic", "split_hm": true },
+    { "field": "time", "width": 1.4, "title": ["In Com."], "roles": ["PIC", "MUTUAL"], "instruction": "when_pic", "split_hm": true },
+    { "field": "gap", "width": 1.1 },
+    { "field": "notes", "width": 6.8, "title": ["Remarks", "Exercise / Task / Turnpoints / Landing point / Km"] },
+    { "field": "blank", "width": 2.2, "title": ["Trainers", "Signature"] }
+  ]
+}

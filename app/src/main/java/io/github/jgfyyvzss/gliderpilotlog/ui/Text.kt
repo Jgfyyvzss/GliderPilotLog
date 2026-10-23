@@ -149,6 +149,9 @@ fun MsgKey.res(): Int = when (this) {
     MsgKey.LXNAV_NO_LOGBOOK -> R.string.msg_lxnav_no_logbook
     MsgKey.LXNAV_GAVE_UP -> R.string.msg_lxnav_gave_up
     MsgKey.LXNAV_SIZE_MISMATCH -> R.string.msg_lxnav_size_mismatch
+    MsgKey.PDF_TEMPLATE_UNREADABLE -> R.string.msg_pdf_template_unreadable
+    MsgKey.PDF_TEMPLATE_NEWER -> R.string.msg_pdf_template_newer
+    MsgKey.PDF_TEMPLATE_PROBLEM -> R.string.msg_pdf_template_problem
 }
 
 /** A message in the pilot's language. Arguments that are messages, roles or dates are shown in that language too. */

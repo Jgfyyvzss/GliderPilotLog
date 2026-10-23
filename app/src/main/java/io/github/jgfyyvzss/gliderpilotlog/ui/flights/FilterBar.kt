@@ -55,6 +55,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.jgfyyvzss.gliderpilotlog.core.ClockTime
 import io.github.jgfyyvzss.gliderpilotlog.core.FlightFilter
 import io.github.jgfyyvzss.gliderpilotlog.core.Role
+import io.github.jgfyyvzss.gliderpilotlog.data.AirfieldEntity
+import io.github.jgfyyvzss.gliderpilotlog.data.ClubEntity
+import io.github.jgfyyvzss.gliderpilotlog.data.GliderEntity
 import io.github.jgfyyvzss.gliderpilotlog.data.Settings
 import io.github.jgfyyvzss.gliderpilotlog.ui.ColonTransformation
 import io.github.jgfyyvzss.gliderpilotlog.ui.PickerOption
@@ -76,32 +79,7 @@ fun FilterBar(modifier: Modifier = Modifier) {
     val clubs by remember { app.repository.observeClubs() }.collectAsStateWithLifecycle(emptyList())
     var open by rememberSaveable { mutableStateOf(false) }
 
-    val chips = buildList<Pair<String, FlightFilter>> {
-        // One chip per field, naming every choice, for example "Glider FQM, GZY".
-        if (filter.gliderIds.isNotEmpty()) {
-            val names = gliders.filter { it.id in filter.gliderIds }.joinToString(", ") { it.registration }.ifEmpty { "?" }
-            add(stringResource(R.string.filter_chip_glider, names) to filter.copy(gliderIds = emptySet()))
-        }
-        if (filter.airfieldIds.isNotEmpty()) {
-            val names = airfields.filter { it.id in filter.airfieldIds }.joinToString(", ") { it.name }.ifEmpty { "?" }
-            add(stringResource(R.string.filter_chip_airfield, names) to filter.copy(airfieldIds = emptySet()))
-        }
-        if (filter.clubIds.isNotEmpty()) {
-            val names = clubs.filter { it.id in filter.clubIds }.joinToString(", ") { it.name }.ifEmpty { "?" }
-            add(stringResource(R.string.filter_chip_club, names) to filter.copy(clubIds = emptySet()))
-        }
-        filter.dateFrom?.let { add(stringResource(R.string.filter_chip_from, it.shortText()) to filter.copy(dateFrom = null)) }
-        filter.dateTo?.let { add(stringResource(R.string.filter_chip_to, it.shortText()) to filter.copy(dateTo = null)) }
-        if (filter.roles.isNotEmpty()) {
-            add(Role.entries.filter { it in filter.roles }.map { it.label() }.joinToString(", ") to filter.copy(roles = emptySet()))
-        }
-        if (filter.logNoFrom != null || filter.logNoTo != null) {
-            add(stringResource(R.string.filter_chip_log, filter.logNoFrom?.toString() ?: "", filter.logNoTo?.toString() ?: "") to filter.copy(logNoFrom = null, logNoTo = null))
-        }
-        if (filter.launchFrom != null || filter.launchTo != null) {
-            add(stringResource(R.string.filter_chip_launch, filter.launchFrom?.toString() ?: "", filter.launchTo?.toString() ?: "") to filter.copy(launchFrom = null, launchTo = null))
-        }
-    }
+    val chips = filterChips(filter, gliders, airfields, clubs)
 
     Row(
         modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp),
@@ -135,6 +113,36 @@ fun FilterBar(modifier: Modifier = Modifier) {
         )
     }
 }
+
+/** The active filters as removable chips: each chip's text and the filter without it. Also the PDF's filter summary. */
+@Composable
+fun filterChips(filter: FlightFilter, gliders: List<GliderEntity>, airfields: List<AirfieldEntity>, clubs: List<ClubEntity>): List<Pair<String, FlightFilter>> =
+    buildList {
+        // One chip per field, naming every choice, for example "Glider FQM, GZY".
+        if (filter.gliderIds.isNotEmpty()) {
+            val names = gliders.filter { it.id in filter.gliderIds }.joinToString(", ") { it.registration }.ifEmpty { "?" }
+            add(stringResource(R.string.filter_chip_glider, names) to filter.copy(gliderIds = emptySet()))
+        }
+        if (filter.airfieldIds.isNotEmpty()) {
+            val names = airfields.filter { it.id in filter.airfieldIds }.joinToString(", ") { it.name }.ifEmpty { "?" }
+            add(stringResource(R.string.filter_chip_airfield, names) to filter.copy(airfieldIds = emptySet()))
+        }
+        if (filter.clubIds.isNotEmpty()) {
+            val names = clubs.filter { it.id in filter.clubIds }.joinToString(", ") { it.name }.ifEmpty { "?" }
+            add(stringResource(R.string.filter_chip_club, names) to filter.copy(clubIds = emptySet()))
+        }
+        filter.dateFrom?.let { add(stringResource(R.string.filter_chip_from, it.shortText()) to filter.copy(dateFrom = null)) }
+        filter.dateTo?.let { add(stringResource(R.string.filter_chip_to, it.shortText()) to filter.copy(dateTo = null)) }
+        if (filter.roles.isNotEmpty()) {
+            add(Role.entries.filter { it in filter.roles }.map { it.label() }.joinToString(", ") to filter.copy(roles = emptySet()))
+        }
+        if (filter.logNoFrom != null || filter.logNoTo != null) {
+            add(stringResource(R.string.filter_chip_log, filter.logNoFrom?.toString() ?: "", filter.logNoTo?.toString() ?: "") to filter.copy(logNoFrom = null, logNoTo = null))
+        }
+        if (filter.launchFrom != null || filter.launchTo != null) {
+            add(stringResource(R.string.filter_chip_launch, filter.launchFrom?.toString() ?: "", filter.launchTo?.toString() ?: "") to filter.copy(launchFrom = null, launchTo = null))
+        }
+    }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable

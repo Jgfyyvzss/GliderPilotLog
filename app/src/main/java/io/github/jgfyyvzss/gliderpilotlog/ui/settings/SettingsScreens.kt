@@ -92,7 +92,7 @@ private val identifierSuggestions = listOf(R.string.settings_id_licence, R.strin
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun SettingsScreen(onClubs: () -> Unit, onLaunchTypes: () -> Unit, onOpeningBalances: () -> Unit, onSpreadsheets: () -> Unit) {
+fun SettingsScreen(onClubs: () -> Unit, onLaunchTypes: () -> Unit, onOpeningBalances: () -> Unit, onSpreadsheets: () -> Unit, onPdf: () -> Unit) {
     val container = appContainer()
     val settings by container.settings.settings.collectAsStateWithLifecycle(null)
     val vm: ProfileViewModel = viewModel(factory = vmFactory { ProfileViewModel(it.settings) })
@@ -185,6 +185,11 @@ fun SettingsScreen(onClubs: () -> Unit, onLaunchTypes: () -> Unit, onOpeningBala
         Text(stringResource(R.string.title_spreadsheets), style = MaterialTheme.typography.titleMedium)
         Text(stringResource(R.string.settings_spreadsheets_hint), style = MaterialTheme.typography.bodySmall)
         OutlinedButton(onClick = onSpreadsheets, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.settings_spreadsheets_button)) }
+
+        HorizontalDivider()
+        Text(stringResource(R.string.settings_pdf), style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.settings_pdf_hint), style = MaterialTheme.typography.bodySmall)
+        OutlinedButton(onClick = onPdf, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.settings_pdf_button)) }
 
         HorizontalDivider()
         Text(stringResource(R.string.settings_weglide), style = MaterialTheme.typography.titleMedium)

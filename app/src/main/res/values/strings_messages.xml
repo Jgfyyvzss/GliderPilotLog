@@ -145,5 +145,9 @@
     <string name="msg_lxnav_connect_failed">Could not connect to the logger. Check it is switched on and nearby.</string>
     <string name="msg_lxnav_no_logbook">The logger did not send its list of flights</string>
     <string name="msg_lxnav_gave_up">The download stopped at line %1$d. Try again to continue from there.</string>
+    <string name="msg_pdf_template_unreadable">This is not a soarlogs PDF template</string>
+    <string name="msg_pdf_template_newer">This template needs a newer version of soarlogs</string>
+    <!-- The JSON field name stays as written in the file -->
+    <string name="msg_pdf_template_problem">The template has a problem with %1$s</string>
     <string name="msg_lxnav_size_mismatch">The downloaded file has %1$d bytes but the logger lists %2$d, so it was discarded</string>
 </resources>

@@ -6,6 +6,7 @@ import io.github.jgfyyvzss.gliderpilotlog.core.FlightContext
 import io.github.jgfyyvzss.gliderpilotlog.core.FlightDraft
 import io.github.jgfyyvzss.gliderpilotlog.core.FlightFilter
 import io.github.jgfyyvzss.gliderpilotlog.core.GliderTotal
+import io.github.jgfyyvzss.gliderpilotlog.core.pdf.PdfFlight
 import io.github.jgfyyvzss.gliderpilotlog.core.FlightRules
 import io.github.jgfyyvzss.gliderpilotlog.core.FlightValidation
 import io.github.jgfyyvzss.gliderpilotlog.core.Keys
@@ -17,6 +18,7 @@ import io.github.jgfyyvzss.gliderpilotlog.core.RoleTotal
 import io.github.jgfyyvzss.gliderpilotlog.core.weglide.WeGlideAircraft
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 
 /** The outcome of saving a record. */
@@ -90,6 +92,27 @@ class LogbookRepository(
     /** The glider's live flights on [date], and the gliders flown that day. */
     suspend fun flightsOnDay(gliderId: String, date: LocalDate) = flights.onDay(gliderId, date.toString())
     suspend fun glidersOnDay(date: LocalDate) = flights.glidersOnDay(date.toString())
+
+    suspend fun countFlights(filter: FlightFilter): Int = flights.count(FlightQueries.count(filter))
+
+    /** Filtered flights for the logbook PDF, oldest first, read [batch] at a time so a long logbook is never all in memory. */
+    fun pdfFlights(filter: FlightFilter, batch: Int = 500): Flow<PdfFlight> = flow {
+        var offset = 0
+        while (true) {
+            val rows = flights.pdfBatch(FlightQueries.pdfBatch(filter, batch, offset))
+            rows.forEach { r ->
+                emit(
+                    PdfFlight(
+                        r.logNo, LocalDate.parse(r.date), r.registration, r.gliderType, r.airfieldName, r.clubName,
+                        r.launchTypeId, r.launchTypeName, Role.entries.firstOrNull { it.name == r.role } ?: Role.PIC, r.picName,
+                        r.durationMinutes, r.launchTime, r.landingTime, r.landingAirfieldName ?: r.landingPlace, r.notes,
+                    ),
+                )
+            }
+            if (rows.size < batch) break
+            offset += batch
+        }
+    }
 
     fun observeGliderTotals(): Flow<List<GliderTotal>> =
         flights.observeGliderTotals().map { rows -> rows.map { GliderTotal(it.type, it.weglideAircraftId, it.minutes, it.flights) } }

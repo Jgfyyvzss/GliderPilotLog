@@ -75,7 +75,7 @@ fun IgcImportScreen(onImport: (Int) -> Unit, onUpload: () -> Unit, onFinish: () 
             IgcImportState.Reading -> Text(stringResource(R.string.igc_reading))
             is IgcImportState.Failed, null -> {
                 Text(
-                    ((s as? IgcImportState.Failed)?.message ?: msg(MsgKey.IGC_UNREADABLE)).text(),
+                    (s?.message ?: msg(MsgKey.IGC_UNREADABLE)).text(),
                     color = MaterialTheme.colorScheme.error,
                 )
                 OutlinedButton(onClick = pick, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.igc_choose_other)) }

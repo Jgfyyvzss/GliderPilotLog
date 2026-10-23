@@ -1,0 +1,24 @@
+{
+  "format": "soarlogs-pdf-template",
+  "version": 1,
+  "name": "Simple list",
+  "page": { "size": "A4", "orientation": "landscape" },
+  "margins_mm": { "top": 12, "bottom": 12, "left": 12, "right": 12 },
+  "font_size": 8,
+  "rows_per_page": 25,
+  "header": { "show_pilot": true },
+  "columns": [
+    { "field": "log_no", "width": 0.8, "align": "end" },
+    { "field": "date", "width": 1.2 },
+    { "field": "glider", "width": 1.8 },
+    { "field": "place", "width": 1.6 },
+    { "field": "launch_type", "width": 1.0 },
+    { "field": "role", "width": 1.1 },
+    { "field": "pic", "width": 1.8 },
+    { "field": "launch_time", "width": 0.8 },
+    { "field": "landing_time", "width": 0.8 },
+    { "field": "landing_place", "width": 1.4 },
+    { "field": "duration", "width": 1.0, "align": "end" },
+    { "field": "notes", "width": 3.5 }
+  ]
+}
